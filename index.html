@@ -84,6 +84,10 @@ body.no-crt .scanlines{display:none}
 /* ============ 大厅卡片 ============ */
 .view-tip{color:var(--muted); font-size:13px; margin:0 0 12px 2px}
 .card-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:14px}
+.pager{display:flex; align-items:center; justify-content:center; gap:10px; margin-top:16px}
+.pager .pg-info{font-family:'Press Start 2P','DotGothic16',monospace; font-size:11px; color:var(--muted); min-width:64px; text-align:center}
+.pager .pg-btn{padding:6px 12px}
+.pager .pg-btn:disabled{opacity:.3; cursor:default}
 .game-card{
   background:var(--panel); border:3px solid var(--line); box-shadow:5px 5px 0 0 rgba(0,0,0,.5);
   padding:16px 14px 14px; cursor:pointer; text-align:left; color:var(--ink);
@@ -712,6 +716,7 @@ body.no-crt .scanlines{display:none}
             <span class="card-desc">控制姿态省着燃料，优雅降落</span>
           </button>
         </div>
+        <div class="pager" id="gamePager" aria-label="游戏分页"></div>
       </div>
       <div id="gameView" class="game-view hidden">
         <div class="game-topbar">
@@ -1070,6 +1075,7 @@ body.no-crt .scanlines{display:none}
             <span class="card-desc">拖出一条会慢慢熄灭的光轨</span>
           </button>
         </div>
+        <div class="pager" id="toyPager" aria-label="玩具分页"></div>
       </div>
       <div id="toyView" class="game-view hidden">
         <div class="game-topbar">
@@ -6253,6 +6259,35 @@ window.__audioReady = false;
 document.addEventListener('pointerdown', () => { window.__audioReady = true; }, { once:true });
 $$('#gameLobby .game-card').forEach(c => c.addEventListener('click', () => mountGame(c.dataset.game)));
 $$('#toyLobby .game-card').forEach(c => c.addEventListener('click', () => mountToy(c.dataset.toy)));
+
+/* ---------- 大厅分页 ---------- */
+function initPager(pagerSel, cardSel, perPage){
+  const cards = $$(cardSel);
+  const pager = $(pagerSel);
+  if (!cards.length) return;
+  let page = 0;
+  const pages = Math.max(1, Math.ceil(cards.length / perPage));
+  const show = () => {
+    cards.forEach((c, i) => { c.style.display = Math.floor(i / perPage) === page ? '' : 'none'; });
+    if (pages > 1) {
+      pager.innerHTML = ''
+        + '<button class="px-btn ghost pg-btn" data-pg="prev" type="button"' + (page === 0 ? ' disabled' : '') + '>◀</button>'
+        + '<span class="pg-info">' + (page + 1) + ' / ' + pages + '</span>'
+        + '<button class="px-btn ghost pg-btn" data-pg="next" type="button"' + (page === pages - 1 ? ' disabled' : '') + '>▶</button>';
+    } else {
+      pager.innerHTML = '';
+    }
+  };
+  pager.addEventListener('click', e => {
+    const b = e.target.closest('[data-pg]');
+    if (!b) return;
+    if (b.dataset.pg === 'prev' && page > 0) { page--; show(); sfx.click(); }
+    if (b.dataset.pg === 'next' && page < pages - 1) { page++; show(); sfx.click(); }
+  });
+  show();
+}
+initPager('#gamePager', '#gameLobby .game-card', 16);
+initPager('#toyPager', '#toyLobby .game-card', 16);
 syncHeader();
 const initialHash = (location.hash || '').replace('#', '');
 if(VIEWS[initialHash]) setTab(initialHash);
