@@ -1,0 +1,4268 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>像素无聊屋 · 打发无聊神器</title>
+<meta name="description" content="复古像素风的无聊终结器：小游戏合集、趣味随机内容、互动小玩具，一个网页全搞定。">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23171826'/%3E%3Cg transform='translate(4,6) scale(4)' fill='%23ff3d5a'%3E%3Crect x='1' y='0' width='1' height='1'/%3E%3Crect x='4' y='0' width='1' height='1'/%3E%3Crect x='0' y='1' width='6' height='1'/%3E%3Crect x='0' y='2' width='6' height='1'/%3E%3Crect x='1' y='3' width='4' height='1'/%3E%3Crect x='2' y='4' width='2' height='1'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Press+Start+2P&family=DotGothic16&display=swap">
+<style>
+/* ============ 设计令牌：复古街机风 ============ */
+:root{
+  --bg:#171826; --bg2:#0e0f1d; --panel:#23244a; --panel2:#2c2d5c;
+  --ink:#eef0ff; --muted:#9aa0d8; --line:#0b0c18;
+  --red:#ff3d5a; --yellow:#ffc53d; --green:#3ddc84; --blue:#4da6ff;
+  --purple:#b18cff; --pink:#ff8ac2;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:auto}
+body{
+  background:var(--bg); color:var(--ink); min-height:100vh;
+  font-family:'DotGothic16','Microsoft YaHei','PingFang SC',sans-serif;
+  padding:14px 12px 40px; font-size:15px; line-height:1.6; overflow-x:hidden;
+}
+body::before{ /* 像素底纹 */
+  content:''; position:fixed; inset:0; z-index:-1; pointer-events:none;
+  background-image:
+    radial-gradient(rgba(157,166,255,.07) 1px, transparent 1px),
+    radial-gradient(rgba(157,166,255,.05) 1px, transparent 1px);
+  background-size:26px 26px, 26px 26px; background-position:0 0, 13px 13px;
+}
+.f-px{font-family:'Press Start 2P','Courier New',monospace}
+.hidden{display:none!important}
+
+/* CRT 扫描线 */
+.scanlines{position:fixed; inset:0; z-index:60; pointer-events:none;
+  background:repeating-linear-gradient(0deg, rgba(0,0,0,.16) 0 1px, transparent 1px 3px);
+  opacity:.55}
+body.no-crt .scanlines{display:none}
+
+.wrap{max-width:1000px;margin:0 auto}
+
+/* 像素边框与按钮 */
+.px-border{border:3px solid var(--line); box-shadow:5px 5px 0 0 rgba(0,0,0,.5)}
+.px-btn{
+  font-family:'Press Start 2P','DotGothic16',monospace; font-size:12px; color:var(--line);
+  background:var(--blue); border:3px solid var(--line); box-shadow:4px 4px 0 0 rgba(0,0,0,.55);
+  padding:10px 14px; cursor:pointer; line-height:1.2; user-select:none;
+}
+.px-btn:hover{filter:brightness(1.12)}
+.px-btn:active{transform:translate(3px,3px); box-shadow:1px 1px 0 0 rgba(0,0,0,.55)}
+.px-btn.red{background:var(--red)}
+.px-btn.green{background:var(--green)}
+.px-btn.yellow{background:var(--yellow)}
+.px-btn.purple{background:var(--purple)}
+.px-btn.pink{background:var(--pink)}
+.px-btn.big{font-size:14px; padding:14px 22px}
+.px-btn.ghost{background:var(--panel2); color:var(--ink)}
+
+/* ============ 顶栏 ============ */
+.site-header{display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px;
+  background:var(--panel); border:3px solid var(--line); box-shadow:5px 5px 0 0 rgba(0,0,0,.5);
+  padding:12px 16px; margin-bottom:14px}
+.logo{display:flex; align-items:center; gap:12px}
+.logo svg{flex:none}
+.logo h1{font-family:'DotGothic16','Microsoft YaHei',sans-serif; font-size:22px; letter-spacing:2px;
+  color:var(--ink); text-shadow:3px 3px 0 var(--line)}
+.tagline{font-family:'Press Start 2P',monospace; font-size:9px; color:var(--yellow); margin-top:2px}
+.hdr-actions{display:flex; gap:8px}
+
+/* ============ 标签页 ============ */
+.tabs{display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap}
+.tab-btn{
+  font-family:'Press Start 2P','DotGothic16',monospace; font-size:12px;
+  background:var(--panel2); color:var(--muted); border:3px solid var(--line);
+  box-shadow:4px 4px 0 0 rgba(0,0,0,.5); padding:12px 18px; cursor:pointer; flex:1 1 auto;
+}
+.tab-btn.active{background:var(--yellow); color:var(--line); transform:translate(2px,2px); box-shadow:2px 2px 0 0 rgba(0,0,0,.5)}
+.tab-btn:hover:not(.active){filter:brightness(1.15)}
+.view{display:none}
+.view.active{display:block; animation:viewIn .18s steps(4) 0s 1}
+@keyframes viewIn{from{opacity:0; transform:translateY(4px)} to{opacity:1; transform:none}}
+
+/* ============ 大厅卡片 ============ */
+.view-tip{color:var(--muted); font-size:13px; margin:0 0 12px 2px}
+.card-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:14px}
+.game-card{
+  background:var(--panel); border:3px solid var(--line); box-shadow:5px 5px 0 0 rgba(0,0,0,.5);
+  padding:16px 14px 14px; cursor:pointer; text-align:left; color:var(--ink);
+  font-family:'DotGothic16','Microsoft YaHei',sans-serif; display:flex; flex-direction:column; gap:8px;
+  min-width:0;
+}
+.game-card:hover{transform:translate(-2px,-2px); box-shadow:7px 7px 0 0 rgba(0,0,0,.5); filter:brightness(1.08)}
+.game-card:active{transform:translate(2px,2px); box-shadow:2px 2px 0 0 rgba(0,0,0,.5)}
+.game-card .card-icon{width:54px; height:54px; background:var(--bg2); border:2px solid var(--line);
+  display:flex; align-items:center; justify-content:center; box-shadow:inset 0 0 0 2px rgba(255,255,255,.05)}
+.game-card .card-name{font-family:'Press Start 2P','DotGothic16',monospace; font-size:14px; letter-spacing:1px}
+.game-card .card-desc{font-size:12px; color:var(--muted); line-height:1.5}
+
+/* ============ 游戏/玩具视图 ============ */
+.game-topbar{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:14px}
+.game-topbar h2{font-family:'Press Start 2P','DotGothic16',monospace; font-size:15px; letter-spacing:1px; flex:1 1 auto}
+.game-stats{display:flex; gap:8px; flex-wrap:wrap}
+.stat{background:var(--bg2); border:2px solid var(--line); padding:6px 10px; font-size:11px; color:var(--muted); line-height:1.5}
+.stat b{display:block; font-family:'Press Start 2P',monospace; font-size:13px; color:var(--yellow)}
+.stage{max-width:560px; margin:0 auto; position:relative}
+.pix-canvas{width:100%; height:auto; display:block; image-rendering:pixelated; background:var(--bg2);
+  border:3px solid var(--line); box-shadow:5px 5px 0 0 rgba(0,0,0,.5)}
+.overlay{position:absolute; inset:0; z-index:5; display:flex; flex-direction:column; gap:14px;
+  align-items:center; justify-content:center; text-align:center; padding:20px;
+  background:rgba(14,15,29,.88)}
+.overlay .ov-title{font-family:'Press Start 2P','DotGothic16',monospace; font-size:16px; color:var(--yellow); text-shadow:3px 3px 0 var(--line)}
+.overlay .ov-sub{color:var(--muted); font-size:13px; max-width:420px}
+
+/* ============ 随机内容 ============ */
+.chips{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px}
+.chip{
+  font-family:'Press Start 2P','DotGothic16',monospace; font-size:11px; color:var(--muted);
+  background:var(--panel2); border:3px solid var(--line); box-shadow:3px 3px 0 0 rgba(0,0,0,.5);
+  padding:8px 12px; cursor:pointer;
+}
+.chip.active{background:var(--red); color:var(--line)}
+.chip:hover:not(.active){filter:brightness(1.15)}
+.random-card{
+  background:var(--panel); border:3px solid var(--line); box-shadow:5px 5px 0 0 rgba(0,0,0,.5);
+  padding:22px 20px; min-height:190px; display:flex; flex-direction:column; gap:14px;
+}
+.rc-cat{display:inline-block; font-family:'Press Start 2P',monospace; font-size:10px; color:var(--line);
+  background:var(--green); border:2px solid var(--line); padding:4px 8px; align-self:flex-start}
+.rc-cat.c-joke{background:var(--yellow)}
+.rc-cat.c-fact{background:var(--blue); color:var(--line)}
+.rc-cat.c-question{background:var(--purple); color:var(--line)}
+.rc-cat.c-slack{background:var(--pink); color:var(--line)}
+.rc-cat.c-riddle{background:#3ddc84; color:var(--line)}
+.rc-cat.c-nonsense{background:#ff3d5a; color:var(--line)}
+.rc-cat.c-mood{background:#ff9f43; color:var(--line)}
+.rc-cat.c-tip{background:#5eead4; color:var(--line)}
+.rc-cat.c-odd{background:#f1a7ff; color:var(--line)}
+.rc-text{font-size:17px; line-height:1.9; flex:1 1 auto; letter-spacing:.5px}
+.rc-meta{color:var(--muted); font-size:12px}
+.random-actions{display:flex; gap:10px; margin-top:14px; flex-wrap:wrap}
+.random-actions .px-btn{flex:1 1 auto}
+
+/* ============ 小游戏：贪吃蛇 ============ */
+.snake-hud{display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:12px}
+.snake-hud .stat{flex:1 1 auto; text-align:center}
+
+/* ============ 2048 ============ */
+.t2048-wrap{max-width:420px; margin:0 auto}
+.t2048-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:10px; padding:10px;
+  background:var(--panel); border:3px solid var(--line); box-shadow:5px 5px 0 0 rgba(0,0,0,.5)}
+.t2048-cell{aspect-ratio:1; display:flex; align-items:center; justify-content:center;
+  font-family:'Press Start 2P',monospace; font-size:20px; color:var(--ink);
+  background:#33356a; border:2px solid var(--line); user-select:none}
+.t2048-cell.t2{background:#4a4c92}
+.t2048-cell.t4{background:#5b5da8}
+.t2048-cell.t8{background:#b18cff}
+.t2048-cell.t16{background:#4da6ff}
+.t2048-cell.t32{background:#3ddc84}
+.t2048-cell.t64{background:#ffc53d; color:#101120}
+.t2048-cell.t128{background:#ff9f43; color:#101120}
+.t2048-cell.t256{background:#ff8ac2; color:#101120}
+.t2048-cell.t512{background:#ff3d5a; color:#101120}
+.t2048-cell.t1024{background:#ff5d5d; color:#101120; box-shadow:0 0 0 3px var(--line), 0 0 18px rgba(255,93,93,.6)}
+.t2048-cell.t2048{background:#ffe95c; color:#101120; box-shadow:0 0 0 3px var(--line), 0 0 24px rgba(255,233,92,.8)}
+.t2048-msg{text-align:center; margin-top:14px; font-size:14px; color:var(--yellow); min-height:24px}
+
+/* ============ 扫雷 ============ */
+.mine-grid{display:grid; grid-template-columns:repeat(9,1fr); gap:4px; max-width:420px; margin:0 auto; touch-action:manipulation}
+.mine-cell{aspect-ratio:1; background:var(--panel2); border:2px solid var(--line); cursor:pointer;
+  display:flex; align-items:center; justify-content:center; user-select:none;
+  font-family:'Press Start 2P',monospace; font-size:12px; color:var(--ink); min-width:0}
+.mine-cell:active{transform:translate(1px,1px)}
+.mine-cell.open{background:#34365f; box-shadow:inset 0 0 0 2px rgba(0,0,0,.22)}
+.mine-cell.flag{background:#1f2040; color:var(--red)}
+.mine-cell.bomb{background:var(--red); color:#101120}
+.mine-cell.bad{background:var(--yellow); color:#101120}
+.mine-status{text-align:center; margin-top:12px; font-size:14px; min-height:24px; color:var(--muted)}
+
+/* ============ 打地鼠 ============ */
+.mole-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; max-width:420px; margin:0 auto}
+.mole-hole{aspect-ratio:1; background:var(--panel2); border:3px solid var(--line); position:relative;
+  cursor:pointer; overflow:hidden; box-shadow:inset 0 8px 0 rgba(0,0,0,.35)}
+.mole-sprite{position:absolute; left:50%; bottom:10%; transform:translateX(-50%); width:72%; height:72%;
+  background-repeat:no-repeat; background-size:contain; background-position:center bottom; display:none;
+  image-rendering:pixelated}
+.mole-hole.up .mole-sprite{display:block; animation:rise .1s steps(3) 1}
+.mole-hole.bonk .mole-sprite{filter:brightness(2.4) saturate(.6)}
+.mole-hole.bonk{background:#3a3c68}
+@keyframes rise{from{transform:translateX(-50%) translateY(26%)} to{transform:translateX(-50%) translateY(0)}}
+
+/* ============ 捏泡泡 ============ */
+.bubble-grid{display:grid; grid-template-columns:repeat(10,1fr); gap:8px; max-width:520px; margin:0 auto}
+.bubble{aspect-ratio:1; cursor:pointer; border:2px solid var(--line);
+  background:radial-gradient(circle at 32% 28%, rgba(255,255,255,.95) 0 10%, rgba(255,255,255,.30) 12% 30%, rgba(139,146,255,.5) 34% 100%);
+  box-shadow:inset 0 -3px 0 rgba(0,0,0,.18); transition:background .08s steps(2)}
+.bubble:hover{filter:brightness(1.15)}
+.bubble.popped{background:#26274e; box-shadow:inset 0 3px 0 rgba(0,0,0,.4), inset 0 0 0 2px rgba(0,0,0,.25); cursor:default}
+.bubble.popped:hover{filter:none}
+.bubble-count{text-align:center; margin-top:14px; font-family:'Press Start 2P',monospace; font-size:13px; color:var(--yellow)}
+
+/* ============ 像素涂鸦 ============ */
+.doodle-wrap{max-width:560px; margin:0 auto}
+.doodle-canvas-wrap{background:var(--bg2); border:3px solid var(--line); box-shadow:5px 5px 0 0 rgba(0,0,0,.5); padding:8px; touch-action:none}
+.doodle-tools{display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:12px}
+.palette{display:flex; gap:6px; flex-wrap:wrap; flex:1 1 auto}
+.pal-swatch{width:26px; height:26px; border:2px solid var(--line); cursor:pointer; box-shadow:2px 2px 0 0 rgba(0,0,0,.5)}
+.pal-swatch.sel{outline:3px solid var(--yellow); outline-offset:1px; transform:translate(-1px,-1px)}
+
+/* ============ 蹦蹦球 ============ */
+.bounce-box{height:340px; background:var(--bg2); border:3px solid var(--line); box-shadow:5px 5px 0 0 rgba(0,0,0,.5), inset 0 0 0 4px rgba(0,0,0,.28);
+  position:relative; overflow:hidden; cursor:crosshair; touch-action:none}
+.ball{position:absolute; border-radius:50%; border:2px solid var(--line); pointer-events:none}
+
+/* ============ 像素宠物 ============ */
+.pet-wrap{max-width:420px; margin:0 auto}
+.pet-stage{position:relative; background:var(--bg2); border:3px solid var(--line); box-shadow:5px 5px 0 0 rgba(0,0,0,.5); padding:10px}
+.pet-canvas{width:100%; height:auto; display:block; image-rendering:pixelated; cursor:pointer}
+.pet-name{position:absolute; top:12px; left:14px; font-family:'Press Start 2P',monospace; font-size:11px; color:var(--green); text-shadow:2px 2px 0 var(--line)}
+.pet-status{position:absolute; bottom:12px; left:14px; font-size:12px; color:var(--muted); background:rgba(14,15,29,.7); border:2px solid var(--line); padding:3px 8px}
+.heart-fly{position:absolute; z-index:4; pointer-events:none; animation:heartUp 1s steps(8) forwards}
+@keyframes heartUp{0%{opacity:0; transform:translateY(0) scale(.6)} 20%{opacity:1} 100%{opacity:0; transform:translateY(-70px) scale(1.15)}}
+.pet-bars{display:flex; gap:14px; margin-top:12px; flex-wrap:wrap}
+.pet-bar{flex:1 1 auto; min-width:150px}
+.pet-bar .lbl{font-size:11px; color:var(--muted); margin-bottom:4px}
+.pet-bar .bar{height:16px; background:var(--bg2); border:2px solid var(--line); padding:2px}
+.pet-bar .fill{height:100%; width:50%; transition:width .3s steps(6)}
+.fill.hunger{background:var(--green)}
+.fill.mood{background:var(--pink)}
+.pet-actions{display:flex; gap:10px; margin-top:12px}
+.pet-actions .px-btn{flex:1 1 auto; text-align:center}
+
+/* ============ 记忆翻牌 ============ */
+.mem-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;max-width:420px;margin:0 auto}
+.mem-card{aspect-ratio:1;background:repeating-linear-gradient(45deg,#3a3c6e 0 8px,#343663 8px 16px);border:3px solid var(--line);cursor:pointer;font-family:'Press Start 2P',monospace;font-size:28px;color:var(--line);display:flex;align-items:center;justify-content:center;box-shadow:3px 3px 0 rgba(0,0,0,.5);padding:0}
+.mem-card.open{background:var(--panel2);color:var(--yellow)}
+.mem-card.done{background:var(--green);color:#101120;cursor:default}
+.mem-card:active{transform:translate(1px,1px)}
+/* ============ 石头剪刀布 ============ */
+.rps-box{display:flex;align-items:center;justify-content:center;gap:18px;max-width:460px;margin:0 auto;background:var(--panel);border:3px solid var(--line);box-shadow:5px 5px 0 rgba(0,0,0,.5);padding:20px}
+.rps-icon{width:96px;height:96px;background:var(--bg2);border:3px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:46px;color:var(--ink)}
+.rps-lbl{text-align:center;font-size:12px;color:var(--muted);margin-top:6px}
+.rps-vs{font-family:'Press Start 2P',monospace;font-size:18px;color:var(--red)}
+.rps-msg{text-align:center;margin:14px 0;font-size:14px;color:var(--yellow);min-height:22px}
+.rps-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+/* ============ 记忆色块（西蒙） ============ */
+.simon-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;max-width:340px;margin:0 auto}
+.simon-pad{aspect-ratio:1;border:4px solid var(--line);box-shadow:4px 4px 0 rgba(0,0,0,.5);cursor:pointer;opacity:.8}
+.simon-pad.lit{opacity:1;filter:brightness(1.5);box-shadow:0 0 0 4px var(--line),0 0 24px currentColor}
+.simon-msg{text-align:center;margin-top:14px;font-size:13px;color:var(--muted);min-height:20px}
+/* ============ 解压捏捏 ============ */
+.squishy-box{display:flex;justify-content:center;align-items:center;height:280px;background:var(--panel);border:3px solid var(--line);box-shadow:5px 5px 0 rgba(0,0,0,.5);cursor:pointer;user-select:none}
+.squishy-blob{width:150px;height:130px;background:var(--green);border:4px solid var(--line);border-radius:50% 50% 46% 46%;box-shadow:inset -8px -10px 0 rgba(0,0,0,.18);display:flex;align-items:center;justify-content:center;transition:transform .16s steps(3);position:relative}
+.squishy-blob.squishing{transform:scaleX(1.28) scaleY(.6)}
+.squishy-face{width:60px;height:40px;position:relative}
+.squishy-face::before,.squishy-face::after{content:'';position:absolute;top:4px;width:8px;height:8px;background:#0b0c18}
+.squishy-face::before{left:4px}.squishy-face::after{right:4px}
+.squishy-face span{position:absolute;left:13px;top:22px;width:34px;height:5px;background:#0b0c18}
+.squishy-tip{text-align:center;margin-top:12px;color:var(--muted);font-size:12px}
+/* ============ 像素钢琴 ============ */
+.piano-keys{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;max-width:520px;margin:0 auto}
+.piano-key{width:64px;height:110px;background:#eef0ff;color:var(--line);border:3px solid var(--line);box-shadow:3px 3px 0 rgba(0,0,0,.5);font-family:'Press Start 2P',monospace;font-size:12px;cursor:pointer;display:flex;align-items:flex-end;justify-content:center;padding-bottom:8px}
+.piano-key.pressed{background:var(--yellow);transform:translate(2px,2px);box-shadow:1px 1px 0 rgba(0,0,0,.5)}
+.piano-hint{text-align:center;margin-top:12px;color:var(--muted);font-size:12px}
+/* ============ 占卜水晶球 ============ */
+.oracle-box{display:flex;flex-direction:column;align-items:center;max-width:420px;margin:0 auto;padding:20px;background:var(--panel);border:3px solid var(--line);box-shadow:5px 5px 0 rgba(0,0,0,.5)}
+.oracle-ball{width:160px;height:160px;border-radius:50%;background:radial-gradient(circle at 35% 30%, #5b6bff, #3a3f9e 55%, #23244a 100%);border:4px solid var(--line);box-shadow:0 0 30px rgba(91,107,255,.45);cursor:pointer;position:relative;margin:8px 0}
+.oracle-ball::after{content:'';position:absolute;left:30px;top:24px;width:34px;height:22px;background:rgba(255,255,255,.5);border-radius:50%;transform:rotate(-24deg)}
+.oracle-ball.pulse{animation:oraclePulse .5s steps(5)}
+@keyframes oraclePulse{0%{transform:scale(1)}40%{transform:scale(1.08)}100%{transform:scale(1)}}
+.oracle-label{font-family:'Press Start 2P',monospace;font-size:11px;color:var(--yellow)}
+.oracle-out{text-align:center;margin-top:16px;font-size:16px;line-height:1.9;max-width:460px;margin-left:auto;margin-right:auto}
+
+/* ============ 页脚 ============ */
+.site-footer{margin-top:26px; text-align:center; color:var(--muted); font-size:12px; line-height:2}
+.site-footer .kbd{font-family:'Press Start 2P',monospace; font-size:9px; background:var(--panel2); border:2px solid var(--line); padding:2px 5px; color:var(--yellow)}
+
+/* ============ 响应式 ============ */
+@media (min-width:768px){
+  body{padding:20px 20px 44px}
+  .card-grid{grid-template-columns:repeat(4,1fr)}
+  .game-card .card-icon{width:62px; height:62px}
+  .logo h1{font-size:26px}
+  .tab-btn{flex:0 1 auto; padding:12px 24px}
+  .rc-text{font-size:18px}
+}
+/* ============ 新增游戏样式 ============ */
+.guess-box{max-width:460px;margin:0 auto;background:var(--panel);border:3px solid var(--line);box-shadow:5px 5px 0 rgba(0,0,0,.5);padding:18px}
+.guess-msg{font-size:15px;margin-bottom:12px;min-height:24px}
+.guess-row{display:flex;gap:10px}
+.guess-input{flex:1 1 auto;min-width:0;font-family:'Press Start 2P','DotGothic16',monospace;font-size:16px;background:var(--bg2);color:var(--ink);border:3px solid var(--line);padding:12px}
+.guess-log{margin-top:12px;font-size:13px;color:var(--muted);max-height:150px;overflow:auto}
+.guess-log div{margin-top:4px}
+.ttt-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:320px;margin:0 auto}
+.ttt-cell{aspect-ratio:1;background:var(--panel2);border:3px solid var(--line);box-shadow:3px 3px 0 rgba(0,0,0,.5);font-family:'Press Start 2P',monospace;font-size:34px;color:var(--yellow);cursor:pointer}
+.ttt-cell:active{transform:translate(1px,1px)}
+.slide-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;max-width:360px;margin:0 auto}
+.slide-tile{aspect-ratio:1;background:var(--panel2);border:3px solid var(--line);box-shadow:2px 2px 0 rgba(0,0,0,.5);font-family:'Press Start 2P',monospace;font-size:18px;color:var(--yellow);cursor:pointer}
+.slide-tile.blank{background:transparent;border-color:transparent;box-shadow:none;cursor:default}
+.slide-tile:active:not(.blank){transform:translate(1px,1px)}
+.wheel-box{position:relative;width:240px;height:240px;margin:10px auto}
+.wheel{position:absolute;inset:0;border-radius:50%;border:5px solid var(--line);box-shadow:5px 5px 0 rgba(0,0,0,.5)}
+.wheel-seg{position:absolute;left:50%;top:50%;font-family:'Press Start 2P',monospace;font-size:11px;color:var(--line);text-shadow:0 0 2px rgba(255,255,255,.4)}
+.wheel-pointer{position:absolute;left:50%;top:-8px;transform:translateX(-50%);width:0;height:0;border-left:10px solid transparent;border-right:10px solid transparent;border-top:16px solid var(--red);z-index:2;filter:drop-shadow(2px 2px 0 rgba(0,0,0,.5))}
+.wheel-result{text-align:center;margin:10px 0;font-size:16px;color:var(--yellow);min-height:24px}
+.dice-box{display:flex;gap:20px;justify-content:center;margin:16px 0}
+.dice{width:92px;height:92px;background:var(--ink);border:4px solid var(--line);box-shadow:4px 4px 0 rgba(0,0,0,.5);display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);padding:12px;gap:6px}
+.dice-dot{background:transparent}
+.dice-dot.on{background:var(--line)}
+.dice-total{text-align:center;font-family:'Press Start 2P',monospace;font-size:13px;color:var(--green);margin-bottom:14px}
+.reflex-pad{height:220px;background:var(--panel2);border:4px solid var(--line);box-shadow:6px 6px 0 rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:17px;color:var(--muted);text-align:center;user-select:none}
+.reflex-pad.wait{background:#2c2d5c}
+.reflex-pad.green{background:var(--green);color:var(--line)}
+.reflex-pad.red{background:var(--red);color:var(--line)}
+.digit-num{font-family:'Press Start 2P',monospace;font-size:44px;color:var(--yellow);text-align:center;margin:18px 0;letter-spacing:8px}
+.digit-msg{text-align:center;color:var(--muted);font-size:14px;margin:10px 0;min-height:22px}
+.digit-num + .guess-input{display:block;margin:0 auto;max-width:260px}
+.stroop-card{max-width:360px;margin:0 auto;background:var(--panel);border:3px solid var(--line);box-shadow:5px 5px 0 rgba(0,0,0,.5);padding:30px;text-align:center}
+.stroop-word{font-family:'Press Start 2P',monospace;font-size:44px;letter-spacing:6px;min-height:60px}
+.stroop-msg{text-align:center;color:var(--muted);font-size:14px;margin:12px 0}
+
+/* ============ 新增玩具样式 ============ */
+.drums-row{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;max-width:460px;margin:10px auto}
+.drum-pad{width:118px;height:118px;border:4px solid var(--line);box-shadow:5px 5px 0 rgba(0,0,0,.5);border-radius:50%;font-family:'Press Start 2P',monospace;font-size:22px;color:var(--line);cursor:pointer;transition:transform .1s}
+.drum-pad.hit{transform:scale(.9);box-shadow:2px 2px 0 rgba(0,0,0,.5)}
+.clock-box{max-width:420px;margin:0 auto;background:var(--panel);border:4px solid var(--line);box-shadow:6px 6px 0 rgba(0,0,0,.5);padding:30px;text-align:center}
+.clock-time{font-family:'Press Start 2P',monospace;font-size:32px;color:var(--green);letter-spacing:2px}
+.clock-date{margin-top:14px;font-size:15px;color:var(--muted)}
+.pump-box{display:flex;justify-content:center;align-items:flex-end;height:280px;background:var(--panel);border:3px solid var(--line);box-shadow:5px 5px 0 rgba(0,0,0,.5);padding:20px}
+.pump-ball{width:24px;height:28px;background:var(--red);border:3px solid var(--line);border-radius:50% 50% 45% 45%;display:flex;align-items:center;justify-content:center;color:var(--line);font-family:'Press Start 2P',monospace;font-size:8px;transition:width .12s steps(3),height .12s steps(3);box-shadow:inset -5px -6px 0 rgba(0,0,0,.15)}
+.pump-ball.popped{background:#3a3c68;color:var(--muted)}
+.pump-msg{text-align:center;margin-top:12px;color:var(--muted);font-size:13px;min-height:20px}
+.palette{display:flex;gap:8px;justify-content:center;margin:10px 0 14px}
+.pal-swatch{width:30px;height:30px;border:3px solid var(--line);cursor:pointer;box-shadow:2px 2px 0 rgba(0,0,0,.5)}
+.pal-swatch.sel{outline:3px solid var(--ink);outline-offset:1px}
+
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.01ms!important; animation-iteration-count:1!important; transition-duration:.01ms!important}
+}
+</style>
+</head>
+<body>
+<div class="scanlines" aria-hidden="true"></div>
+<div class="wrap">
+
+  <!-- ===== 顶栏 ===== -->
+  <header class="site-header">
+    <div class="logo">
+      <svg width="38" height="38" viewBox="0 0 32 32" aria-hidden="true">
+        <rect width="32" height="32" fill="#171826"/>
+        <g transform="translate(4,6) scale(4)" fill="#ff3d5a">
+          <rect x="1" y="0" width="1" height="1"/><rect x="4" y="0" width="1" height="1"/>
+          <rect x="0" y="1" width="6" height="1"/><rect x="0" y="2" width="6" height="1"/>
+          <rect x="1" y="3" width="4" height="1"/><rect x="2" y="4" width="2" height="1"/>
+        </g>
+      </svg>
+      <div>
+        <h1>像素无聊屋</h1>
+        <div class="tagline">BOREDOM KILLER v1.0</div>
+      </div>
+    </div>
+    <div class="hdr-actions">
+      <button id="crtBtn" class="px-btn ghost" type="button">CRT 关</button>
+      <button id="muteBtn" class="px-btn ghost" type="button">音效 开</button>
+    </div>
+  </header>
+
+  <!-- ===== 导航 ===== -->
+  <nav class="tabs" aria-label="功能切换">
+    <button class="tab-btn active" data-tab="games" type="button">小游戏</button>
+    <button class="tab-btn" data-tab="random" type="button">随机内容</button>
+    <button class="tab-btn" data-tab="toys" type="button">互动玩具</button>
+  </nav>
+
+  <main>
+
+    <!-- ===== 视图：小游戏 ===== -->
+    <section id="view-games" class="view active">
+      <div id="gameLobby" class="lobby">
+        <p class="view-tip">选一款小游戏开玩，分数自动保存在本地。</p>
+        <div class="card-grid">
+          <button class="game-card" data-game="snake" type="button">
+            <span class="card-icon" aria-hidden="true">
+              <svg width="40" height="40" viewBox="0 0 32 32">
+                <rect x="3" y="14" width="8" height="8" fill="#2fa86b"/>
+                <rect x="11" y="14" width="8" height="8" fill="#3ddc84"/>
+                <rect x="19" y="14" width="8" height="8" fill="#3ddc84"/>
+                <rect x="25" y="10" width="4" height="4" fill="#ff3d5a"/>
+                <rect x="21" y="16" width="2" height="2" fill="#0b0c18"/><rect x="25" y="16" width="2" height="2" fill="#0b0c18"/>
+              </svg>
+            </span>
+            <span class="card-name">贪吃蛇</span>
+            <span class="card-desc">吃豆子，别撞到自己。方向键 / WASD</span>
+          </button>
+          <button class="game-card" data-game="g2048" type="button">
+            <span class="card-icon" aria-hidden="true">
+              <svg width="40" height="40" viewBox="0 0 32 32">
+                <rect x="5" y="5" width="10" height="10" fill="#4da6ff"/><rect x="6.5" y="6.5" width="3" height="3" fill="#cfe6ff"/>
+                <rect x="17" y="17" width="10" height="10" fill="#ffc53d"/><rect x="18.5" y="18.5" width="3" height="3" fill="#fff3c9"/>
+              </svg>
+            </span>
+            <span class="card-name">2048</span>
+            <span class="card-desc">合并数字，冲击 2048。方向键 / WASD</span>
+          </button>
+          <button class="game-card" data-game="mine" type="button">
+            <span class="card-icon" aria-hidden="true">
+              <svg width="40" height="40" viewBox="0 0 32 32">
+                <circle cx="16" cy="16" r="7" fill="#ff3d5a"/>
+                <rect x="15" y="3" width="2" height="6" fill="#0b0c18"/><rect x="23" y="5" width="2" height="6" fill="#0b0c18"/><rect x="7" y="5" width="2" height="6" fill="#0b0c18"/>
+                <rect x="3" y="15" width="6" height="2" fill="#0b0c18"/><rect x="23" y="15" width="6" height="2" fill="#0b0c18"/>
+                <rect x="13" y="12" width="6" height="6" fill="#fff"/>
+              </svg>
+            </span>
+            <span class="card-name">扫雷</span>
+            <span class="card-desc">9×9 · 10 颗雷。左键翻开，右键插旗</span>
+          </button>
+          <button class="game-card" data-game="mole" type="button">
+            <span class="card-icon" aria-hidden="true">
+              <svg width="40" height="40" viewBox="0 0 32 32">
+                <rect x="7" y="14" width="6" height="6" fill="#8a5a33"/><rect x="19" y="14" width="6" height="6" fill="#8a5a33"/>
+                <rect x="9" y="8" width="14" height="14" fill="#a06b3c"/>
+                <rect x="13" y="14" width="2" height="2" fill="#0b0c18"/><rect x="18" y="14" width="2" height="2" fill="#0b0c18"/>
+                <rect x="15.5" y="17" width="2" height="2" fill="#ff8ac2"/>
+              </svg>
+            </span>
+            <span class="card-name">打地鼠</span>
+            <span class="card-desc">30 秒限时，点击冒头的地鼠</span>
+          </button>
+          <button class="game-card" data-game="memory" type="button">
+            <span class="card-icon" aria-hidden="true">
+              <svg width="40" height="40" viewBox="0 0 32 32">
+                <rect x="4" y="4" width="13" height="13" fill="#4da6ff"/><rect x="6" y="6" width="9" height="9" fill="#b8d8ff"/>
+                <rect x="15" y="15" width="13" height="13" fill="#ff3d5a"/><rect x="17" y="17" width="9" height="9" fill="#ffb3c1"/>
+              </svg>
+            </span>
+            <span class="card-name">记忆翻牌</span>
+            <span class="card-desc">翻开卡片找配对，测测你的记性</span>
+          </button>
+          <button class="game-card" data-game="rps" type="button">
+            <span class="card-icon" aria-hidden="true">
+              <svg width="40" height="40" viewBox="0 0 32 32">
+                <circle cx="10" cy="16" r="6" fill="#3ddc84"/>
+                <rect x="20" y="10" width="3" height="12" fill="#ffc53d"/><rect x="24" y="8" width="3" height="12" fill="#ffc53d"/>
+                <rect x="19" y="13" width="3" height="12" fill="#ffc53d" transform="rotate(12 20 18)"/>
+              </svg>
+            </span>
+            <span class="card-name">石头剪刀布</span>
+            <span class="card-desc">和电脑对决，看谁更懂套路</span>
+          </button>
+          <button class="game-card" data-game="breakout" type="button">
+            <span class="card-icon" aria-hidden="true">
+              <svg width="40" height="40" viewBox="0 0 32 32">
+                <rect x="2" y="4" width="9" height="5" fill="#ff3d5a"/><rect x="12" y="4" width="9" height="5" fill="#ffc53d"/><rect x="22" y="4" width="9" height="5" fill="#3ddc84"/>
+                <rect x="2" y="11" width="9" height="5" fill="#4da6ff"/><rect x="12" y="11" width="9" height="5" fill="#b18cff"/>
+                <circle cx="16" cy="22" r="4" fill="#eef0ff"/><rect x="9" y="27" width="16" height="3" fill="#9aa0d8"/>
+              </svg>
+            </span>
+            <span class="card-name">打砖块</span>
+            <span class="card-desc">移动挡板，反弹小球清空砖块</span>
+          </button>
+          <button class="game-card" data-game="pong" type="button">
+            <span class="card-icon" aria-hidden="true">
+              <svg width="40" height="40" viewBox="0 0 32 32">
+                <rect x="3" y="8" width="4" height="16" fill="#4da6ff"/><rect x="25" y="8" width="4" height="16" fill="#ff3d5a"/>
+                <rect x="14" y="14" width="4" height="4" fill="#eef0ff"/>
+                <rect x="4" y="1" width="24" height="2" fill="#9aa0d8"/><rect x="4" y="29" width="24" height="2" fill="#9aa0d8"/>
+              </svg>
+            </span>
+            <span class="card-name">乒乓</span>
+            <span class="card-desc">W/S 控制球拍，先到 7 分获胜</span>
+          </button>
+          <button class="game-card" data-game="simon" type="button">
+            <span class="card-icon" aria-hidden="true">
+              <svg width="40" height="40" viewBox="0 0 32 32">
+                <rect x="4" y="4" width="12" height="12" fill="#ff3d5a"/><rect x="16" y="4" width="12" height="12" fill="#ffc53d"/>
+                <rect x="4" y="16" width="12" height="12" fill="#3ddc84"/><rect x="16" y="16" width="12" height="12" fill="#4da6ff"/>
+              </svg>
+            </span>
+            <span class="card-name">记忆色块</span>
+            <span class="card-desc">西蒙经典，记下并复述颜色顺序</span>
+          </button>
+          <button class="game-card" data-game="tetris" type="button">
+            <span class="card-icon" aria-hidden="true">
+              <svg width="40" height="40" viewBox="0 0 32 32">
+                <rect x="8" y="4" width="7" height="7" fill="#4da6ff"/><rect x="15" y="4" width="7" height="7" fill="#4da6ff"/>
+                <rect x="8" y="11" width="7" height="7" fill="#4da6ff"/>
+                <rect x="15" y="11" width="7" height="7" fill="#ff3d5a"/>
+                <rect x="8" y="18" width="7" height="7" fill="#ffc53d"/><rect x="15" y="18" width="7" height="7" fill="#ffc53d"/>
+              </svg>
+            </span>
+            <span class="card-name">俄罗斯方块</span>
+            <span class="card-desc">消行得分，经典永不落幕</span>
+          </button>
+          <button class="game-card" data-game="gomoku" type="button">
+            <span class="card-icon" aria-hidden="true">
+              <svg width="40" height="40" viewBox="0 0 32 32">
+                <rect x="4" y="4" width="24" height="24" fill="#23244a"/>
+                <circle cx="10" cy="10" r="3" fill="#0b0c18"/><circle cx="22" cy="22" r="3" fill="#eef0ff"/>
+                <rect x="4" y="14" width="24" height="1" fill="#5b5d92"/><rect x="14" y="4" width="1" height="24" fill="#5b5d92"/>
+              </svg>
+            </span>
+            <span class="card-name">五子棋</span>
+            <span class="card-desc">15×15，你和电脑轮流落子连成五</span>
+          </button>
+          <button class="game-card" data-game="guess" type="button">
+            <span class="card-icon" aria-hidden="true">
+              <svg width="40" height="40" viewBox="0 0 32 32">
+                <rect x="4" y="6" width="24" height="20" fill="#2c2d5c"/>
+                <rect x="8" y="10" width="16" height="12" fill="#101120"/>
+                <rect x="11" y="13" width="4" height="4" fill="#ffc53d"/><rect x="18" y="13" width="4" height="4" fill="#ff3d5a"/>
+                <text x="8" y="23" font-size="6" fill="#9aa0d8">1-100</text>
+              </svg>
+            </span>
+            <span class="card-name">猜数字</span>
+            <span class="card-desc">1~100 里藏了个数，你来猜</span>
+          </button>
+          <button class="game-card" data-game="tictactoe" type="button">
+            <span class="card-icon" aria-hidden="true">
+              <svg width="40" height="40" viewBox="0 0 32 32">
+                <rect x="4" y="4" width="24" height="24" fill="#23244a"/>
+                <rect x="4" y="13" width="24" height="1" fill="#5b5d92"/><rect x="4" y="22" width="24" height="1" fill="#5b5d92"/>
+                <rect x="13" y="4" width="1" height="24" fill="#5b5d92"/><rect x="22" y="4" width="1" height="24" fill="#5b5d92"/>
+                <rect x="7" y="6" width="5" height="5" fill="#ff3d5a"/><rect x="24" y="15" width="5" height="5" fill="#3ddc84"/>
+              </svg>
+            </span>
+            <span class="card-name">井字棋</span>
+            <span class="card-desc">经典三连，和 AI 斗智</span>
+          </button>
+          <button class="game-card" data-game="catchg" type="button">
+            <span class="card-icon" aria-hidden="true">
+              <svg width="40" height="40" viewBox="0 0 32 32">
+                <circle cx="16" cy="10" r="5" fill="#ff3d5a"/>
+                <rect x="14" y="14" width="4" height="4" fill="#8a5a33"/>
+                <rect x="7" y="27" width="18" height="3" fill="#9aa0d8"/>
+              </svg>
+            </span>
+            <span class="card-name">接苹果</span>
+            <span class="card-desc">移动挡板接住落下的苹果</span>
+          </button>
+          <button class="game-card" data-game="slide" type="button">
+            <span class="card-icon" aria-hidden="true">
+              <svg width="40" height="40" viewBox="0 0 32 32">
+                <rect x="4" y="4" width="24" height="24" fill="#23244a"/>
+                <rect x="6" y="6" width="9" height="9" fill="#4da6ff"/><rect x="17" y="6" width="9" height="9" fill="#3ddc84"/>
+                <rect x="6" y="17" width="9" height="9" fill="#ffc53d"/><rect x="17" y="17" width="9" height="9" fill="#23244a"/>
+              </svg>
+            </span>
+            <span class="card-name">数字华容道</span>
+            <span class="card-desc">4×4 滑块，把数字按顺序归位</span>
+          </button>
+          <button class="game-card" data-game="wheel" type="button">
+            <span class="card-icon" aria-hidden="true">
+              <svg width="40" height="40" viewBox="0 0 32 32">
+                <circle cx="16" cy="16" r="13" fill="#ff3d5a"/>
+                <circle cx="16" cy="16" r="13" fill="none" stroke="#0b0c18" stroke-width="2"/>
+                <rect x="15" y="3" width="2" height="8" fill="#0b0c18"/>
+                <rect x="15" y="21" width="2" height="8" fill="#0b0c18"/><rect x="3" y="15" width="8" height="2" fill="#0b0c18"/><rect x="21" y="15" width="8" height="2" fill="#0b0c18"/>
+              </svg>
+            </span>
+            <span class="card-name">幸运转盘</span>
+            <span class="card-desc">转一下，看看今天的运气</span>
+          </button>
+          <button class="game-card" data-game="dice" type="button">
+            <span class="card-icon" aria-hidden="true">
+              <svg width="40" height="40" viewBox="0 0 32 32">
+                <rect x="5" y="5" width="22" height="22" fill="#eef0ff"/>
+                <rect x="9" y="9" width="4" height="4" fill="#0b0c18"/><rect x="19" y="19" width="4" height="4" fill="#0b0c18"/><rect x="14" y="14" width="4" height="4" fill="#0b0c18"/>
+              </svg>
+            </span>
+            <span class="card-name">掷骰子</span>
+            <span class="card-desc">双手一抛，见证点数与运势</span>
+          </button>
+          <button class="game-card" data-game="reflex" type="button">
+            <span class="card-icon" aria-hidden="true">
+              <svg width="40" height="40" viewBox="0 0 32 32">
+                <path d="M16 2 L26 20 L19 20 L19 30 L6 14 L13 14 Z" fill="#ffc53d"/>
+              </svg>
+            </span>
+            <span class="card-name">光速反应</span>
+            <span class="card-desc">等它变绿立刻按，测手速</span>
+          </button>
+          <button class="game-card" data-game="digit" type="button">
+            <span class="card-icon" aria-hidden="true">
+              <svg width="40" height="40" viewBox="0 0 32 32">
+                <rect x="4" y="8" width="24" height="16" fill="#2c2d5c"/>
+                <rect x="8" y="12" width="4" height="8" fill="#ffc53d"/><rect x="14" y="12" width="10" height="8" fill="#4da6ff"/>
+              </svg>
+            </span>
+            <span class="card-name">记忆数字</span>
+            <span class="card-desc">记住闪现的数字并复述，逐轮加长</span>
+          </button>
+          <button class="game-card" data-game="stroop" type="button">
+            <span class="card-icon" aria-hidden="true">
+              <svg width="40" height="40" viewBox="0 0 32 32">
+                <rect x="4" y="8" width="24" height="14" fill="#23244a"/>
+                <text x="6" y="19" font-family="monospace" font-size="10" fill="#3ddc84">红蓝</text>
+              </svg>
+            </span>
+            <span class="card-name">斯特鲁普</span>
+            <span class="card-desc">说出字的颜色，别被字义带偏</span>
+          </button>
+        </div>
+      </div>
+      <div id="gameView" class="game-view hidden">
+        <div class="game-topbar">
+          <button id="gameBack" class="px-btn ghost" type="button">← 返回</button>
+          <h2 id="gameTitle">贪吃蛇</h2>
+          <div id="gameStats" class="game-stats"></div>
+        </div>
+        <div id="gameMount"></div>
+      </div>
+    </section>
+
+    <!-- ===== 视图：随机内容 ===== -->
+    <section id="view-random" class="view">
+      <div class="chips" id="chips">
+        <button class="chip active" data-cat="all" type="button">全部</button>
+        <button class="chip" data-cat="joke" type="button">冷笑话</button>
+        <button class="chip" data-cat="fact" type="button">冷知识</button>
+        <button class="chip" data-cat="question" type="button">奇怪问题</button>
+        <button class="chip" data-cat="slack" type="button">摸鱼文案</button>
+        <button class="chip" data-cat="riddle" type="button">脑筋急转弯</button>
+        <button class="chip" data-cat="nonsense" type="button">无厘头吐槽</button>
+        <button class="chip" data-cat="mood" type="button">今日心情</button>
+        <button class="chip" data-cat="tip" type="button">生活小妙招</button>
+        <button class="chip" data-cat="odd" type="button">离谱日常</button>
+      </div>
+      <div class="random-card px-border">
+        <span class="rc-cat c-joke" id="rcCat">冷笑话</span>
+        <p class="rc-text" id="rcText">加载中……</p>
+        <div class="rc-meta" id="rcMeta"></div>
+      </div>
+      <div class="random-actions">
+        <button id="rcBtn" class="px-btn big" type="button">再来一条</button>
+        <button id="rcAllBtn" class="px-btn ghost big" type="button">换一换手感</button>
+      </div>
+    </section>
+
+    <!-- ===== 视图：互动玩具 ===== -->
+    <section id="view-toys" class="view">
+      <div id="toyLobby" class="lobby">
+        <p class="view-tip">解压小玩具，点开就能玩。</p>
+        <div class="card-grid">
+          <button class="game-card" data-toy="bubble" type="button">
+            <span class="card-icon" aria-hidden="true">
+              <svg width="40" height="40" viewBox="0 0 32 32">
+                <circle cx="10" cy="11" r="6" fill="#b18cff"/><circle cx="22" cy="9" r="4" fill="#4da6ff"/>
+                <circle cx="20" cy="23" r="5" fill="#ff8ac2"/>
+                <circle cx="8" cy="9" r="2" fill="#fff"/><circle cx="18.5" cy="21.5" r="1.5" fill="#fff"/>
+              </svg>
+            </span>
+            <span class="card-name">捏泡泡</span>
+            <span class="card-desc">一整个气泡膜，捏到停不下来</span>
+          </button>
+          <button class="game-card" data-toy="doodle" type="button">
+            <span class="card-icon" aria-hidden="true">
+              <svg width="40" height="40" viewBox="0 0 32 32">
+                <rect x="9" y="4" width="6" height="18" fill="#a06b3c"/><rect x="12" y="22" width="4" height="5" fill="#ffc53d"/>
+                <rect x="15" y="6" width="12" height="12" fill="#ff3d5a"/>
+              </svg>
+            </span>
+            <span class="card-name">像素涂鸦</span>
+            <span class="card-desc">24×24 像素画板，可保存成 PNG</span>
+          </button>
+          <button class="game-card" data-toy="bounce" type="button">
+            <span class="card-icon" aria-hidden="true">
+              <svg width="40" height="40" viewBox="0 0 32 32">
+                <circle cx="16" cy="18" r="10" fill="#3ddc84"/><circle cx="12" cy="14" r="3" fill="#b8f5d4"/>
+                <circle cx="16" cy="7" r="4" fill="#ffc53d"/>
+              </svg>
+            </span>
+            <span class="card-name">蹦蹦球</span>
+            <span class="card-desc">点击撒一屋子像素弹力球</span>
+          </button>
+          <button class="game-card" data-toy="pet" type="button">
+            <span class="card-icon" aria-hidden="true">
+              <svg width="40" height="40" viewBox="0 0 32 32">
+                <rect x="7" y="10" width="18" height="14" fill="#3ddc84"/>
+                <rect x="10" y="14" width="2" height="2" fill="#0b0c18"/><rect x="20" y="14" width="2" height="2" fill="#0b0c18"/>
+                <rect x="14" y="18" width="4" height="2" fill="#0b0c18"/>
+              </svg>
+            </span>
+            <span class="card-name">像素宠物</span>
+            <span class="card-desc">养一只叫「果冻」的史莱姆</span>
+          </button>
+          <button class="game-card" data-toy="squishy" type="button">
+            <span class="card-icon" aria-hidden="true">
+              <svg width="40" height="40" viewBox="0 0 32 32">
+                <rect x="6" y="8" width="20" height="16" fill="#3ddc84"/>
+                <rect x="10" y="12" width="3" height="3" fill="#0b0c18"/><rect x="19" y="12" width="3" height="3" fill="#0b0c18"/>
+                <rect x="13" y="17" width="6" height="2" fill="#0b0c18"/>
+              </svg>
+            </span>
+            <span class="card-name">解压捏捏</span>
+            <span class="card-desc">按住使劲捏，松手回弹，越捏越爽</span>
+          </button>
+          <button class="game-card" data-toy="piano" type="button">
+            <span class="card-icon" aria-hidden="true">
+              <svg width="40" height="40" viewBox="0 0 32 32">
+                <rect x="2" y="8" width="8" height="18" fill="#eef0ff"/><rect x="10" y="8" width="8" height="18" fill="#eef0ff"/><rect x="18" y="8" width="8" height="18" fill="#eef0ff"/><rect x="26" y="8" width="6" height="18" fill="#eef0ff"/>
+                <rect x="6" y="2" width="3" height="8" fill="#0b0c18"/><rect x="14" y="2" width="3" height="8" fill="#0b0c18"/><rect x="22" y="2" width="3" height="8" fill="#0b0c18"/>
+              </svg>
+            </span>
+            <span class="card-name">像素钢琴</span>
+            <span class="card-desc">点按琴键，也可以直接用键盘弹</span>
+          </button>
+          <button class="game-card" data-toy="fireworks" type="button">
+            <span class="card-icon" aria-hidden="true">
+              <svg width="40" height="40" viewBox="0 0 32 32">
+                <rect x="15" y="3" width="2" height="26" fill="#ffc53d"/>
+                <circle cx="16" cy="16" r="6" fill="#ff3d5a"/>
+                <rect x="2" y="12" width="4" height="4" fill="#4da6ff"/><rect x="26" y="8" width="4" height="4" fill="#3ddc84"/>
+              </svg>
+            </span>
+            <span class="card-name">像素烟花</span>
+            <span class="card-desc">点击夜空，绽放一片像素花火</span>
+          </button>
+          <button class="game-card" data-toy="fishtank" type="button">
+            <span class="card-icon" aria-hidden="true">
+              <svg width="40" height="40" viewBox="0 0 32 32">
+                <rect x="2" y="6" width="28" height="20" fill="#20304a"/>
+                <rect x="6" y="10" width="10" height="6" fill="#ff3d5a"/>
+                <rect x="4" y="9" width="4" height="8" fill="#ff8ac2"/>
+                <rect x="20" y="13" width="6" height="5" fill="#ffc53d"/>
+                <rect x="24" y="12" width="4" height="7" fill="#ffec9c"/>
+              </svg>
+            </span>
+            <span class="card-name">摸鱼鱼缸</span>
+            <span class="card-desc">看鱼游，投食、敲缸吓它们一跳</span>
+          </button>
+          <button class="game-card" data-toy="oracle" type="button">
+            <span class="card-icon" aria-hidden="true">
+              <svg width="40" height="40" viewBox="0 0 32 32">
+                <circle cx="16" cy="14" r="9" fill="#5b6bff"/><circle cx="12" cy="11" r="3" fill="#b9c2ff"/>
+                <rect x="11" y="22" width="10" height="6" fill="#2c2d5c"/>
+              </svg>
+            </span>
+            <span class="card-name">占卜水晶球</span>
+            <span class="card-desc">默念一个问题，点击水晶球求一签</span>
+          </button>
+          <button class="game-card" data-toy="snowglobe" type="button">
+            <span class="card-icon" aria-hidden="true">
+              <svg width="40" height="40" viewBox="0 0 32 32">
+                <circle cx="16" cy="15" r="10" fill="#4a5f8a"/>
+                <rect x="11" y="22" width="10" height="6" fill="#2c2d5c"/>
+                <rect x="12" y="11" width="2" height="2" fill="#eef0ff"/><rect x="18" y="7" width="2" height="2" fill="#eef0ff"/>
+                <rect x="20" y="14" width="2" height="2" fill="#eef0ff"/><rect x="12" y="17" width="2" height="2" fill="#eef0ff"/>
+              </svg>
+            </span>
+            <span class="card-name">像素雪景球</span>
+            <span class="card-desc">点一点或摇一摇，看雪花飘</span>
+          </button>
+          <button class="game-card" data-toy="candle" type="button">
+            <span class="card-icon" aria-hidden="true">
+              <svg width="40" height="40" viewBox="0 0 32 32">
+                <rect x="13" y="10" width="6" height="18" fill="#eef0ff"/><rect x="15" y="6" width="2" height="6" fill="#ffc53d"/>
+                <rect x="14" y="2" width="4" height="6" fill="#ff8ac2"/>
+              </svg>
+            </span>
+            <span class="card-name">电子蜡烛</span>
+            <span class="card-desc">点亮像素火焰，点击吹灭</span>
+          </button>
+          <button class="game-card" data-toy="confetti" type="button">
+            <span class="card-icon" aria-hidden="true">
+              <svg width="40" height="40" viewBox="0 0 32 32">
+                <rect x="4" y="4" width="5" height="3" fill="#ff3d5a"/><rect x="12" y="2" width="4" height="3" fill="#ffc53d"/><rect x="20" y="5" width="3" height="4" fill="#4da6ff"/>
+                <rect x="6" y="12" width="4" height="3" fill="#3ddc84"/><rect x="18" y="13" width="5" height="3" fill="#ff8ac2"/>
+                <rect x="10" y="22" width="3" height="4" fill="#b18cff"/><rect x="22" y="24" width="4" height="3" fill="#ffc53d"/>
+              </svg>
+            </span>
+            <span class="card-name">彩纸屑</span>
+            <span class="card-desc">点一下，撒一片彩色纸屑</span>
+          </button>
+          <button class="game-card" data-toy="ripple" type="button">
+            <span class="card-icon" aria-hidden="true">
+              <svg width="40" height="40" viewBox="0 0 32 32">
+                <rect x="3" y="5" width="26" height="22" fill="#1b5b8a"/>
+                <circle cx="16" cy="16" r="5" fill="none" stroke="#b8e2ff" stroke-width="2"/>
+                <circle cx="16" cy="16" r="9" fill="none" stroke="#6aa3d0" stroke-width="2"/>
+              </svg>
+            </span>
+            <span class="card-name">涟漪池塘</span>
+            <span class="card-desc">点水面，看像素涟漪一圈圈散开</span>
+          </button>
+          <button class="game-card" data-toy="drums" type="button">
+            <span class="card-icon" aria-hidden="true">
+              <svg width="40" height="40" viewBox="0 0 32 32">
+                <rect x="4" y="14" width="12" height="12" fill="#ff3d5a"/><rect x="5" y="12" width="10" height="3" fill="#b81e38"/>
+                <rect x="18" y="14" width="10" height="12" fill="#ffc53d"/><rect x="19" y="12" width="8" height="3" fill="#c98f1f"/>
+              </svg>
+            </span>
+            <span class="card-name">敲鼓</span>
+            <span class="card-desc">四个鼓点，或用键盘 J K L ;</span>
+          </button>
+          <button class="game-card" data-toy="sand" type="button">
+            <span class="card-icon" aria-hidden="true">
+              <svg width="40" height="40" viewBox="0 0 32 32">
+                <rect x="2" y="14" width="28" height="16" fill="#c98f1f"/>
+                <rect x="4" y="10" width="3" height="5" fill="#ffc53d"/><rect x="12" y="12" width="3" height="4" fill="#ffc53d"/><rect x="22" y="9" width="3" height="5" fill="#ffc53d"/>
+              </svg>
+            </span>
+            <span class="card-name">沙画</span>
+            <span class="card-desc">按住倒彩沙，堆出你的沙堡</span>
+          </button>
+          <button class="game-card" data-toy="clock" type="button">
+            <span class="card-icon" aria-hidden="true">
+              <svg width="40" height="40" viewBox="0 0 32 32">
+                <rect x="4" y="6" width="24" height="20" fill="#2c2d5c"/>
+                <rect x="9" y="11" width="3" height="10" fill="#3ddc84"/><rect x="14" y="11" width="3" height="10" fill="#3ddc84"/><rect x="19" y="11" width="3" height="10" fill="#3ddc84"/>
+              </svg>
+            </span>
+            <span class="card-name">像素时钟</span>
+            <span class="card-desc">一块复古像素电子钟</span>
+          </button>
+          <button class="game-card" data-toy="fountain" type="button">
+            <span class="card-icon" aria-hidden="true">
+              <svg width="40" height="40" viewBox="0 0 32 32">
+                <rect x="6" y="26" width="20" height="4" fill="#2c2d5c"/>
+                <rect x="13" y="2" width="2" height="16" fill="#4da6ff"/><rect x="17" y="4" width="2" height="12" fill="#3ddc84"/><rect x="9" y="8" width="2" height="10" fill="#ffc53d"/>
+              </svg>
+            </span>
+            <span class="card-name">魔法喷泉</span>
+            <span class="card-desc">点一下，喷出五彩水花</span>
+          </button>
+          <button class="game-card" data-toy="balloon" type="button">
+            <span class="card-icon" aria-hidden="true">
+              <svg width="40" height="40" viewBox="0 0 32 32">
+                <ellipse cx="16" cy="14" rx="7" ry="9" fill="#ff3d5a"/>
+                <rect x="15" y="22" width="2" height="4" fill="#0b0c18"/>
+                <circle cx="13" cy="10" r="2" fill="#ffb3c1"/>
+              </svg>
+            </span>
+            <span class="card-name">气球派对</span>
+            <span class="card-desc">气球往上飘，点它捏爆解压</span>
+          </button>
+          <button class="game-card" data-toy="stars" type="button">
+            <span class="card-icon" aria-hidden="true">
+              <svg width="40" height="40" viewBox="0 0 32 32">
+                <path d="M16 4 L19 11 L27 11 L21 16 L23 24 L16 19 L9 24 L11 16 L5 11 L13 11 Z" fill="#eef0ff"/>
+                <rect x="26" y="4" width="2" height="2" fill="#ffc53d"/><rect x="4" y="22" width="2" height="2" fill="#ffc53d"/>
+              </svg>
+            </span>
+            <span class="card-name">摘星瓶</span>
+            <span class="card-desc">点击夜空，摘星装瓶</span>
+          </button>
+          <button class="game-card" data-toy="pump" type="button">
+            <span class="card-icon" aria-hidden="true">
+              <svg width="40" height="40" viewBox="0 0 32 32">
+                <ellipse cx="16" cy="12" rx="7" ry="9" fill="#ff3d5a"/>
+                <rect x="15" y="20" width="2" height="4" fill="#0b0c18"/>
+                <path d="M4 30 L20 24 L22 28 Z" fill="#4da6ff"/>
+              </svg>
+            </span>
+            <span class="card-name">打气筒</span>
+            <span class="card-desc">使劲打气，把它吹到爆</span>
+          </button>
+        </div>
+      </div>
+      <div id="toyView" class="game-view hidden">
+        <div class="game-topbar">
+          <button id="toyBack" class="px-btn ghost" type="button">← 返回</button>
+          <h2 id="toyTitle">捏泡泡</h2>
+          <div id="toyStats" class="game-stats"></div>
+        </div>
+        <div id="toyMount"></div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    每个小游戏的操作各不相同，进入后按屏幕提示玩即可 &nbsp;|&nbsp; 分数自动保存在本地 &nbsp;|&nbsp; 摸鱼一时爽，一直摸鱼一直爽
+  </footer>
+
+</div>
+
+<script>
+"use strict";
+/* ============================================================
+   核心：工具 / 音效 / 标签页 / 随机内容
+   ============================================================ */
+const $  = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+
+/* 本地存储（file:// 下可能不可用，全部 try/catch） */
+const store = {
+  get(k, d){ try{ const v = localStorage.getItem('wuliao.'+k); return v==null ? d : JSON.parse(v); }catch(e){ return d; } },
+  set(k, v){ try{ localStorage.setItem('wuliao.'+k, JSON.stringify(v)); }catch(e){} }
+};
+
+/* ---------- 像素音效（Web Audio，首次点击后启动） ---------- */
+let muted = !!store.get('muted', false);
+let actx = null;
+function tone(freq, dur=0.08, type='square', vol=0.045, slideTo=0){
+  if(muted || !window.__audioReady) return;
+  try{
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    if(actx.state === 'suspended') actx.resume();
+    const t = actx.currentTime;
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.type = type;
+    o.frequency.setValueAtTime(Math.max(30, freq), t);
+    if(slideTo) o.frequency.exponentialRampToValueAtTime(Math.max(30, slideTo), t+dur);
+    g.gain.setValueAtTime(vol, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t+dur);
+    o.connect(g); g.connect(actx.destination);
+    o.start(t); o.stop(t+dur+0.03);
+  }catch(e){}
+}
+const sfx = {
+  click: () => tone(880, 0.05, 'square', 0.03),
+  pop:   () => tone(520, 0.06, 'square', 0.05, 260),
+  point: () => { tone(660, 0.07, 'square', 0.04); setTimeout(()=>tone(880, 0.09, 'square', 0.04), 60); },
+  eat:   () => tone(440, 0.09, 'triangle', 0.05, 660),
+  bonk:  () => tone(300, 0.07, 'square', 0.05, 140),
+  lose:  () => { tone(320, 0.16, 'sawtooth', 0.05, 180); setTimeout(()=>tone(210, 0.22, 'sawtooth', 0.05, 120), 150); },
+  win:   () => [523,659,784,1046].forEach((f,i)=>setTimeout(()=>tone(f,0.11,'square',0.04), i*95)),
+};
+
+/* ---------- 顶栏开关 ---------- */
+let crtOn = true;
+function syncHeader(){
+  $('#crtBtn').textContent  = crtOn ? 'CRT 关' : 'CRT 开';
+  $('#muteBtn').textContent = muted ? '音效 开' : '音效 关';
+  document.body.classList.toggle('no-crt', !crtOn);
+}
+$('#crtBtn').addEventListener('click', ()=>{ crtOn=!crtOn; syncHeader(); sfx.click(); });
+$('#muteBtn').addEventListener('click', ()=>{ muted=!muted; store.set('muted', muted); syncHeader(); if(!muted) sfx.click(); });
+
+/* ---------- 标签页切换（支持 hash） ---------- */
+const VIEWS = { games:'view-games', random:'view-random', toys:'view-toys' };
+const state = { tab:'games', game:null, toy:null };
+
+function stopActive(){
+  if(state.game && GAMES[state.game]){ try{ GAMES[state.game].destroy(); }catch(e){} }
+  if(state.toy && TOYS[state.toy]){ try{ TOYS[state.toy].destroy(); }catch(e){} }
+  state.game = null; state.toy = null;
+}
+function setTab(name){
+  if(!VIEWS[name]) return;
+  stopActive();
+  state.tab = name;
+  $$('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+  Object.keys(VIEWS).forEach(k => $('#'+VIEWS[k]).classList.toggle('active', k === name));
+  if(name==='games'){ $('#gameView').classList.add('hidden'); $('#gameLobby').classList.remove('hidden'); }
+  if(name==='toys'){ $('#toyView').classList.add('hidden'); $('#toyLobby').classList.remove('hidden'); }
+  try{ if(location.hash !== '#'+name) history.replaceState(null, '', '#'+name); }catch(e){}
+  sfx.click();
+}
+$$('.tab-btn').forEach(b => b.addEventListener('click', () => setTab(b.dataset.tab)));
+
+/* ---------- 游戏 / 玩具装配 ---------- */
+function mountGame(name){
+  stopActive();
+  state.game = name;
+  $('#gameLobby').classList.add('hidden');
+  $('#gameView').classList.remove('hidden');
+  const g = GAMES[name];
+  $('#gameTitle').textContent = g.title;
+  $('#gameStats').innerHTML = '';
+  $('#gameMount').innerHTML = '';
+  g.mount($('#gameMount'), $('#gameStats'));
+}
+function backToLobby(){
+  stopActive();
+  $('#gameView').classList.add('hidden');
+  $('#gameLobby').classList.remove('hidden');
+}
+function mountToy(name){
+  stopActive();
+  state.toy = name;
+  $('#toyLobby').classList.add('hidden');
+  $('#toyView').classList.remove('hidden');
+  const t = TOYS[name];
+  $('#toyTitle').textContent = t.title;
+  $('#toyStats').innerHTML = '';
+  $('#toyMount').innerHTML = '';
+  t.mount($('#toyMount'), $('#toyStats'));
+}
+function backToToyLobby(){
+  stopActive();
+  $('#toyView').classList.add('hidden');
+  $('#toyLobby').classList.remove('hidden');
+}
+$('#gameBack').addEventListener('click', backToLobby);
+$('#toyBack').addEventListener('click', backToToyLobby);
+
+/* ---------- 随机内容 ---------- */
+const CONTENT = {
+  joke: {
+    label:'冷笑话', cls:'c-joke',
+    items:[
+      '为什么程序员总是分不清万圣节和圣诞节？因为 Oct 31 == Dec 25。',
+      '我在书店买了本《如何摆脱无聊》，结果看了两页就睡着了——这书效果真好。',
+      '妈妈问我为什么整天对着电脑傻笑，我说这是职业训练：练习当个快乐的人。',
+      '我决定减肥，定了个目标：每顿饭少吃一口。结果发现，少的那口都被我加回来了。',
+      '为什么鱼从来不看手机？因为怕中“鱼”毒。',
+      '我的钱包说要减肥，现在它瘦得只剩零钱了。',
+      '去银行存钱，柜员问存定期还是活期，我说存“待定”——等我哪天不穷了再来。',
+      '有个鸡蛋走进茶馆，老板说：本店不接待蛋蛋后。',
+      '老板说我迟到了。我说不，我这是错峰上班——别人都下班了，才显得我迟。',
+      '为什么北极熊不吃企鹅？因为它们住在世界的两端，异地恋太累了。',
+      '蜗牛说它要去上班，我给它加油。它说：别急，我已经在路上一年了。',
+      '游泳教练说学不会就多喝水。我喝了三天，终于会了——会漂了。',
+      '电脑对我说：你关机吧。我说：不，你先睡。',
+      '我买了本《睡眠指南》，看完目录就睡着了——这书，真有用。',
+      '电梯里有人放屁，大家都装作没闻到。那人自豪地说：谁在电梯里煮茶？',
+      '为什么镜子里的你总是比你帅？因为那是滤镜在帮你。',
+      '我教会了猫握手，它教会了我早起——每天凌晨五点用爪子拍我脸。',
+      '我跟朋友说我要存钱，他说存多少？我说存个“万一”，万一哪天用得上。',
+      '天气预报说今天有 100% 的概率下雨，我心想：太好了，终于有一件事能保证。',
+      '我问理发师为什么总是建议我剪短，他说：剪短了，你下次才能再来。',
+      '手机没电了，我把它放冰箱里冻了一会儿，还是不开机——原来手机不是火腿肠。',
+      '我跟 AI 说：夸夸我。它说：你很好，因为你问得对。',
+      '减肥最成功的时刻，是我钱包里的钱。',
+      '为什么键盘上的退格键在右上角？因为人生没有后悔药，但电脑有。',
+      '我煮了一锅水，烧开后它跟我说：你可以去下饺子了，我不等你。',
+      '老板问我梦想是什么，我说希望公司多放几天假。他说这个不算，换一个。我说：那希望您天天来上班。',
+      '医生说我睡眠不足，我说怎么可能，我每天做梦都在补觉。',
+      '我在电梯里按了负一楼，结果到了负十八楼——原来这楼比我惨。',
+      '我问我妈怎么煮一碗完美的泡面，她说：先烧水，水开了叫我。',
+      '为什么上班总想睡觉？因为睡觉是免费的，而加班没有免费咖啡。',
+      '我决定早睡早起，结果早睡了，没早起——早睡成功了，早起没谈成。',
+      '老板让我做一份 PPT，我说行，结果做成了 EXE——因为他说要“能跑起来的”。',
+      '我请了一天假，理由是“我要去看看我那还没出生的未来”。',
+      '我买了本《一分钟读完一本书》，看了六十秒就困了，还剩三万字没读完。',
+      '医生说我缺维生素 D，我说怎么可能，我天天晒太阳——隔着窗户也算吗？',
+      '为什么手机电量总在我最需要它的时候消失？因为它也知道我要熬夜。',
+    ]
+  },
+  fact: {
+    label:'冷知识', cls:'c-fact',
+    items:[
+      '章鱼有三颗心脏，游泳时那颗负责全身供血的心脏还会暂时停止跳动。',
+      '香蕉其实是浆果，草莓反而不是。',
+      '蜜蜂靠“跳舞”告诉同伴花蜜的方向和距离，舞步的角度就是方向。',
+      '胃黏膜每三天左右更新一次，所以胃酸不会把自己消化掉。',
+      '袋熊的便便是方形的，因为它的肠道末端是立方体结构。',
+      '阳光从太阳到地球大约需要 8 分 20 秒——你看到的太阳光是 8 分钟前的它。',
+      '人类和香蕉大约共享 60% 的基因。',
+      '北极熊的皮肤其实是黑色的，白色只是毛色。',
+      '成年蓝鲸的心脏有一辆小汽车那么大。',
+      '睡觉时大脑会“清理垃圾”，脑脊液会冲洗神经细胞间的废物。',
+      '地球上每天约有十亿只鸟在空中飞行。',
+      '棉花糖其实是把糖拉成极细的丝，再一圈圈缠绕起来的。',
+      '闪电的温度大约是太阳表面的 5 倍。',
+      '人类历史上最短的战争只持续了大约 38 分钟。',
+      '指甲和头发的主要成分是角蛋白，和犀牛角是同一类物质。',
+      '人每天大约眨眼一万次，加起来相当于每天“闭眼”十六分钟。',
+      '宇航员在太空中会长高约 3%，因为脊柱不再被重力压缩，回到地面后会恢复。',
+      '蜂蜜几乎不会变质，考古发现了几千年前的蜂蜜仍然可以食用。',
+      '海马是唯一由雄性负责怀孕生子的动物。',
+      '人眼能分辨的颜色远不止 1000 万种，但目前科学家认为约千万级是上限。',
+      '金鱼的记忆不止 7 秒，它们能记住数月前学过的动作。',
+      '一朵云的重量平均约有 50 万千克，飘在天上不落下来，靠的是浮力。',
+      '人一生平均大约行走 11 万公里，相当于绕地球两圈多。',
+      '竹子的某些品种一天能长近 1 米，是生长最快的植物之一。',
+      '你的头发每个月大约长 1.25 厘米，一年约 15 厘米。',
+      '人的大脑约有 860 亿个神经元，比银河系的星星还多。',
+      '一勺中子星的物质，重约 60 亿吨。',
+      '你身体里约有 39 万亿个细菌，数量比你的细胞还多。',
+      '蜗牛可以睡三年，要是它能当闹钟，估计没人敢迟到。',
+      '北极的夏天有一种“午夜太阳”现象，太阳可以一整个月不落山。',
+      '闪电击中地面时的温度可达 3 万度，远超太阳表面。',
+      '人不能同时打喷嚏和睁着眼睛，这是身体的自我保护。',
+      '成年人的骨头共有 206 块，但婴儿出生时有 300 多块，会慢慢融合。',
+      '冰岛没有蚊子。',
+    ]
+  },
+  question: {
+    label:'奇怪问题', cls:'c-question',
+    items:[
+      '如果时间是一种货币，你会存起来，还是花光？',
+      '平行世界里的你，此刻正在做什么？',
+      '猫能听懂你的话，但它愿不愿意理你是另一回事。那你呢？',
+      '如果能一键学会所有语言，你先学哪一门？为什么？',
+      '为什么“等一下”永远比“现在”晚？',
+      '如果外星人存在，他们会不会也在纠结今天吃什么？',
+      '如果橡皮擦能擦掉记忆，你会擦掉哪一段？',
+      '你更怕无聊，还是更怕忙碌？',
+      '如果明天就是世界末日，今晚你会做什么？',
+      '你的手机如果会说话，它会吐槽你什么？',
+      '为什么我们总觉得“别人碗里的饭更香”？',
+      '如果镜子里的你能独立思考，它会怎么看你？',
+      '给你一种超能力但不能用来赚钱，你会选什么？',
+      '宇宙那么大，而你正在刷这个网页——你觉得这算巧合吗？',
+      '如果你的生活是一部电影，片名会叫什么？',
+      '动物能听懂你的语气，却听不懂你的语言——那你在它们眼里是什么声音？',
+      '如果可以给十年前的自己发一条短信，你会发什么？',
+      '你更喜欢有答案的问题，还是没答案的问题？',
+      '如果悲伤有颜色，它是什么颜色？开心呢？',
+      '你把时间花在哪里，你的生命就在哪里——那今天的时间去哪了？',
+      '如果每天多出一个小时，你会拿来做什么，还是继续发呆？',
+      '如果快乐有保质期，你希望它是多久？',
+      '你会优先修复哪个自己：拖延、熬夜，还是胡思乱想？',
+      '如果能把一件事做到完美，你会选哪件？',
+      '你愿意做小镇里最好的，还是大城市里普通的？',
+      '如果今天重新开始，你最想改变哪一步？',
+      '你上次真正发呆，是什么时候？',
+      '如果让你选一个季节永远停留，你会选哪个？',
+      '你更愿意被人记住，还是更愿意被人遗忘？',
+      '如果今天能重来一次，你还会这样过吗？',
+    ]
+  },
+  slack: {
+    label:'摸鱼文案', cls:'c-slack',
+    items:[
+      '我不是在摸鱼，我是在给大脑充氧。',
+      '工作使我快乐——这句话我练了很多年，还没学会。',
+      '今天的目标：活着，并假装很忙。',
+      '摸鱼一时爽，一直摸鱼一直爽。',
+      '我的工位离现实很远——从屏幕到世界的步行距离。',
+      '老板眼里的我：奋笔疾书；真实的我：脑内环游世界。',
+      '生活不止眼前的苟且，还有鼠标下的微操。',
+      '我不是不想工作，我只是在等一个灵感闪现的瞬间。',
+      '休息是为了走更远的路，摸鱼是为了……别问了。',
+      '效率这个词，我只在日历上见过。',
+      '别人卷我卷不动，别人躺我躺不平，所以我选择——滑。',
+      '我的工作状态像进度条：看着在动，其实在缓冲。',
+      '别问我为什么盯着屏幕发呆，我在和宇宙同步。',
+      '据说老板都喜欢勤奋的员工，所以我决定勤奋地摸鱼。',
+      '我每天都在等一个不存在的灵感，顺便把班上了。',
+      '工作做完了吗？没有。那你在干嘛？在准备。',
+      '我的键盘很忙，但它打出来的字和 KPI 没什么关系。',
+      '效率是装出来的，快乐是摸出来的。',
+      '别卷了，你再卷，也卷不过那杯没喝完的咖啡。',
+      '今天也是假装正常的一天：正常上班，正常发呆，正常下班。',
+      '我的电脑开了很多窗口，没有一个在干活，全在眺望。',
+      '我的工位和我之间，隔着一整个下午。',
+      '不是在摸鱼，是在做「大脑碎片整理」。',
+      '别人在冲业绩，我在冲……睡意。',
+      '开会时我在想：这只笔是不是也觉得自己很忙。',
+      '我的任务清单：完成一项，长出来三项。',
+      '摸鱼的最高境界，是把鱼摸出一种仪式感。',
+      '我不是懒，我是在给老板省咖啡钱。',
+      '今天的工作量：一个下午，还没开始。',
+      '我摸鱼的技术，已经熟练到连自己都看不出来了。',
+    ]
+  },
+  riddle: {
+    label:'脑筋急转弯', cls:'c-riddle',
+    items:[
+      '问：什么路最不能走？答：电路。',
+      '问：什么东西越洗越脏？答：水。',
+      '问：什么饭不能吃？答：牢饭。',
+      '问：什么门永远关不上？答：球门。',
+      '问：什么东西有头无脚？答：针。',
+      '问：什么布剪不断？答：瀑布。',
+      '问：什么雨淋不到人？答：流星雨——它们落在太空里。',
+      '问：什么书里有答案却不能翻？答：天书。',
+      '问：什么东西越老越年轻？答：照片，人老了，照片里的人还年轻。',
+      '问：什么帽不能戴？答：螺丝帽。',
+      '问：什么杯不能喝水？答：世界杯。',
+      '问：什么马不能骑？答：木马。',
+      '问：什么蛋不能吃？答：炸弹。',
+      '问：什么瓜不能吃？答：傻瓜。',
+      '问：什么床不能睡？答：牙床。',
+      '问：什么山不能爬？答：书山（有路勤为径）。',
+      '问：什么人最不会迷路？答：导航员。',
+    ]
+  },
+  nonsense: {
+    label:'无厘头吐槽', cls:'c-nonsense',
+    items:[
+      '我的生活像一张饼，正反面都焦了，中间还没熟。',
+      '天气预报永远比我准，因为它连我什么时候出门都不关心。',
+      '我买了条秋裤，发现它比我更会过日子。',
+      '人生像一盒巧克力，我拆开一看，里面全是说明书。',
+      '我的拖延症和我的自律打了一辈子架，自律输得挺体面。',
+      '自从知道猫也熬夜，我就没那么焦虑了——大家都一样。',
+      '我不缺朋友，我缺的是不用解释的朋友。',
+      '生活不是苟且，生活是苟且的限量版。',
+      '我给自己立了条规矩：今天的事今天做——然后昨天也是这么想的。',
+      '为什么咖啡叫咖啡？因为“苦”“哭”都太难听。',
+      '我的钱包和我的梦想一样：看着挺满，打开全空。',
+      '努力不一定有结果，但不努力一定很舒服。',
+      '我的人生格言是：来都来了。',
+      '成年人的崩溃，往往从手机没电开始，从它又充上电结束。',
+      '我怀疑我的时间被偷偷调慢了，不然一天咋啥也没干就过去了。',
+    ]
+  },
+  mood: {
+    label:'今日心情', cls:'c-mood',
+    items:[
+      '今日心情：像下午三点的阳光，暖但没什么用。',
+      '今日心情：电量 30%，还在撑。',
+      '今日心情：准备和床深度合作一整天。',
+      '今日心情：想出门，又怕太阳觉得我像颗烤土豆。',
+      '今日心情：平静得像一杯没加糖的凉白开。',
+      '今日心情：迷之自信，看谁都觉得是缘分。',
+      '今日心情：在“再睡五分钟”和“起来吧”之间反复横跳。',
+      '今日心情：对世界保持礼貌，对自己保持客气。',
+      '今日心情：像重启过的电脑，暂时没加载任何程序。',
+      '今日心情：想点杯奶茶，假装生活有点甜。',
+      '今日心情：别人忙着长大，我忙着想中午吃什么。',
+      '今日心情：风和日丽，适合发呆，不适合上班。',
+      '今日心情：平平无奇，但还想再撑一会儿。',
+      '今日心情：想被夸，又不好意思主动要。',
+      '今日心情：天气很好，心情待定。',
+    ]
+  },
+  tip: {
+    label:'生活小妙招', cls:'c-tip',
+    items:[
+      '想早起？把闹钟放远三米，你很快就会发明新的睡姿。',
+      '想省钱？把购物车当收藏夹，多放几天它自己就失效了。',
+      '想专注？先把手机放远一点，你会发现它也没那么重要。',
+      '想开心？把“我应该”换成“我选择”，语气立刻轻松。',
+      '拖延时，只做五分钟——通常做着做着就忘了停。',
+      '生气前先喝口水，气顺了，事也顺了。',
+      '难过时给未来的自己写句话，你会发现现在的你也挺会安慰人。',
+      '保持桌面整洁，比保持心情整洁容易，但后者更重要。',
+      '学新东西，先别追求完美，先追求“能用”。',
+      '每天留十分钟纯发呆，脑子会主动给你整理今天的账。',
+      '想戒掉一件事，别急着说不，先减少一点点，积少成多。',
+      '无聊的时候，先动起来再谈心情——身体会带动大脑。',
+    ]
+  },
+  odd: {
+    label:'离谱日常', cls:'c-odd',
+    items:[
+      '研究发现，人的一生平均会花大约 6 年时间做梦。',
+      '机场自动扶梯的护栏表面，其实比跑道还干净。',
+      '你刚经历的这一秒，永远不会回来——所以这一秒很重要。',
+      '据说大多数人在电梯里都会不自觉地盯着楼层显示屏，尽管没人在意。',
+      '你喝的一口水里，可能有几十亿年前就存在的原子。',
+      '猫可以发出约 100 种不同的声音，而狗大约只有 10 种。',
+      '你的指纹、舌纹、耳廓纹，全都独一无二。',
+      '人一天要呼吸约 2 万次——你刚才已经呼吸了好几次。',
+      '一块普通的石头，在几十亿年前，可能来自某颗星星。',
+      '你此刻读这句话的时间，够你眨一次眼——顺便错过了它的前半秒。',
+    ]
+  }
+};
+let curCat = 'all';
+let lastText = '';
+const seenCount = { all:0, joke:0, fact:0, question:0, slack:0, riddle:0, nonsense:0, mood:0, tip:0, odd:0 };
+
+function pickRandomItem(cat){
+  let pool;
+  if(cat === 'all'){
+    pool = [];
+    Object.keys(CONTENT).forEach(k => CONTENT[k].items.forEach(t => pool.push({cat:CONTENT[k].label, cls:CONTENT[k].cls, text:t})));
+  } else {
+    pool = CONTENT[cat].items.map(t => ({cat:CONTENT[cat].label, cls:CONTENT[cat].cls, text:t}));
+  }
+  if(!pool.length) return null;
+  let idx = Math.floor(Math.random() * pool.length);
+  if(pool.length > 1 && pool[idx].text === lastText) idx = (idx + 1) % pool.length;
+  lastText = pool[idx].text;
+  return pool[idx];
+}
+function renderRandom(){
+  const item = pickRandomItem(curCat);
+  if(!item) return;
+  seenCount[curCat]++;
+  const total = curCat==='all' ? Object.keys(CONTENT).reduce((s,k)=>s+CONTENT[k].items.length,0) : CONTENT[curCat].items.length;
+  const catEl = $('#rcCat');
+  catEl.textContent = item.cat;
+  catEl.className = 'rc-cat ' + item.cls;
+  $('#rcText').textContent = item.text;
+  $('#rcMeta').textContent = '本轮已看 ' + seenCount[curCat] + ' 条 · 共 ' + total + ' 条';
+}
+$('#rcBtn').addEventListener('click', () => { renderRandom(); sfx.point(); });
+$('#rcAllBtn').addEventListener('click', () => {
+  const cats = Object.keys(CONTENT);
+  const next = cats[Math.floor(Math.random() * cats.length)];
+  curCat = next;
+  $$('#chips .chip').forEach(c => c.classList.toggle('active', c.dataset.cat === next));
+  renderRandom(); sfx.pop();
+});
+$$('#chips .chip').forEach(c => c.addEventListener('click', () => {
+  curCat = c.dataset.cat;
+  $$('#chips .chip').forEach(x => x.classList.toggle('active', x === c));
+  renderRandom(); sfx.click();
+}));
+
+/* ---------- 全局键盘：交给当前游戏 ---------- */
+document.addEventListener('keydown', (e) => {
+  if(state.game && GAMES[state.game].onKey){
+    const handled = GAMES[state.game].onKey(e);
+    if(handled) e.preventDefault();
+  }
+});
+/* ============================================================
+   小游戏：贪吃蛇 / 2048 / 扫雷 / 打地鼠
+   ============================================================ */
+function makeCanvas(w, h){
+  const cv = document.createElement('canvas');
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+  const ctx = cv.getContext('2d');
+  ctx.scale(dpr, dpr);
+  return { cv, ctx };
+}
+function stageOverlay(parent, title, sub, btnText, onBtn){
+  const ov = document.createElement('div');
+  ov.className = 'overlay';
+  ov.innerHTML = '<div class="ov-title"></div><div class="ov-sub"></div><button class="px-btn green" type="button"></button>';
+  ov.querySelector('.ov-title').textContent = title;
+  ov.querySelector('.ov-sub').textContent = sub;
+  const b = ov.querySelector('button');
+  b.textContent = btnText;
+  b.addEventListener('click', onBtn);
+  parent.appendChild(ov);
+  return ov;
+}
+
+const GAMES = {};
+
+/* ---------------- 贪吃蛇 ---------------- */
+let snake = null;
+GAMES.snake = {
+  title: '贪吃蛇',
+  mount(mountEl, statsEl){
+    mountEl.classList.add('stage');
+    const S = snake = {
+      cols:20, rows:20, cell:24, mount:mountEl,
+      dir:{x:1,y:0}, queue:[], body:[], food:null,
+      score:0, best:store.get('snake.best', 0),
+      speed:150, timer:null, over:false, paused:false, pauseOv:null,
+    };
+    const { cv, ctx } = makeCanvas(S.cols*S.cell, S.rows*S.cell);
+    cv.className = 'pix-canvas';
+    mountEl.appendChild(cv);
+    S.ctx = ctx;
+    statsEl.innerHTML =
+      '<div class="stat">分数<b id="snkScore">0</b></div>' +
+      '<div class="stat">最高<b id="snkBest">' + S.best + '</b></div>';
+    stageOverlay(mountEl, '贪吃蛇', '方向键 / WASD 移动，空格暂停。\n吃豆子会越来越快，别撞墙也别咬到自己。', '开始游戏', startSnake);
+    drawSnakeFrame();
+  },
+  onKey(e){
+    const S = snake; if(!S) return false;
+    const k = e.key;
+    const map = {
+      ArrowUp:{x:0,y:-1}, ArrowDown:{x:0,y:1}, ArrowLeft:{x:-1,y:0}, ArrowRight:{x:1,y:0},
+      w:{x:0,y:-1}, s:{x:0,y:1}, a:{x:-1,y:0}, d:{x:1,y:0},
+      W:{x:0,y:-1}, S:{x:0,y:1}, A:{x:-1,y:0}, D:{x:1,y:0}
+    };
+    if(map[k]){
+      if(S.over) return true;
+      const nd = map[k];
+      const last = S.queue.length ? S.queue[S.queue.length-1] : S.dir;
+      if(nd.x === -last.x && nd.y === -last.y) return true;
+      if(S.queue.length < 2) S.queue.push(nd);
+      else S.queue[S.queue.length-1] = nd;
+      return true;
+    }
+    if(k === ' '){ if(!S.over) toggleSnakePause(); return true; }
+    if(k === 'Enter' && S.over){ startSnake(); return true; }
+    return false;
+  },
+  destroy(){
+    if(snake){ clearTimeout(snake.timer); snake = null; }
+  }
+};
+function startSnake(){
+  const S = snake; if(!S) return;
+  S.mount.querySelectorAll('.overlay').forEach(o => o.remove());
+  S.body = [{x:7,y:10},{x:6,y:10},{x:5,y:10}];
+  S.dir = {x:1,y:0}; S.queue = [];
+  S.score = 0; S.over = false; S.paused = false; S.speed = 150;
+  placeSnakeFood();
+  updateSnakeHud();
+  clearTimeout(S.timer);
+  S.timer = setTimeout(snakeTick, S.speed);
+  sfx.click();
+}
+function placeSnakeFood(){
+  const S = snake; if(!S) return;
+  const free = [];
+  for(let y=0;y<S.rows;y++) for(let x=0;x<S.cols;x++){
+    if(!S.body.some(p => p.x===x && p.y===y)) free.push({x,y});
+  }
+  S.food = free.length ? free[Math.floor(Math.random()*free.length)] : null;
+}
+function snakeTick(){
+  const S = snake; if(!S || S.over || S.paused) return;
+  if(S.queue.length) S.dir = S.queue.shift();
+  const head = { x: S.body[0].x + S.dir.x, y: S.body[0].y + S.dir.y };
+  if(head.x<0 || head.y<0 || head.x>=S.cols || head.y>=S.rows){ snakeGameOver(); return; }
+  const eating = S.food && head.x===S.food.x && head.y===S.food.y;
+  const check = eating ? S.body : S.body.slice(0,-1);
+  if(check.some(p => p.x===head.x && p.y===head.y)){ snakeGameOver(); return; }
+  S.body.unshift(head);
+  if(eating){
+    S.score += 1;
+    S.speed = Math.max(70, 150 - Math.floor(S.score/3)*10);
+    sfx.point();
+    placeSnakeFood();
+    if(S.score > S.best){ S.best = S.score; store.set('snake.best', S.best); }
+  } else {
+    S.body.pop();
+  }
+  updateSnakeHud();
+  drawSnakeFrame();
+  S.timer = setTimeout(snakeTick, S.speed);
+}
+function snakeGameOver(){
+  const S = snake; if(!S) return;
+  S.over = true;
+  clearTimeout(S.timer);
+  updateSnakeHud();
+  drawSnakeFrame();
+  sfx.lose();
+  stageOverlay(S.mount, '游戏结束', '得分 ' + S.score + ' · 最高 ' + S.best + '。按回车或点击再来一局。', '再来一局', startSnake);
+}
+function toggleSnakePause(){
+  const S = snake; if(!S || S.over) return;
+  if(S.paused){
+    S.paused = false;
+    if(S.pauseOv){ S.pauseOv.remove(); S.pauseOv = null; }
+    clearTimeout(S.timer);
+    S.timer = setTimeout(snakeTick, S.speed);
+    sfx.click();
+  } else {
+    S.paused = true;
+    clearTimeout(S.timer);
+    S.pauseOv = stageOverlay(S.mount, '已暂停', '按空格或点击「继续」回到战场。', '继续', toggleSnakePause);
+    sfx.click();
+  }
+}
+function updateSnakeHud(){
+  const S = snake; if(!S) return;
+  const sEl = $('#snkScore'), bEl = $('#snkBest');
+  if(sEl) sEl.textContent = S.score;
+  if(bEl) bEl.textContent = S.best;
+}
+function drawSnakeFrame(){
+  const S = snake; if(!S) return;
+  const { ctx } = S, c = S.cell, w = S.cols*c, h = S.rows*c;
+  ctx.fillStyle = '#1d1e3a';
+  ctx.fillRect(0, 0, w, h);
+  ctx.fillStyle = '#222350';
+  for(let y=0;y<S.rows;y++) for(let x=0;x<S.cols;x++){
+    if((x+y)%2===0) ctx.fillRect(x*c, y*c, c, c);
+  }
+  if(S.food){
+    ctx.fillStyle = '#ff3d5a';
+    ctx.fillRect(S.food.x*c+2, S.food.y*c+2, c-4, c-4);
+    ctx.fillStyle = '#ff8ac2';
+    ctx.fillRect(S.food.x*c+4, S.food.y*c+4, c-8, c-8);
+  }
+  S.body.forEach((p, i) => {
+    ctx.fillStyle = i===0 ? '#3ddc84' : '#2fa86b';
+    ctx.fillRect(p.x*c+1, p.y*c+1, c-2, c-2);
+    if(i===0){
+      ctx.fillStyle = '#0b0c18';
+      const d = S.dir;
+      if(d.x===1){ ctx.fillRect(p.x*c+c-7, p.y*c+4, 3, 3); ctx.fillRect(p.x*c+c-7, p.y*c+c-7, 3, 3); }
+      else if(d.x===-1){ ctx.fillRect(p.x*c+4, p.y*c+4, 3, 3); ctx.fillRect(p.x*c+4, p.y*c+c-7, 3, 3); }
+      else if(d.y===1){ ctx.fillRect(p.x*c+4, p.y*c+c-7, 3, 3); ctx.fillRect(p.x*c+c-7, p.y*c+c-7, 3, 3); }
+      else { ctx.fillRect(p.x*c+4, p.y*c+4, 3, 3); ctx.fillRect(p.x*c+c-7, p.y*c+4, 3, 3); }
+    }
+  });
+}
+
+/* ---------------- 2048 ---------------- */
+let g2048 = null;
+GAMES.g2048 = {
+  title: '2048',
+  mount(mountEl, statsEl){
+    mountEl.classList.add('stage');
+    const G = g2048 = {
+      grid:null, score:0, best:store.get('g2048.best', 0), over:false, won:false
+    };
+    statsEl.innerHTML =
+      '<div class="stat">分数<b id="tScore">0</b></div>' +
+      '<div class="stat">最高<b id="tBest">' + G.best + '</b></div>' +
+      '<button class="px-btn yellow" id="tNew" type="button">新一局</button>';
+    const wrap = document.createElement('div');
+    wrap.className = 't2048-wrap';
+    const grid = document.createElement('div');
+    grid.className = 't2048-grid';
+    wrap.appendChild(grid);
+    const msg = document.createElement('div');
+    msg.className = 't2048-msg';
+    wrap.appendChild(msg);
+    mountEl.appendChild(wrap);
+    G.el = grid; G.msg = msg;
+    start2048();
+    $('#tNew').addEventListener('click', start2048);
+    let sx = 0, sy = 0;
+    grid.addEventListener('touchstart', e => { sx = e.touches[0].clientX; sy = e.touches[0].clientY; }, {passive:true});
+    grid.addEventListener('touchend', e => {
+      const dx = e.changedTouches[0].clientX - sx, dy = e.changedTouches[0].clientY - sy;
+      if(Math.abs(dx) < 24 && Math.abs(dy) < 24) return;
+      if(Math.abs(dx) > Math.abs(dy)) move2048(dx > 0 ? 'right' : 'left');
+      else move2048(dy > 0 ? 'down' : 'up');
+    }, {passive:true});
+  },
+  onKey(e){
+    const G = g2048; if(!G) return false;
+    const map = {
+      ArrowUp:'up', ArrowDown:'down', ArrowLeft:'left', ArrowRight:'right',
+      w:'up', s:'down', a:'left', d:'right', W:'up', S:'down', A:'left', D:'right'
+    };
+    const dir = map[e.key];
+    if(!dir) return false;
+    if(!G.over) move2048(dir);
+    return true;
+  },
+  destroy(){ g2048 = null; }
+};
+function emptyGrid(){ return [[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]]; }
+function newTile(G){
+  const empty = [];
+  for(let y=0;y<4;y++) for(let x=0;x<4;x++) if(G.grid[y][x]===0) empty.push([x,y]);
+  if(!empty.length) return;
+  const [x, y] = empty[Math.floor(Math.random()*empty.length)];
+  G.grid[y][x] = Math.random() < 0.9 ? 2 : 4;
+}
+function start2048(){
+  const G = g2048; if(!G) return;
+  G.grid = emptyGrid(); G.score = 0; G.over = false; G.won = false;
+  newTile(G); newTile(G);
+  G.msg.textContent = '';
+  render2048();
+  sfx.click();
+}
+function slideRow(row){
+  const nz = row.filter(v => v !== 0);
+  const out = []; let gained = 0;
+  for(let i=0;i<nz.length;i++){
+    if(i+1 < nz.length && nz[i] === nz[i+1]){ out.push(nz[i]*2); gained += nz[i]*2; i++; }
+    else out.push(nz[i]);
+  }
+  while(out.length < 4) out.push(0);
+  return { row: out, gained };
+}
+function move2048(dir){
+  const G = g2048; if(!G || G.over) return;
+  const old = G.grid.map(r => r.slice());
+  const g2 = emptyGrid();
+  let gained = 0;
+  if(dir === 'left' || dir === 'right'){
+    for(let y=0;y<4;y++){
+      const src = dir === 'left' ? G.grid[y].slice() : G.grid[y].slice().reverse();
+      const r = slideRow(src);
+      g2[y] = dir === 'left' ? r.row : r.row.slice().reverse();
+      gained += r.gained;
+    }
+  } else {
+    for(let x=0;x<4;x++){
+      const col = [];
+      for(let y=0;y<4;y++) col.push(G.grid[y][x]);
+      const src = dir === 'up' ? col : col.slice().reverse();
+      const r = slideRow(src);
+      const out = dir === 'up' ? r.row : r.row.slice().reverse();
+      for(let y=0;y<4;y++) g2[y][x] = out[y];
+      gained += r.gained;
+    }
+  }
+  let changed = false;
+  for(let y=0;y<4 && !changed;y++) for(let x=0;x<4;x++){
+    if(old[y][x] !== g2[y][x]){ changed = true; break; }
+  }
+  if(!changed) return;
+  G.grid = g2;
+  G.score += gained;
+  if(G.score > G.best){ G.best = G.score; store.set('g2048.best', G.best); }
+  newTile(G);
+  render2048();
+  sfx.pop();
+  if(!G.won){
+    for(let y=0;y<4;y++) for(let x=0;x<4;x++){
+      if(G.grid[y][x] === 2048){ G.won = true; G.msg.textContent = '达成 2048！可以继续挑战更高分。'; sfx.win(); break; }
+    }
+  }
+  if(!canMove2048(G)){
+    G.over = true;
+    G.msg.textContent = '没有空位了，游戏结束。点「新一局」再来。';
+    sfx.lose();
+  }
+}
+function canMove2048(G){
+  for(let y=0;y<4;y++) for(let x=0;x<4;x++){
+    if(G.grid[y][x] === 0) return true;
+    if(x<3 && G.grid[y][x] === G.grid[y][x+1]) return true;
+    if(y<3 && G.grid[y][x] === G.grid[y+1][x]) return true;
+  }
+  return false;
+}
+function render2048(){
+  const G = g2048; if(!G) return;
+  G.el.innerHTML = '';
+  for(let y=0;y<4;y++) for(let x=0;x<4;x++){
+    const v = G.grid[y][x];
+    const d = document.createElement('div');
+    d.className = 't2048-cell' + (v ? ' t'+v : '');
+    if(v){
+      d.textContent = v;
+      d.style.fontSize = v >= 1024 ? '13px' : (v >= 128 ? '15px' : '20px');
+    }
+    G.el.appendChild(d);
+  }
+  const s = $('#tScore'), b = $('#tBest');
+  if(s) s.textContent = G.score;
+  if(b) b.textContent = G.best;
+}
+
+/* ---------------- 扫雷 ---------------- */
+const MINE_COLORS = ['', '#4da6ff', '#3ddc84', '#ff3d5a', '#b18cff', '#ffc53d', '#ff8ac2', '#9aa0d8', '#eef0ff'];
+let mine = null;
+GAMES.mine = {
+  title: '扫雷',
+  mount(mountEl, statsEl){
+    mountEl.classList.add('stage');
+    const M = mine = {
+      rows:9, cols:9, mines:10, grid:[], revealed:0, flags:0,
+      started:false, over:false, time:0, timer:null,
+      best:store.get('mine.best', null)
+    };
+    statsEl.innerHTML =
+      '<div class="stat">剩余雷<b id="mRem">10</b></div>' +
+      '<div class="stat">用时<b id="mTime">0</b></div>' +
+      '<div class="stat">最佳<b id="mBest">' + (M.best==null?'--':M.best) + '</b></div>' +
+      '<button class="px-btn yellow" id="mNew" type="button">新一局</button>';
+    const grid = document.createElement('div');
+    grid.className = 'mine-grid';
+    mountEl.appendChild(grid);
+    const status = document.createElement('div');
+    status.className = 'mine-status';
+    status.textContent = '左键翻开，右键插旗。第一次点击绝对安全。';
+    mountEl.appendChild(status);
+    M.el = grid; M.status = status;
+    grid.addEventListener('contextmenu', e => e.preventDefault());
+    grid.addEventListener('click', e => {
+      const t = e.target.closest('.mine-cell');
+      if(!t || M.over) return;
+      const x = +t.dataset.x, y = +t.dataset.y;
+      const c = M.grid[y][x];
+      if(c.flag) return;
+      if(!M.started){
+        M.started = true;
+        buildMineBoard(M, {x,y});
+        startMineTimer(M);
+      }
+      const cc = M.grid[y][x];
+      if(cc.mine){ mineLose(M, x, y); return; }
+      if(!cc.open){
+        revealMine(M, x, y);
+        if(checkMineWin(M)) mineWin(M);
+      }
+    });
+    grid.addEventListener('contextmenu', e => {
+      e.preventDefault();
+      const t = e.target.closest('.mine-cell');
+      if(!t || M.over) return;
+      const x = +t.dataset.x, y = +t.dataset.y;
+      const c = M.grid[y][x];
+      if(c.open) return;
+      if(!M.started){
+        M.started = true;
+        buildMineBoard(M, {x,y});
+        startMineTimer(M);
+      }
+      M.grid[y][x].flag = !M.grid[y][x].flag;
+      renderMine(M);
+      sfx.click();
+    });
+    buildMineBoard(M, null);
+    $('#mNew').addEventListener('click', () => resetMine(M));
+  },
+  destroy(){
+    if(mine){ clearInterval(mine.timer); mine = null; }
+  }
+};
+function buildMineBoard(M, safe){
+  M.grid = [];
+  for(let y=0;y<M.rows;y++){
+    M.grid.push([]);
+    for(let x=0;x<M.cols;x++) M.grid[y].push({mine:false, open:false, flag:false, adj:0});
+  }
+  M.revealed = 0; M.flags = 0;
+  if(safe){
+    const excluded = new Set([safe.y*M.cols + safe.x]);
+    let placed = 0, guard = 0;
+    while(placed < M.mines && guard < 2000){
+      guard++;
+      const x = Math.floor(Math.random()*M.cols), y = Math.floor(Math.random()*M.rows);
+      if(excluded.has(y*M.cols+x) || M.grid[y][x].mine) continue;
+      M.grid[y][x].mine = true;
+      placed++;
+    }
+    calcAdj(M);
+  }
+  renderMine(M);
+}
+function calcAdj(M){
+  for(let y=0;y<M.rows;y++) for(let x=0;x<M.cols;x++){
+    if(M.grid[y][x].mine) continue;
+    let n = 0;
+    for(let dy=-1;dy<=1;dy++) for(let dx=-1;dx<=1;dx++){
+      const nx=x+dx, ny=y+dy;
+      if(nx>=0 && nx<M.cols && ny>=0 && ny<M.rows && M.grid[ny][nx].mine) n++;
+    }
+    M.grid[y][x].adj = n;
+  }
+}
+function renderMine(M){
+  M.el.innerHTML = '';
+  for(let y=0;y<M.rows;y++) for(let x=0;x<M.cols;x++){
+    const c = M.grid[y][x];
+    const d = document.createElement('div');
+    d.className = 'mine-cell';
+    d.dataset.x = x; d.dataset.y = y;
+    if(c.open){
+      d.classList.add('open');
+      if(c.mine){ d.classList.add('bomb'); d.textContent = '*'; }
+      else if(c.adj > 0){ d.textContent = c.adj; d.style.color = MINE_COLORS[c.adj]; }
+    } else if(c.flag){
+      d.classList.add('flag');
+      d.textContent = 'F';
+    }
+    M.el.appendChild(d);
+  }
+  const rem = $('#mRem');
+  if(rem) rem.textContent = Math.max(0, M.mines - M.flags);
+}
+function revealMine(M, sx, sy){
+  const stack = [[sx, sy]];
+  while(stack.length){
+    const [x, y] = stack.pop();
+    const c = M.grid[y][x];
+    if(c.open || c.flag || c.mine) continue;
+    c.open = true;
+    M.revealed++;
+    if(c.adj === 0){
+      for(let dy=-1;dy<=1;dy++) for(let dx=-1;dx<=1;dx++){
+        const nx=x+dx, ny=y+dy;
+        if(nx>=0 && nx<M.cols && ny>=0 && ny<M.rows && !M.grid[ny][nx].open) stack.push([nx, ny]);
+      }
+    }
+  }
+  renderMine(M);
+  sfx.pop();
+}
+function startMineTimer(M){
+  clearInterval(M.timer);
+  M.time = 0;
+  M.timer = setInterval(() => {
+    M.time++;
+    const el = $('#mTime');
+    if(el) el.textContent = M.time;
+  }, 1000);
+}
+function mineLose(M, badX, badY){
+  M.over = true;
+  clearInterval(M.timer);
+  for(let y=0;y<M.rows;y++) for(let x=0;x<M.cols;x++){
+    if(M.grid[y][x].mine) M.grid[y][x].open = true;
+  }
+  M.grid[badY][badX].bad = true;
+  renderMine(M);
+  const bad = M.el.querySelector('[data-x="'+badX+'"][data-y="'+badY+'"]');
+  if(bad) bad.classList.add('bad');
+  M.status.textContent = '踩雷了！点「新一局」再来一次。';
+  sfx.lose();
+}
+function checkMineWin(M){
+  return M.revealed === M.rows*M.cols - M.mines;
+}
+function mineWin(M){
+  M.over = true;
+  clearInterval(M.timer);
+  for(let y=0;y<M.rows;y++) for(let x=0;x<M.cols;x++){
+    const c = M.grid[y][x];
+    if(c.mine) c.flag = true;
+    else c.open = true;
+  }
+  renderMine(M);
+  M.status.textContent = '通关！用时 ' + M.time + ' 秒。';
+  if(M.best == null || M.time < M.best){
+    M.best = M.time;
+    store.set('mine.best', M.best);
+    const el = $('#mBest');
+    if(el) el.textContent = M.best;
+    M.status.textContent = '新纪录！用时 ' + M.time + ' 秒。';
+  }
+  sfx.win();
+}
+function resetMine(M){
+  clearInterval(M.timer);
+  M.started = false; M.over = false; M.time = 0;
+  M.grid = [];
+  const t = $('#mTime'); if(t) t.textContent = 0;
+  M.status.textContent = '左键翻开，右键插旗。第一次点击绝对安全。';
+  buildMineBoard(M, null);
+  sfx.click();
+}
+
+/* ---------------- 打地鼠 ---------------- */
+let mole = null;
+GAMES.mole = {
+  title: '打地鼠',
+  mount(mountEl, statsEl){
+    mountEl.classList.add('stage');
+    const M = mole = {
+      score:0, best:store.get('mole.best', 0), time:30, playing:false,
+      timer:null, spawnTimer:null, spriteUrl:makeMoleSprite()
+    };
+    statsEl.innerHTML =
+      '<div class="stat">得分<b id="mlScore">0</b></div>' +
+      '<div class="stat">最高<b id="mlBest">' + M.best + '</b></div>' +
+      '<div class="stat">剩余<b id="mlTime">30</b></div>' +
+      '<button class="px-btn green" id="mlStart" type="button">开始</button>';
+    const grid = document.createElement('div');
+    grid.className = 'mole-grid';
+    mountEl.appendChild(grid);
+    M.grid = grid;
+    for(let i=0;i<9;i++){
+      const h = document.createElement('div');
+      h.className = 'mole-hole';
+      h.dataset.i = i;
+      const sp = document.createElement('div');
+      sp.className = 'mole-sprite';
+      if(M.spriteUrl) sp.style.backgroundImage = 'url(' + M.spriteUrl + ')';
+      h.appendChild(sp);
+      grid.appendChild(h);
+      h.addEventListener('click', () => bonkMole(M, i, h));
+    }
+    $('#mlStart').addEventListener('click', () => { if(!M.playing) startMole(M); });
+  },
+  destroy(){
+    if(mole){
+      clearInterval(mole.timer);
+      clearTimeout(mole.spawnTimer);
+      mole = null;
+    }
+  }
+};
+function makeMoleSprite(){
+  try{
+    const cv = document.createElement('canvas');
+    cv.width = 20; cv.height = 18;
+    const c = cv.getContext('2d');
+    const px = (x,y,w,h,col) => { c.fillStyle = col; c.fillRect(x,y,w,h); };
+    px(3,4,3,3,'#7c4f28'); px(14,4,3,3,'#7c4f28');
+    px(4,5,1,1,'#c98a4b'); px(15,5,1,1,'#c98a4b');
+    px(3,7,14,9,'#a06b3c');
+    px(4,6,12,1,'#b97f45');
+    px(3,14,14,2,'#7c4f28');
+    px(6,10,2,3,'#0b0c18'); px(12,10,2,3,'#0b0c18');
+    px(9,12,2,2,'#ff8ac2');
+    return cv.toDataURL('image/png');
+  }catch(e){ return null; }
+}
+function startMole(M){
+  M.score = 0; M.time = 30; M.playing = true;
+  M.grid.querySelectorAll('.mole-hole.up, .mole-hole.bonk').forEach(h => h.classList.remove('up','bonk'));
+  updateMoleHud(M);
+  clearInterval(M.timer);
+  M.timer = setInterval(() => {
+    M.time--;
+    updateMoleHud(M);
+    if(M.time <= 0) endMole(M);
+  }, 1000);
+  scheduleMoleSpawn(M);
+  sfx.click();
+}
+function scheduleMoleSpawn(M){
+  clearTimeout(M.spawnTimer);
+  M.spawnTimer = setTimeout(() => {
+    if(!M.playing) return;
+    const holes = M.grid.querySelectorAll('.mole-hole');
+    const upCount = M.grid.querySelectorAll('.mole-hole.up').length;
+    const count = 2 - upCount;
+    const free = Array.from(holes).filter(h => !h.classList.contains('up') && !h.classList.contains('bonk'));
+    for(let i=0;i<count && free.length;i++){
+      const idx = Math.floor(Math.random()*free.length);
+      const h = free.splice(idx,1)[0];
+      h.classList.add('up');
+      const dur = 850 + Math.random()*450;
+      setTimeout(() => { if(M.playing) h.classList.remove('up'); }, dur);
+    }
+    scheduleMoleSpawn(M);
+  }, 700 + Math.random()*300);
+}
+function bonkMole(M, i, h){
+  if(!h.classList.contains('up')) return;
+  h.classList.remove('up');
+  h.classList.add('bonk');
+  setTimeout(() => h.classList.remove('bonk'), 160);
+  M.score++;
+  if(M.score > M.best){ M.best = M.score; store.set('mole.best', M.best); }
+  updateMoleHud(M);
+  sfx.point();
+}
+function endMole(M){
+  M.playing = false;
+  clearInterval(M.timer);
+  clearTimeout(M.spawnTimer);
+  M.grid.querySelectorAll('.mole-hole.up').forEach(h => h.classList.remove('up'));
+  updateMoleHud(M);
+  const startBtn = $('#mlStart');
+  if(startBtn) startBtn.textContent = '再来一局';
+  if(M.score >= M.best && M.score > 0){ M.best = M.score; store.set('mole.best', M.best); sfx.win(); }
+  else sfx.lose();
+}
+function updateMoleHud(M){
+  const s = $('#mlScore'), b = $('#mlBest'), t = $('#mlTime');
+  if(s) s.textContent = M.score;
+  if(b) b.textContent = M.best;
+  if(t) t.textContent = Math.max(0, M.time);
+}
+/* ============================================================
+   互动玩具：捏泡泡 / 像素涂鸦 / 蹦蹦球 / 像素宠物
+   ============================================================ */
+/* ---------------- 记忆翻牌 ---------------- */
+const MEM_SYMS = ['◆','●','▲','■','★','♥','✚','☾'];
+let memory = null;
+GAMES.memory = {
+  title:'记忆翻牌',
+  mount(mountEl, statsEl){
+    mountEl.classList.add('stage');
+    const M = memory = { cards:[], opened:null, lock:false, moves:0, matched:0, pairs:8, startT:0, best:store.get('memory.best', null) };
+    statsEl.innerHTML =
+      '<div class="stat">步数<b id="memMoves">0</b></div>' +
+      '<div class="stat">用时<b id="memTime">0</b></div>' +
+      '<div class="stat">最佳<b id="memBest">' + (M.best==null?'--':M.best+'秒') + '</b></div>' +
+      '<button class="px-btn yellow" id="memNew" type="button">新一局</button>';
+    const grid = document.createElement('div');
+    grid.className = 'mem-grid';
+    mountEl.appendChild(grid);
+    M.el = grid;
+    newMemoryGame(M);
+    M.timer = setInterval(() => { if(M.matched < M.pairs) updateMemoryHud(M); }, 500);
+    $('#memNew').addEventListener('click', () => newMemoryGame(M));
+  },
+  destroy(){
+    if(memory){ clearInterval(memory.timer); memory = null; }
+  }
+};
+function newMemoryGame(M){
+  M.el.innerHTML = '';
+  M.moves = 0; M.matched = 0; M.opened = null; M.lock = false;
+  M.startT = performance.now();
+  const syms = MEM_SYMS.slice(0, M.pairs);
+  const deck = syms.concat(syms);
+  for(let i=deck.length-1;i>0;i--){ const j = Math.floor(Math.random()*(i+1)); const t = deck[i]; deck[i] = deck[j]; deck[j] = t; }
+  M.cards = deck;
+  deck.forEach((sym, i) => {
+    const d = document.createElement('button');
+    d.className = 'mem-card';
+    d.dataset.i = i;
+    d.addEventListener('click', () => flipMemory(M, i, d));
+    M.el.appendChild(d);
+  });
+  updateMemoryHud(M);
+  sfx.click();
+}
+function flipMemory(M, i, d){
+  if(M.lock || d.classList.contains('done') || d.classList.contains('open')) return;
+  d.classList.add('open');
+  d.textContent = M.cards[i];
+  M.moves++;
+  if(M.opened == null){
+    M.opened = { i, d };
+  } else {
+    const a = M.opened;
+    M.opened = null;
+    if(M.cards[a.i] === M.cards[i]){
+      a.d.classList.add('done'); d.classList.add('done');
+      M.matched++;
+      sfx.point();
+      if(M.matched === M.pairs){
+        const sec = Math.round((performance.now()-M.startT)/1000);
+        updateMemoryHud(M);
+        if(M.best==null || sec < M.best){ M.best = sec; store.set('memory.best', M.best); $('#memBest').textContent = M.best + '秒'; }
+        sfx.win();
+      }
+    } else {
+      M.lock = true;
+      sfx.bonk();
+      setTimeout(() => { a.d.classList.remove('open'); d.classList.remove('open'); a.d.textContent=''; d.textContent=''; M.lock=false; }, 650);
+    }
+  }
+  updateMemoryHud(M);
+}
+function updateMemoryHud(M){
+  const m = $('#memMoves'), t = $('#memTime');
+  if(m) m.textContent = M.moves;
+  if(t) t.textContent = Math.round((performance.now()-M.startT)/1000);
+}
+
+/* ---------------- 石头剪刀布 ---------------- */
+let rps = null;
+GAMES.rps = {
+  title:'石头剪刀布',
+  mount(mountEl, statsEl){
+    mountEl.classList.add('stage');
+    const R = rps = { w:0, l:0, t:0, streak:0, best:store.get('rps.best', 0) };
+    statsEl.innerHTML =
+      '<div class="stat">胜<b id="rpsW">0</b></div><div class="stat">负<b id="rpsL">0</b></div>' +
+      '<div class="stat">平<b id="rpsT">0</b></div><div class="stat">连胜<b id="rpsS">0</b></div>' +
+      '<div class="stat">最佳连胜<b id="rpsB">' + R.best + '</b></div>';
+    const box = document.createElement('div');
+    box.className = 'rps-box';
+    box.innerHTML =
+      '<div><div class="rps-icon" id="rpsCpu">?</div><div class="rps-lbl">对手</div></div>' +
+      '<div class="rps-vs">VS</div>' +
+      '<div><div class="rps-icon" id="rpsYou">?</div><div class="rps-lbl">你</div></div>';
+    mountEl.appendChild(box);
+    const msg = document.createElement('div');
+    msg.className = 'rps-msg';
+    msg.textContent = '选一个出招：';
+    mountEl.appendChild(msg);
+    const btns = document.createElement('div');
+    btns.className = 'rps-btns';
+    [['石头','●'],['剪刀','✂'],['布','▭']].forEach(([name, icon]) => {
+      const b = document.createElement('button');
+      b.className = 'px-btn';
+      b.textContent = name;
+      b.addEventListener('click', () => playRps(R, name, icon));
+      btns.appendChild(b);
+    });
+    mountEl.appendChild(btns);
+    R.msg = msg;
+  },
+  destroy(){ rps = null; }
+};
+function playRps(R, mine, myIcon){
+  const opts = ['石头','剪刀','布'];
+  const cpu = opts[Math.floor(Math.random()*3)];
+  const cpuIcon = {石头:'●', 剪刀:'✂', 布:'▭'}[cpu];
+  $('#rpsCpu').textContent = cpuIcon;
+  $('#rpsYou').textContent = myIcon;
+  let res;
+  if(mine === cpu){ R.t++; R.streak = 0; res = '平局，再来！'; sfx.bonk(); }
+  else if((mine==='石头'&&cpu==='剪刀')||(mine==='剪刀'&&cpu==='布')||(mine==='布'&&cpu==='石头')){
+    R.w++; R.streak++;
+    if(R.streak > R.best){ R.best = R.streak; store.set('rps.best', R.best); }
+    res = '你赢了！'; sfx.point();
+  } else {
+    R.l++; R.streak = 0; res = '这局输了。'; sfx.lose();
+  }
+  $('#rpsW').textContent = R.w; $('#rpsL').textContent = R.l; $('#rpsT').textContent = R.t;
+  $('#rpsS').textContent = R.streak; $('#rpsB').textContent = R.best;
+  R.msg.textContent = '你出「' + mine + '」，对手出「' + cpu + '」——' + res;
+}
+
+/* ---------------- 打砖块 ---------------- */
+const BRK_COLORS = ['#ff3d5a','#ffc53d','#3ddc84','#4da6ff','#b18cff'];
+let breakout = null;
+GAMES.breakout = {
+  title:'打砖块',
+  mount(mountEl, statsEl){
+    mountEl.classList.add('stage');
+    const B = breakout = { over:true, raf:0, px:null, best:store.get('breakout.best', 0), mount:mountEl };
+    statsEl.innerHTML =
+      '<div class="stat">分数<b id="brkScore">0</b></div>' +
+      '<div class="stat">最高<b id="brkBest">' + B.best + '</b></div>' +
+      '<div class="stat">生命<b id="brkLives">3</b></div>' +
+      '<button class="px-btn green" id="brkStart" type="button">开始</button>';
+    const { cv, ctx } = makeCanvas(480, 360);
+    cv.className = 'pix-canvas';
+    mountEl.appendChild(cv);
+    B.cv = cv; B.ctx = ctx;
+    stageOverlay(mountEl, '打砖块', '移动鼠标控制挡板，点击发射小球。\n打碎全部砖块，别让球掉下去！', '开始', startBreakout);
+    $('#brkStart').addEventListener('click', () => { if(B.over) startBreakout(); });
+    cv.addEventListener('mousemove', e => {
+      const r = cv.getBoundingClientRect();
+      B.px = (e.clientX - r.left) / r.width * 480;
+    });
+    cv.addEventListener('click', () => {
+      if(!B.over && B.ball && B.ball.stuck) launchBreakoutBall(B);
+    });
+    B.loop = () => { if(!B.over) stepBreakout(B); B.raf = requestAnimationFrame(B.loop); };
+    B.raf = requestAnimationFrame(B.loop);
+  },
+  destroy(){
+    if(breakout){ cancelAnimationFrame(breakout.raf); breakout = null; }
+  }
+};
+function startBreakout(){
+  const B = breakout; if(!B) return;
+  B.mount.querySelectorAll('.overlay').forEach(o => o.remove());
+  B.over = false; B.score = 0; B.lives = 3;
+  B.bricks = [];
+  for(let r=0;r<5;r++) for(let c=0;c<8;c++){
+    B.bricks.push({ x:c*60+6, y:r*18+8, w:54, h:14, alive:true, color:BRK_COLORS[r] });
+  }
+  B.paddle = { x:195, w:90, h:12 };
+  B.ball = { x:240, y:320, vx:0, vy:0, r:5, stuck:true };
+  if(B.px == null) B.px = 240;
+  updateBreakoutHud(B);
+  drawBreakout(B);
+  sfx.click();
+}
+function launchBreakoutBall(B){
+  const off = (B.ball.x - (B.paddle.x + B.paddle.w/2)) / (B.paddle.w/2);
+  B.ball.stuck = false;
+  B.ball.vx = off * 3.2;
+  B.ball.vy = -3.2;
+  sfx.point();
+}
+function stepBreakout(B){
+  const { ctx, cv } = B;
+  B.paddle.x = Math.max(0, Math.min(480 - B.paddle.w, (B.px == null ? B.paddle.x : B.px - B.paddle.w/2)));
+  const b = B.ball;
+  if(b.stuck){
+    b.x = B.paddle.x + B.paddle.w/2;
+    b.y = 320;
+  } else {
+    b.x += b.vx; b.y += b.vy;
+    if(b.x < b.r){ b.x = b.r; b.vx = Math.abs(b.vx); }
+    if(b.x > 480 - b.r){ b.x = 480 - b.r; b.vx = -Math.abs(b.vx); }
+    if(b.y < b.r){ b.y = b.r; b.vy = Math.abs(b.vy); }
+    if(b.vy > 0 && b.y + b.r >= 348 && b.y + b.r <= 360 && b.x >= B.paddle.x - b.r && b.x <= B.paddle.x + B.paddle.w + b.r){
+      const hit = (b.x - (B.paddle.x + B.paddle.w/2)) / (B.paddle.w/2);
+      b.vy = -Math.abs(b.vy) * 1.02;
+      b.vx = hit * 3.4;
+      b.y = 348 - b.r - 1;
+      sfx.pop();
+    }
+    for(const br of B.bricks){
+      if(!br.alive) continue;
+      if(b.x + b.r > br.x && b.x - b.r < br.x + br.w && b.y + b.r > br.y && b.y - b.r < br.y + br.h){
+        br.alive = false;
+        b.vy = -b.vy;
+        B.score += 10;
+        updateBreakoutHud(B);
+        sfx.point();
+        break;
+      }
+    }
+    if(b.y - b.r > 360){
+      B.lives--;
+      updateBreakoutHud(B);
+      if(B.lives <= 0){ endBreakout(B); return; }
+      b.stuck = true;
+      sfx.lose();
+    }
+  }
+  if(B.bricks.every(br => !br.alive)){ endBreakoutWin(B); return; }
+  drawBreakout(B);
+}
+function endBreakout(B){
+  B.over = true;
+  if(B.score > B.best){ B.best = B.score; store.set('breakout.best', B.best); $('#brkBest').textContent = B.best; sfx.win(); }
+  stageOverlay(B.mount, '游戏结束', '得分 ' + B.score + ' · 最高 ' + B.best, '再来一局', startBreakout);
+}
+function endBreakoutWin(B){
+  B.over = true;
+  if(B.score > B.best){ B.best = B.score; store.set('breakout.best', B.best); $('#brkBest').textContent = B.best; sfx.win(); }
+  stageOverlay(B.mount, '通关！', '全部砖块已打碎 · 得分 ' + B.score, '再来一局', startBreakout);
+}
+function drawBreakout(B){
+  const { ctx, cv } = B;
+  ctx.fillStyle = '#101120';
+  ctx.fillRect(0, 0, cv.width, cv.height);
+  for(const br of B.bricks){
+    if(!br.alive) continue;
+    ctx.fillStyle = br.color;
+    ctx.fillRect(br.x, br.y, br.w, br.h);
+    ctx.fillStyle = 'rgba(0,0,0,.25)';
+    ctx.fillRect(br.x, br.y + br.h - 3, br.w, 3);
+  }
+  ctx.fillStyle = '#9aa0d8';
+  ctx.fillRect(B.paddle.x, 348, B.paddle.w, 12);
+  const b = B.ball;
+  ctx.fillStyle = '#eef0ff';
+  ctx.fillRect(b.x - b.r, b.y - b.r, b.r*2, b.r*2);
+}
+function updateBreakoutHud(B){
+  $('#brkScore').textContent = B.score;
+  $('#brkLives').textContent = B.lives;
+  $('#brkBest').textContent = B.best;
+}
+
+/* ---------------- 乒乓 ---------------- */
+let pong = null;
+GAMES.pong = {
+  title:'乒乓',
+  mount(mountEl, statsEl){
+    mountEl.classList.add('stage');
+    const P = pong = { over:true, raf:0, up:false, down:false, best:store.get('pong.best', 0), mount:mountEl };
+    statsEl.innerHTML =
+      '<div class="stat">你<b id="pongY">0</b></div><div class="stat">对手<b id="pongC">0</b></div>' +
+      '<div class="stat">最高分<b id="pongB">' + P.best + '</b></div>' +
+      '<button class="px-btn green" id="pongStart" type="button">开始</button>';
+    const { cv, ctx } = makeCanvas(520, 360);
+    cv.className = 'pix-canvas';
+    mountEl.appendChild(cv);
+    P.cv = cv; P.ctx = ctx;
+    stageOverlay(mountEl, '乒乓', 'W/S 或 ↑/↓ 控制左侧球拍，先到 7 分获胜。', '开始', startPong);
+    $('#pongStart').addEventListener('click', () => { if(P.over) startPong(); });
+    P.kup = e => {
+      const k = e.key;
+      if(k==='w'||k==='W'||k==='ArrowUp') P.up = false;
+      if(k==='s'||k==='S'||k==='ArrowDown') P.down = false;
+    };
+    document.addEventListener('keyup', P.kup);
+    P.loop = () => { if(!P.over) stepPong(P); P.raf = requestAnimationFrame(P.loop); };
+    P.raf = requestAnimationFrame(P.loop);
+  },
+  onKey(e){
+    const P = pong; if(!P) return false;
+    const k = e.key;
+    if(k==='w'||k==='W'||k==='ArrowUp'){ P.up = true; return true; }
+    if(k==='s'||k==='S'||k==='ArrowDown'){ P.down = true; return true; }
+    return false;
+  },
+  destroy(){
+    if(pong){ cancelAnimationFrame(pong.raf); if(pong.kup) document.removeEventListener('keyup', pong.kup); pong = null; }
+  }
+};
+function startPong(){
+  const P = pong; if(!P) return;
+  P.mount.querySelectorAll('.overlay').forEach(o => o.remove());
+  P.over = false; P.y = 0; P.c = 0; P.winScore = 7;
+  P.p1 = { y:140, h:70 }; P.p2 = { y:140, h:70 };
+  P.ball = { x:260, y:180, vx:3, vy:1.5, r:5 };
+  updatePongHud(P);
+  drawPong(P);
+  sfx.click();
+}
+function stepPong(P){
+  const speed = 4.2;
+  if(P.up) P.p1.y = Math.max(0, P.p1.y - speed);
+  if(P.down) P.p1.y = Math.min(360 - P.p1.h, P.p1.y + speed);
+  const target = P.ball.vy > 0 ? P.ball.y : 180;
+  const cy = P.p2.y + P.p2.h/2;
+  if(Math.abs(cy - target) > 3) P.p2.y += (target > cy ? 1 : -1) * Math.min(3.2, Math.abs(cy - target));
+  P.p2.y = Math.max(0, Math.min(360 - P.p2.h, P.p2.y));
+  const b = P.ball;
+  b.x += b.vx; b.y += b.vy;
+  if(b.y < b.r){ b.y = b.r; b.vy = Math.abs(b.vy); }
+  if(b.y > 360 - b.r){ b.y = 360 - b.r; b.vy = -Math.abs(b.vy); }
+  if(b.vx < 0 && b.x - b.r <= 14 && b.x - b.r >= 0 && b.y >= P.p1.y - b.r && b.y <= P.p1.y + P.p1.h + b.r){ b.vx = Math.abs(b.vx); sfx.pop(); }
+  if(b.vx > 0 && b.x + b.r >= 520 - 14 && b.x + b.r <= 520 && b.y >= P.p2.y - b.r && b.y <= P.p2.y + P.p2.h + b.r){ b.vx = -Math.abs(b.vx); sfx.pop(); }
+  if(b.x < -10){ P.c++; sfx.lose(); resetPongBall(P, 1); }
+  if(b.x > 530){ P.y++; sfx.point(); resetPongBall(P, -1); }
+  updatePongHud(P);
+  if(P.y >= P.winScore){ endPong(P, true); return; }
+  if(P.c >= P.winScore){ endPong(P, false); return; }
+  drawPong(P);
+}
+function resetPongBall(P, dir){
+  P.ball = { x:260, y:180, vx:dir*3, vy:(Math.random()-.5)*2, r:5 };
+}
+function endPong(P, win){
+  P.over = true;
+  if(P.y > P.best){ P.best = P.y; store.set('pong.best', P.best); $('#pongB').textContent = P.best; }
+  if(win) sfx.win(); else sfx.lose();
+  stageOverlay(P.mount, win ? '你赢了！' : '对手获胜', '比分 ' + P.y + ' : ' + P.c, '再来一局', startPong);
+}
+function drawPong(P){
+  const { ctx, cv } = P;
+  ctx.fillStyle = '#0e0f1d';
+  ctx.fillRect(0, 0, cv.width, cv.height);
+  ctx.fillStyle = 'rgba(255,255,255,.14)';
+  for(let y=0;y<cv.height;y+=16) ctx.fillRect(cv.width/2 - 2, y, 4, 8);
+  ctx.fillStyle = '#4da6ff';
+  ctx.fillRect(6, P.p1.y, 8, P.p1.h);
+  ctx.fillStyle = '#ff3d5a';
+  ctx.fillRect(cv.width - 14, P.p2.y, 8, P.p2.h);
+  ctx.fillStyle = '#eef0ff';
+  ctx.fillRect(P.ball.x - P.ball.r, P.ball.y - P.ball.r, P.ball.r*2, P.ball.r*2);
+}
+function updatePongHud(P){
+  $('#pongY').textContent = P.y;
+  $('#pongC').textContent = P.c;
+}
+
+/* ---------------- 记忆色块（西蒙） ---------------- */
+const SIMON_COLORS = ['#ff3d5a','#ffc53d','#3ddc84','#4da6ff'];
+const SIMON_FREQ = [523, 392, 330, 262];
+let simon = null;
+GAMES.simon = {
+  title:'记忆色块',
+  mount(mountEl, statsEl){
+    mountEl.classList.add('stage');
+    const S = simon = { seq:[], pos:0, playing:false, input:false, level:1, best:store.get('simon.best', 0), mount:mountEl };
+    statsEl.innerHTML =
+      '<div class="stat">回合<b id="simLv">1</b></div>' +
+      '<div class="stat">最佳<b id="simBest">' + S.best + '</b></div>' +
+      '<button class="px-btn green" id="simStart" type="button">开始</button>';
+    const grid = document.createElement('div');
+    grid.className = 'simon-grid';
+    mountEl.appendChild(grid);
+    for(let i=0;i<4;i++){
+      const d = document.createElement('button');
+      d.className = 'simon-pad';
+      d.style.background = SIMON_COLORS[i];
+      d.dataset.i = i;
+      d.addEventListener('click', () => simonPress(S, i, d));
+      grid.appendChild(d);
+    }
+    S.grid = grid;
+    const msg = document.createElement('div');
+    msg.className = 'simon-msg';
+    msg.textContent = '点「开始」，记住颜色顺序并重复。';
+    mountEl.appendChild(msg);
+    S.msg = msg;
+    $('#simStart').addEventListener('click', () => { if(!S.playing) startSimon(S); });
+  },
+  destroy(){ simon = null; }
+};
+function startSimon(S){
+  S.seq = []; S.pos = 0; S.playing = true; S.input = false;
+  $('#simLv').textContent = 1;
+  simonNext(S);
+  sfx.click();
+}
+function simonNext(S){
+  S.input = false;
+  S.seq.push(Math.floor(Math.random()*4));
+  S.msg.textContent = '第 ' + S.seq.length + ' 步，看好了…';
+  let i = 0;
+  const play = () => {
+    if(i >= S.seq.length){ S.input = true; S.msg.textContent = '轮到你，按顺序点。'; return; }
+    const idx = S.seq[i];
+    const pad = S.grid.children[idx];
+    pad.classList.add('lit');
+    tone(SIMON_FREQ[idx], 0.2, 'square', 0.05);
+    setTimeout(() => { pad.classList.remove('lit'); i++; setTimeout(play, 260); }, 420);
+  };
+  setTimeout(play, 650);
+}
+function simonPress(S, i, d){
+  if(!S.playing || !S.input) return;
+  tone(SIMON_FREQ[i], 0.15, 'square', 0.05);
+  d.classList.add('lit');
+  setTimeout(() => d.classList.remove('lit'), 180);
+  if(i !== S.seq[S.pos]){ simonLose(S); return; }
+  S.pos++;
+  if(S.pos >= S.seq.length){
+    S.pos = 0;
+    S.level++;
+    if(S.seq.length > S.best){ S.best = S.seq.length; store.set('simon.best', S.best); $('#simBest').textContent = S.best; }
+    $('#simLv').textContent = S.level;
+    sfx.point();
+    setTimeout(() => simonNext(S), 700);
+  }
+}
+function simonLose(S){
+  S.playing = false; S.input = false;
+  if(S.seq.length > S.best){ S.best = S.seq.length; store.set('simon.best', S.best); $('#simBest').textContent = S.best; }
+  S.msg.textContent = '记错啦！本轮记住了 ' + S.seq.length + ' 步。点「开始」再来。';
+  sfx.lose();
+}
+
+/* ---------------- 俄罗斯方块 ---------------- */
+const TETRIS_SHAPES = {
+  I:[[1,1,1,1]],
+  O:[[1,1],[1,1]],
+  T:[[0,1,0],[1,1,1]],
+  S:[[0,1,1],[1,1,0]],
+  Z:[[1,1,0],[0,1,1]],
+  J:[[1,0,0],[1,1,1]],
+  L:[[0,0,1],[1,1,1]]
+};
+const TETRIS_COLORS = { I:'#4da6ff', O:'#ffc53d', T:'#b18cff', S:'#3ddc84', Z:'#ff3d5a', J:'#ff8ac2', L:'#ff9f43' };
+let tetris = null;
+GAMES.tetris = {
+  title:'俄罗斯方块',
+  mount(mountEl, statsEl){
+    mountEl.classList.add('stage');
+    const T = tetris = { cols:10, rows:20, cell:22, board:null, cur:null, nextType:'I', score:0, lines:0, level:1, best:store.get('tetris.best', 0), over:true, paused:false, gravity:null, mount:mountEl };
+    statsEl.innerHTML =
+      '<div class="stat">分数<b id="tetScore">0</b></div><div class="stat">行数<b id="tetLines">0</b></div>' +
+      '<div class="stat">等级<b id="tetLv">1</b></div>' +
+      '<div class="stat">最高<b id="tetBest">' + T.best + '</b></div>' +
+      '<button class="px-btn yellow" id="tetNew" type="button">新一局</button>';
+    const { cv, ctx } = makeCanvas(T.cols*T.cell, T.rows*T.cell);
+    cv.className = 'pix-canvas';
+    mountEl.appendChild(cv);
+    T.cv = cv; T.ctx = ctx;
+    stageOverlay(mountEl, '俄罗斯方块', '←→ 移动 · ↑ 旋转 · ↓ 加速 · 空格 硬降 · P 暂停', '开始', startTetris);
+    $('#tetNew').addEventListener('click', () => { if(T.over) startTetris(); });
+  },
+  onKey(e){
+    const T = tetris; if(!T) return false;
+    const k = e.key;
+    if(T.over) return false;
+    if(k==='ArrowLeft'){ tetMove(T, -1); return true; }
+    if(k==='ArrowRight'){ tetMove(T, 1); return true; }
+    if(k==='ArrowUp'){ tetRotate(T); return true; }
+    if(k==='ArrowDown'){ tetSoftDrop(T); return true; }
+    if(k===' '){ tetHardDrop(T); return true; }
+    if(k==='p'||k==='P'){ tetPause(T); return true; }
+    return false;
+  },
+  destroy(){
+    if(tetris){ clearInterval(tetris.gravity); tetris = null; }
+  }
+};
+function tetEmptyBoard(){ return Array.from({length:20}, () => Array(10).fill(0)); }
+function tetSpeed(level){ return Math.max(90, 650 - (level-1)*60); }
+function tetPick(){ const keys = Object.keys(TETRIS_SHAPES); return keys[Math.floor(Math.random()*keys.length)]; }
+function tetRotateMatrix(m){
+  const h = m.length, w = m[0].length;
+  const rot = Array.from({length:w}, () => Array(h).fill(0));
+  for(let y=0;y<h;y++) for(let x=0;x<w;x++) rot[x][h-1-y] = m[y][x];
+  return rot;
+}
+function startTetris(){
+  const T = tetris; if(!T) return;
+  T.mount.querySelectorAll('.overlay').forEach(o => o.remove());
+  T.board = tetEmptyBoard();
+  T.score = 0; T.lines = 0; T.level = 1; T.over = false; T.paused = false;
+  T.nextType = tetPick();
+  tetSpawn(T);
+  updateTetrisHud(T);
+  clearInterval(T.gravity);
+  T.gravity = setInterval(() => { if(!T.over && !T.paused) tetGravityStep(T); }, tetSpeed(T.level));
+  sfx.click();
+}
+function tetSpawn(T){
+  T.cur = { type:T.nextType, matrix:TETRIS_SHAPES[T.nextType].map(r => r.slice()), x:Math.floor((10 - TETRIS_SHAPES[T.nextType][0].length)/2), y:0 };
+  T.nextType = tetPick();
+  if(!tetCanPlace(T, T.cur.matrix, T.cur.x, T.cur.y)){ tetGameOver(T); return; }
+  drawTetris(T);
+}
+function tetCanPlace(T, m, x, y){
+  for(let yy=0;yy<m.length;yy++) for(let xx=0;xx<m[yy].length;xx++){
+    if(!m[yy][xx]) continue;
+    const nx = x + xx, ny = y + yy;
+    if(nx < 0 || nx >= T.cols || ny >= T.rows) return false;
+    if(ny >= 0 && T.board[ny][nx]) return false;
+  }
+  return true;
+}
+function tetMove(T, dx){
+  if(!T.cur) return;
+  if(tetCanPlace(T, T.cur.matrix, T.cur.x + dx, T.cur.y)){ T.cur.x += dx; drawTetris(T); }
+}
+function tetRotate(T){
+  if(!T.cur) return;
+  const m = tetRotateMatrix(T.cur.matrix);
+  if(tetCanPlace(T, m, T.cur.x, T.cur.y)){ T.cur.matrix = m; drawTetris(T); }
+}
+function tetSoftDrop(T){
+  if(!T.cur) return;
+  if(tetCanPlace(T, T.cur.matrix, T.cur.x, T.cur.y + 1)){ T.cur.y++; drawTetris(T); }
+  else tetLock(T);
+}
+function tetHardDrop(T){
+  if(!T.cur) return;
+  while(tetCanPlace(T, T.cur.matrix, T.cur.x, T.cur.y + 1)) T.cur.y++;
+  tetLock(T);
+}
+function tetGravityStep(T){
+  if(tetCanPlace(T, T.cur.matrix, T.cur.x, T.cur.y + 1)){ T.cur.y++; drawTetris(T); }
+  else tetLock(T);
+}
+function tetLock(T){
+  const c = T.cur; if(!c) return;
+  for(let yy=0;yy<c.matrix.length;yy++) for(let xx=0;xx<c.matrix[yy].length;xx++){
+    if(!c.matrix[yy][xx]) continue;
+    const ny = c.y + yy;
+    if(ny < 0){ tetGameOver(T); return; }
+    T.board[ny][c.x + xx] = c.type;
+  }
+  let cleared = 0;
+  for(let y=T.rows-1;y>=0;y--){
+    if(T.board[y].every(v => v !== 0)){
+      T.board.splice(y, 1);
+      T.board.unshift(Array(T.cols).fill(0));
+      cleared++; y++;
+    }
+  }
+  if(cleared){
+    T.lines += cleared;
+    const pts = [0,100,300,500,800];
+    T.score += (pts[cleared] || 800) * T.level;
+    T.level = 1 + Math.floor(T.lines / 10);
+    sfx.win();
+    updateTetrisHud(T);
+  }
+  if(T.score > T.best){ T.best = T.score; store.set('tetris.best', T.best); }
+  updateTetrisHud(T);
+  tetSpawn(T);
+  clearInterval(T.gravity);
+  T.gravity = setInterval(() => { if(!T.over && !T.paused) tetGravityStep(T); }, tetSpeed(T.level));
+}
+function tetGameOver(T){
+  T.over = true;
+  clearInterval(T.gravity);
+  updateTetrisHud(T);
+  sfx.lose();
+  stageOverlay(T.mount, '游戏结束', '得分 ' + T.score + ' · 消除 ' + T.lines + ' 行', '再来一局', startTetris);
+}
+function tetPause(T){
+  if(!T.over) T.paused = !T.paused;
+}
+function updateTetrisHud(T){
+  $('#tetScore').textContent = T.score;
+  $('#tetLines').textContent = T.lines;
+  $('#tetLv').textContent = T.level;
+  $('#tetBest').textContent = T.best;
+}
+function drawTetris(T){
+  const { ctx, cv, cell } = T;
+  ctx.fillStyle = '#101120';
+  ctx.fillRect(0, 0, cv.width, cv.height);
+  for(let y=0;y<T.rows;y++) for(let x=0;x<T.cols;x++){
+    if(T.board[y][x]){ ctx.fillStyle = TETRIS_COLORS[T.board[y][x]]; ctx.fillRect(x*cell+1, y*cell+1, cell-2, cell-2); }
+  }
+  if(T.cur) for(let yy=0;yy<T.cur.matrix.length;yy++) for(let xx=0;xx<T.cur.matrix[yy].length;xx++){
+    if(!T.cur.matrix[yy][xx]) continue;
+    const px = T.cur.x + xx, py = T.cur.y + yy;
+    if(py >= 0){ ctx.fillStyle = TETRIS_COLORS[T.cur.type]; ctx.fillRect(px*cell+1, py*cell+1, cell-2, cell-2); }
+  }
+  ctx.strokeStyle = 'rgba(255,255,255,.05)';
+  ctx.lineWidth = 1;
+  for(let i=1;i<T.cols;i++){ ctx.beginPath(); ctx.moveTo(i*cell+.5, 0); ctx.lineTo(i*cell+.5, cv.height); ctx.stroke(); }
+  for(let i=1;i<T.rows;i++){ ctx.beginPath(); ctx.moveTo(0, i*cell+.5); ctx.lineTo(cv.width, i*cell+.5); ctx.stroke(); }
+}
+
+/* ============ 游戏 11-20 ============ */
+
+/* 五子棋（对 AI） */
+let gomoku = null;
+GAMES.gomoku = {
+  title:'五子棋',
+  mount(mountEl, statsEl){
+    const G = gomoku = { N:15, cell:26, board:null, turn:'b', over:false, w:0, l:0 };
+    statsEl.innerHTML = '<div class="stat">你<b id="gomW">0</b></div><div class="stat">AI<b id="gomL">0</b></div><div class="stat" id="gomS">你的回合</div><button class="px-btn yellow" id="gomNew" type="button">新一局</button>';
+    const { cv, ctx } = makeCanvas(G.N*G.cell, G.N*G.cell);
+    cv.className = 'pix-canvas'; mountEl.appendChild(cv);
+    G.cv=cv; G.ctx=ctx;
+    startGomoku(G);
+    cv.addEventListener('click', e=>{
+      if(G.over||G.turn!=='b') return;
+      const r=cv.getBoundingClientRect();
+      const x=Math.round((e.clientX-r.left)/r.width*G.N);
+      const y=Math.round((e.clientY-r.top)/r.height*G.N);
+      if(x<0||y<0||x>=G.N||y>=G.N||G.board[y][x]) return;
+      placeGomoku(G,x,y,'b');
+    });
+    $('#gomNew').addEventListener('click', ()=>startGomoku(G));
+  },
+  destroy(){ gomoku=null; }
+};
+function startGomoku(G){
+  G.board=Array.from({length:G.N},()=>Array(G.N).fill(null));
+  G.turn='b'; G.over=false; G.last=null;
+  $('#gomS').textContent='你的回合';
+  drawGomoku(G); sfx.click();
+}
+function placeGomoku(G,x,y,who){
+  G.board[y][x]=who; G.last={x,y};
+  drawGomoku(G);
+  if(checkGomoku(G,x,y,who)){
+    G.over=true;
+    if(who==='b'){ G.w++; $('#gomW').textContent=G.w; $('#gomS').textContent='你赢了！'; sfx.win(); }
+    else { G.l++; $('#gomL').textContent=G.l; $('#gomS').textContent='AI 赢了。'; sfx.lose(); }
+    return;
+  }
+  if(G.board.every(row=>row.every(v=>v))){ G.over=true; $('#gomS').textContent='平局。'; return; }
+  if(who==='b'){ G.turn='w'; $('#gomS').textContent='AI 思考中…'; setTimeout(()=>gomokuAIMove(G), 300); }
+  else { G.turn='b'; $('#gomS').textContent='你的回合'; }
+}
+function checkGomoku(G,x,y,who){
+  const dirs=[[1,0],[0,1],[1,1],[1,-1]];
+  for(const [dx,dy] of dirs){
+    let c=1;
+    for(let s=-1;s<=1;s+=2){
+      let nx=x+dx*s, ny=y+dy*s;
+      while(nx>=0&&ny>=0&&nx<G.N&&ny<G.N&&G.board[ny][nx]===who){ c++; nx+=dx*s; ny+=dy*s; }
+    }
+    if(c>=5) return true;
+  }
+  return false;
+}
+function gomokuScore(G,x,y,who){
+  let total=0;
+  const dirs=[[1,0],[0,1],[1,1],[1,-1]];
+  for(const [dx,dy] of dirs){
+    let count=1, open=0;
+    let nx=x+dx, ny=y+dy;
+    while(nx>=0&&ny>=0&&nx<G.N&&ny<G.N&&G.board[ny][nx]===who){ count++; nx+=dx; ny+=dy; }
+    if(nx>=0&&ny>=0&&nx<G.N&&ny<G.N&&!G.board[ny][nx]) open++;
+    nx=x-dx; ny=y-dy;
+    while(nx>=0&&ny>=0&&nx<G.N&&ny<G.N&&G.board[ny][nx]===who){ count++; nx-=dx; ny-=dy; }
+    if(nx>=0&&ny>=0&&nx<G.N&&ny<G.N&&!G.board[ny][nx]) open++;
+    if(count>=5) return 100000;
+    total += Math.pow(count,3) * (open>0?2:1);
+  }
+  return total;
+}
+function gomokuAIMove(G){
+  if(G.over) return;
+  let best=null, bestScore=-1;
+  for(let y=0;y<G.N;y++)for(let x=0;x<G.N;x++){
+    if(G.board[y][x]) continue;
+    let near=false;
+    for(let dy=-2;dy<=2&&!near;dy++)for(let dx=-2;dx<=2;dx++){
+      const ny=y+dy,nx=x+dx;
+      if(ny>=0&&ny<G.N&&nx>=0&&nx<G.N&&G.board[ny][nx]) near=true;
+    }
+    if(!near) continue;
+    const s = gomokuScore(G,x,y,'w')*1.15 + gomokuScore(G,x,y,'b');
+    if(s>bestScore){ bestScore=s; best={x,y}; }
+  }
+  if(!best){
+    for(let y=0;y<G.N&&!best;y++)for(let x=0;x<G.N;x++){ if(!G.board[y][x]){ best={x,y}; break; } }
+  }
+  if(best) placeGomoku(G,best.x,best.y,'w');
+}
+function drawGomoku(G){
+  const {ctx,cv}=G;
+  ctx.fillStyle='#d9a25f'; ctx.fillRect(0,0,cv.width,cv.height);
+  ctx.strokeStyle='#a86a2f'; ctx.lineWidth=1;
+  for(let i=0;i<G.N;i++){ ctx.beginPath(); ctx.moveTo(G.cell/2, i*G.cell+G.cell/2); ctx.lineTo(cv.width-G.cell/2, i*G.cell+G.cell/2); ctx.stroke(); ctx.beginPath(); ctx.moveTo(i*G.cell+G.cell/2, G.cell/2); ctx.lineTo(i*G.cell+G.cell/2, cv.height-G.cell/2); ctx.stroke(); }
+  ctx.fillStyle='#a86a2f';
+  [[3,3],[7,7],[11,11],[7,3],[3,7],[11,7],[7,11],[3,11],[11,3]].forEach(([sx,sy])=>{
+    const cx=sx*G.cell+G.cell/2, cy=sy*G.cell+G.cell/2;
+    ctx.fillRect(cx-2,cy-2,4,4);
+  });
+  for(let y=0;y<G.N;y++)for(let x=0;x<G.N;x++){
+    if(!G.board[y][x]) continue;
+    const cx=x*G.cell+G.cell/2, cy=y*G.cell+G.cell/2, r=G.cell*0.38;
+    ctx.fillStyle = G.board[y][x]==='b' ? '#0b0c18' : '#eef0ff';
+    ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle='#5b5d92'; ctx.stroke();
+  }
+  if(G.last){
+    ctx.strokeStyle='#ff3d5a'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.arc(G.last.x*G.cell+G.cell/2, G.last.y*G.cell+G.cell/2, G.cell*0.2, 0, Math.PI*2); ctx.stroke();
+  }
+}
+
+/* 猜数字 */
+let guess = null;
+GAMES.guess = {
+  title:'猜数字',
+  mount(mountEl, statsEl){
+    const G = guess = { target:0, tries:0, over:false, best:store.get('guess.best', null) };
+    statsEl.innerHTML = '<div class="stat">已猜<b id="guT">0</b></div><div class="stat">最佳<b id="guB">'+(G.best==null?'--':G.best)+'</b></div><button class="px-btn yellow" id="guNew" type="button">新一局</button>';
+    const box=document.createElement('div'); box.className='guess-box';
+    const msg=document.createElement('div'); msg.className='guess-msg'; msg.id='guMsg';
+    box.appendChild(msg);
+    const row=document.createElement('div'); row.className='guess-row';
+    const inp=document.createElement('input'); inp.className='guess-input'; inp.type='number'; inp.min=1; inp.max=100;
+    const btn=document.createElement('button'); btn.className='px-btn green'; btn.textContent='猜';
+    row.appendChild(inp); row.appendChild(btn);
+    box.appendChild(row);
+    mountEl.appendChild(box);
+    const log=document.createElement('div'); log.className='guess-log';
+    mountEl.appendChild(log);
+    G.inp=inp; G.log=log; G.msg=msg;
+    newGuess(G);
+    const doGuess=()=>guessSubmit(G);
+    btn.addEventListener('click', doGuess);
+    inp.addEventListener('keydown', e=>{ if(e.key==='Enter') doGuess(); });
+    $('#guNew').addEventListener('click', ()=>newGuess(G));
+  },
+  destroy(){ guess=null; }
+};
+function newGuess(G){
+  G.target=1+Math.floor(Math.random()*100);
+  G.tries=0; G.over=false; G.log.innerHTML='';
+  G.msg.textContent='我心里想了一个 1~100 的数字，来猜猜看。';
+  G.inp.value=''; G.inp.focus();
+  $('#guT').textContent='0';
+  sfx.click();
+}
+function guessSubmit(G){
+  if(G.over) return;
+  const v=parseInt(G.inp.value,10);
+  if(isNaN(v)||v<1||v>100){ G.msg.textContent='请输入 1~100 之间的整数。'; return; }
+  G.tries++;
+  $('#guT').textContent=G.tries;
+  let res;
+  if(v===G.target){
+    G.over=true;
+    res='BINGO！只用了 '+G.tries+' 次。';
+    if(G.best==null||G.tries<G.best){ G.best=G.tries; store.set('guess.best',G.best); $('#guB').textContent=G.best; }
+    sfx.win();
+  } else if(v<G.target){ res='小了，再大一点。'; sfx.pop(); }
+  else { res='大了，再小一点。'; sfx.pop(); }
+  G.msg.textContent=res;
+  const row=document.createElement('div');
+  row.textContent='第 '+G.tries+' 次：'+v+' → '+(v<G.target?'小了':(v>G.target?'大了':'正确'));
+  G.log.prepend(row);
+  G.inp.select();
+}
+
+/* 井字棋（对 AI） */
+let ttt = null;
+GAMES.tictactoe = {
+  title:'井字棋',
+  mount(mountEl, statsEl){
+    const T = ttt = { board:Array(9).fill(''), turn:'X', over:false, w:0, l:0, d:0 };
+    statsEl.innerHTML = '<div class="stat">你<b id="ttW">0</b></div><div class="stat">AI<b id="ttL">0</b></div><div class="stat">平<b id="ttD">0</b></div><div class="stat" id="ttS">你的回合</div><button class="px-btn yellow" id="ttNew" type="button">新一局</button>';
+    const grid=document.createElement('div'); grid.className='ttt-grid';
+    mountEl.appendChild(grid);
+    T.grid=grid;
+    startTtt(T);
+    grid.addEventListener('click', e=>{
+      const c=e.target.closest('.ttt-cell');
+      if(!c||T.over) return;
+      const i=+c.dataset.i;
+      if(T.board[i]||T.turn!=='X') return;
+      tttPlace(T,i,'X');
+    });
+    $('#ttNew').addEventListener('click', ()=>startTtt(T));
+  },
+  destroy(){ ttt=null; }
+};
+function startTtt(T){
+  T.board=Array(9).fill(''); T.turn='X'; T.over=false;
+  $('#ttS').textContent='你的回合';
+  renderTtt(T); sfx.click();
+}
+function renderTtt(T){
+  T.grid.innerHTML='';
+  T.board.forEach((v,i)=>{
+    const d=document.createElement('button');
+    d.className='ttt-cell'; d.dataset.i=i; d.textContent=v;
+    T.grid.appendChild(d);
+  });
+}
+function tttPlace(T,i,p){
+  T.board[i]=p; renderTtt(T);
+  const w=tttWinner(T.board);
+  if(w){
+    T.over=true;
+    if(w==='X'){ T.w++; $('#ttW').textContent=T.w; $('#ttS').textContent='你赢了！'; sfx.win(); }
+    else { T.l++; $('#ttL').textContent=T.l; $('#ttS').textContent='AI 赢了。'; sfx.lose(); }
+    return;
+  }
+  if(T.board.every(v=>v)){ T.over=true; T.d++; $('#ttD').textContent=T.d; $('#ttS').textContent='平局。'; return; }
+  if(p==='X'){ $('#ttS').textContent='AI 思考中…'; setTimeout(()=>tttAIMove(T), 300); }
+  else $('#ttS').textContent='你的回合';
+}
+function tttWinner(b){
+  const L=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+  for(const [a,c,e] of L){ if(b[a]&&b[a]===b[c]&&b[a]===b[e]) return b[a]; }
+  return null;
+}
+function tttAIMove(T){
+  if(T.over) return;
+  const b=T.board;
+  for(let i=0;i<9;i++){ if(!b[i]){ b[i]='O'; if(tttWinner(b)==='O'){ b[i]=''; tttPlace(T,i,'O'); return; } b[i]=''; } }
+  for(let i=0;i<9;i++){ if(!b[i]){ b[i]='X'; if(tttWinner(b)==='X'){ b[i]=''; tttPlace(T,i,'O'); return; } b[i]=''; } }
+  if(!b[4]){ tttPlace(T,4,'O'); return; }
+  const corners=[0,2,6,8].filter(i=>!b[i]);
+  if(corners.length){ tttPlace(T,corners[Math.floor(Math.random()*corners.length)],'O'); return; }
+  const edges=[1,3,5,7].filter(i=>!b[i]);
+  if(edges.length){ tttPlace(T,edges[Math.floor(Math.random()*edges.length)],'O'); }
+}
+
+/* 接苹果 */
+let catchg = null;
+GAMES.catchg = {
+  title:'接苹果',
+  mount(mountEl, statsEl){
+    const C = catchg = { over:true, raf:0, px:null, best:store.get('catchg.best', 0) };
+    statsEl.innerHTML = '<div class="stat">分数<b id="caS">0</b></div><div class="stat">最高<b id="caB">'+C.best+'</b></div><div class="stat">生命<b id="caL">3</b></div><button class="px-btn green" id="caStart" type="button">开始</button>';
+    const { cv, ctx }=makeCanvas(480,360);
+    cv.className='pix-canvas'; mountEl.appendChild(cv);
+    C.cv=cv; C.ctx=ctx;
+    stageOverlay(mountEl,'接苹果','移动鼠标接住掉落的苹果，别让它们掉到地上（共 3 次机会）。','开始', startCatch);
+    $('#caStart').addEventListener('click', ()=>{ if(C.over) startCatch(); });
+    cv.addEventListener('mousemove', e=>{ const r=cv.getBoundingClientRect(); C.px=(e.clientX-r.left)/r.width*480; });
+    C.loop=()=>{ if(!C.over) stepCatch(C); C.raf=requestAnimationFrame(C.loop); };
+    C.raf=requestAnimationFrame(C.loop);
+  },
+  destroy(){ if(catchg){ cancelAnimationFrame(catchg.raf); catchg=null; } }
+};
+function startCatch(){
+  const C=catchg; if(!C) return;
+  C.over=false; C.score=0; C.lives=3; C.items=[];
+  C.paddle={x:210,w:90,y:344,h:12}; C.px=240;
+  $$('#gameMount .overlay').forEach(o=>o.remove());
+  updateCatchHud(C); sfx.click();
+}
+function stepCatch(C){
+  const {ctx,cv}=C;
+  C.paddle.x=Math.max(0,Math.min(480-C.paddle.w,(C.px==null?C.paddle.x:C.px-C.paddle.w/2)));
+  C.spawn=(C.spawn||0)+1;
+  if(C.spawn%Math.max(18,40-C.score)===0){ C.items.push({x:10+Math.random()*460,y:8,vy:1.6+Math.random()*0.8,size:11}); }
+  for(let i=C.items.length-1;i>=0;i--){
+    const a=C.items[i];
+    a.y+=a.vy;
+    if(a.y+a.size>=C.paddle.y&&a.y<=C.paddle.y+12&&a.x>=C.paddle.x-a.size&&a.x<=C.paddle.x+C.paddle.w+a.size){
+      C.score++; C.items.splice(i,1); sfx.point(); updateCatchHud(C); continue;
+    }
+    if(a.y>cv.height){ C.items.splice(i,1); C.lives--; sfx.bonk(); updateCatchHud(C);
+      if(C.lives<=0){ endCatch(C); return; } }
+  }
+  drawCatch(C);
+}
+function endCatch(C){
+  C.over=true;
+  if(C.score>C.best){ C.best=C.score; store.set('catchg.best',C.best); $('#caB').textContent=C.best; sfx.win(); }
+  $$('#gameMount .overlay').forEach(o=>o.remove());
+  stageOverlay(C.cv.parentElement,'游戏结束','接住 '+C.score+' 个苹果 · 最高 '+C.best,'再来一局', startCatch);
+}
+function drawCatch(C){
+  const {ctx,cv}=C;
+  ctx.fillStyle='#101120'; ctx.fillRect(0,0,cv.width,cv.height);
+  ctx.fillStyle='#9aa0d8'; ctx.fillRect(C.paddle.x,C.paddle.y,C.paddle.w,12);
+  for(const a of C.items){
+    ctx.fillStyle='#ff3d5a'; ctx.fillRect(a.x-a.size/2,a.y-a.size/2,a.size,a.size);
+    ctx.fillStyle='#3ddc84'; ctx.fillRect(a.x-2,a.y-a.size/2+2,3,3);
+  }
+}
+function updateCatchHud(C){ $('#caS').textContent=C.score; $('#caL').textContent=C.lives; }
+
+/* 数字华容道 */
+let slide = null;
+GAMES.slide = {
+  title:'数字华容道',
+  mount(mountEl, statsEl){
+    const S = slide = { size:4, board:[], moves:0, over:false, best:store.get('slide.best', null) };
+    statsEl.innerHTML = '<div class="stat">步数<b id="slM">0</b></div><div class="stat">最佳<b id="slB">'+(S.best==null?'--':S.best)+'</b></div><button class="px-btn yellow" id="slNew" type="button">洗牌</button>';
+    const grid=document.createElement('div'); grid.className='slide-grid';
+    mountEl.appendChild(grid);
+    S.grid=grid;
+    newSlide(S);
+    grid.addEventListener('click', e=>{
+      const c=e.target.closest('.slide-tile');
+      if(!c||S.over) return;
+      slideMove(S,+c.dataset.i);
+    });
+    $('#slNew').addEventListener('click', ()=>newSlide(S));
+  },
+  destroy(){ slide=null; }
+};
+function newSlide(S){
+  S.moves=0; S.over=false;
+  S.board=Array.from({length:S.size*S.size},(_,i)=>i);
+  const blankIdx=S.size*S.size-1;
+  for(let i=0;i<500;i++){
+    const blank=S.board.indexOf(blankIdx);
+    const bx=blank%S.size, by=Math.floor(blank/S.size);
+    const moves=[];
+    if(bx>0)moves.push(blank-1);
+    if(bx<S.size-1)moves.push(blank+1);
+    if(by>0)moves.push(blank-S.size);
+    if(by<S.size-1)moves.push(blank+S.size);
+    const t=moves[Math.floor(Math.random()*moves.length)];
+    [S.board[blank],S.board[t]]=[S.board[t],S.board[blank]];
+  }
+  renderSlide(S); $('#slM').textContent='0'; sfx.click();
+}
+function renderSlide(S){
+  S.grid.innerHTML='';
+  S.board.forEach((v,i)=>{
+    const d=document.createElement('button');
+    d.className='slide-tile'+(v===S.size*S.size-1?' blank':'');
+    d.dataset.i=i; d.textContent = v===S.size*S.size-1?'':v;
+    S.grid.appendChild(d);
+  });
+}
+function slideMove(S,i){
+  if(S.over) return;
+  const blank=S.board.indexOf(S.size*S.size-1);
+  const bx=blank%S.size, by=Math.floor(blank/S.size);
+  const ix=i%S.size, iy=Math.floor(i/S.size);
+  if(Math.abs(bx-ix)+Math.abs(by-iy)!==1) return;
+  [S.board[blank],S.board[i]]=[S.board[i],S.board[blank]];
+  S.moves++; $('#slM').textContent=S.moves; sfx.click();
+  renderSlide(S);
+  if(S.board.every((v,idx)=>v===idx)){
+    S.over=true;
+    if(S.best==null||S.moves<S.best){ S.best=S.moves; store.set('slide.best',S.best); $('#slB').textContent=S.best; }
+    sfx.win();
+  }
+}
+
+/* 掷骰子 */
+let dice = null;
+GAMES.dice = {
+  title:'掷骰子',
+  mount(mountEl, statsEl){
+    const D = dice = { rolls:0, sum:0, six:0 };
+    statsEl.innerHTML = '<div class="stat">次数<b id="diN">0</b></div><div class="stat">累计<b id="diSum">0</b></div><div class="stat">出 6<b id="diSix">0</b></div>';
+    const box=document.createElement('div'); box.className='dice-box';
+    const d1=document.createElement('div'); d1.className='dice';
+    const d2=document.createElement('div'); d2.className='dice';
+    box.appendChild(d1); box.appendChild(d2);
+    mountEl.appendChild(box);
+    const total=document.createElement('div'); total.className='dice-total'; total.textContent='总和：0';
+    mountEl.appendChild(total);
+    const btn=document.createElement('button'); btn.className='px-btn big green'; btn.textContent='掷骰子';
+    mountEl.appendChild(btn);
+    btn.addEventListener('click', ()=>{
+      const a=1+Math.floor(Math.random()*6), b=1+Math.floor(Math.random()*6);
+      D.rolls++; D.sum+=a+b; if(a===6||b===6)D.six++;
+      renderDice(d1,a); renderDice(d2,b);
+      $('#diN').textContent=D.rolls; $('#diSum').textContent=D.sum; $('#diSix').textContent=D.six;
+      total.textContent='总和：'+(a+b);
+      sfx.pop();
+    });
+  },
+  destroy(){ dice=null; }
+};
+function renderDice(el,val){
+  const dots={1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]};
+  el.innerHTML='';
+  for(let i=0;i<9;i++){ const c=document.createElement('div'); c.className='dice-dot'+(dots[val].includes(i)?' on':''); el.appendChild(c); }
+}
+
+/* 幸运转盘 */
+let wheel = null;
+GAMES.wheel = {
+  title:'幸运转盘',
+  mount(mountEl, statsEl){
+    const W = wheel = { spin:0, count:0 };
+    statsEl.innerHTML = '<div class="stat">转了几次<b id="whC">0</b></div>';
+    const box=document.createElement('div'); box.className='wheel-box';
+    const wd=document.createElement('div'); wd.className='wheel'; wd.id='whWheel';
+    box.appendChild(wd);
+    const ptr=document.createElement('div'); ptr.className='wheel-pointer';
+    box.appendChild(ptr);
+    mountEl.appendChild(box);
+    const result=document.createElement('div'); result.className='wheel-result'; result.textContent='点「开转」试试手气';
+    mountEl.appendChild(result);
+    const btn=document.createElement('button'); btn.className='px-btn big red'; btn.textContent='开转';
+    mountEl.appendChild(btn);
+    W.result=result;
+    const opts=['大吉','中吉','小吉','中吉','大凶','小凶','平','再转一次'];
+    const cols=['#ff3d5a','#ffc53d','#3ddc84','#4da6ff','#b18cff','#ff8ac2','#ff9f43','#5eead4'];
+    let grad='conic-gradient(';
+    for(let i=0;i<8;i++){ grad += cols[i]+' '+(i*45)+'deg '+(i+1)*45+'deg'+(i<7?',':''); }
+    grad += ')';
+    wd.style.background=grad;
+    for(let i=0;i<8;i++){
+      const s=document.createElement('div'); s.className='wheel-seg'; s.textContent=opts[i];
+      const ang=i*45+22.5;
+      s.style.transform='translate(-50%,-50%) rotate('+ang+'deg) translateY(-74px) rotate(-'+ang+'deg)';
+      wd.appendChild(s);
+    }
+    btn.addEventListener('click', ()=>{
+      W.spin += 5 + Math.floor(Math.random()*5);
+      const rot = 360*W.spin + Math.floor(Math.random()*360);
+      wd.style.transition = 'transform 3.2s cubic-bezier(0.12,0.7,0.2,1)';
+      wd.style.transform = 'rotate('+rot+'deg)';
+      W.count++; $('#whC').textContent=W.count; sfx.pop();
+      setTimeout(()=>{
+        const deg = ((rot%360)+360)%360;
+        const idx = Math.floor((360-deg)/45)%8;
+        const res = opts[idx];
+        W.result.textContent = '这次是：'+res+'！';
+        if(res==='大吉') sfx.win(); else if(res==='大凶') sfx.lose(); else sfx.point();
+      }, 3300);
+    });
+  },
+  destroy(){ wheel=null; }
+};
+
+/* 光速反应 */
+let reflex = null;
+GAMES.reflex = {
+  title:'光速反应',
+  mount(mountEl, statsEl){
+    const R = reflex = { state:'idle', startT:0, count:0, best:store.get('reflex.best', null) };
+    statsEl.innerHTML = '<div class="stat">最佳<b id="rfB">'+(R.best==null?'--':R.best+'ms')+'</b></div><div class="stat">次数<b id="rfN">0</b></div>';
+    const pad=document.createElement('div'); pad.className='reflex-pad'; pad.textContent='点击开始';
+    mountEl.appendChild(pad);
+    R.pad=pad;
+    pad.addEventListener('click', ()=>reflexClick(R));
+  },
+  destroy(){ if(reflex&&reflex.timer) clearTimeout(reflex.timer); reflex=null; }
+};
+function reflexClick(R){
+  if(R.state==='idle'||R.state==='done'){
+    R.state='wait';
+    R.pad.classList.remove('green','red'); R.pad.classList.add('wait');
+    R.pad.textContent='等它变绿…';
+    R.timer=setTimeout(()=>{ R.state='go'; R.startT=performance.now(); R.pad.classList.remove('wait'); R.pad.classList.add('green'); R.pad.textContent='快按！'; sfx.point(); }, 1200+Math.random()*2500);
+  } else if(R.state==='go'){
+    clearTimeout(R.timer);
+    const ms=Math.round(performance.now()-R.startT);
+    R.count++; $('#rfN').textContent=R.count;
+    if(R.best==null||ms<R.best){ R.best=ms; store.set('reflex.best',R.best); $('#rfB').textContent=R.best+'ms'; sfx.win(); }
+    R.state='done';
+    R.pad.classList.remove('green','wait');
+    R.pad.textContent='反应时间 '+ms+' ms — 点击再来';
+  } else if(R.state==='wait'){
+    clearTimeout(R.timer); R.state='done';
+    R.pad.classList.remove('wait'); R.pad.classList.add('red');
+    R.pad.textContent='太早啦！等变绿再按 — 点击重来';
+    sfx.bonk();
+  }
+}
+
+/* 记忆数字 */
+let digit = null;
+GAMES.digit = {
+  title:'记忆数字',
+  mount(mountEl, statsEl){
+    const D = digit = { len:3, round:1, shown:false, target:'', best:store.get('digit.best', 0) };
+    statsEl.innerHTML = '<div class="stat">回合<b id="dgR">1</b></div><div class="stat">最佳<b id="dgB">'+D.best+'</b></div><button class="px-btn green" id="dgStart" type="button">开始</button>';
+    const num=document.createElement('div'); num.className='digit-num'; num.textContent='·';
+    mountEl.appendChild(num);
+    const inp=document.createElement('input'); inp.className='guess-input'; inp.type='text'; inp.inputMode='numeric'; inp.placeholder='输入看到的数字';
+    mountEl.appendChild(inp);
+    const msg=document.createElement('div'); msg.className='digit-msg'; msg.textContent='点「开始」，记住数字并输入。';
+    mountEl.appendChild(msg);
+    const cbtn=document.createElement('button'); cbtn.className='px-btn yellow'; cbtn.textContent='确认';
+    mountEl.appendChild(cbtn);
+    D.num=num; D.inp=inp; D.msg=msg;
+    const check=()=>digitCheck(D);
+    $('#dgStart').addEventListener('click', ()=>{ if(!D.shown) startDigit(D); });
+    inp.addEventListener('keydown', e=>{ if(e.key==='Enter') check(); });
+    cbtn.addEventListener('click', check);
+  },
+  destroy(){ if(digit&&digit.timer) clearTimeout(digit.timer); digit=null; }
+};
+function startDigit(D){
+  D.target=String(Math.floor(Math.random()*Math.pow(10,D.len))).padStart(D.len,'0');
+  D.num.textContent=D.target; D.msg.textContent='记住它…'; D.shown=true; D.inp.value='';
+  sfx.pop();
+  clearTimeout(D.timer);
+  D.timer=setTimeout(()=>{ D.num.textContent='？'; D.inp.focus(); D.msg.textContent='现在输入你记住的数字：'; }, 1400+D.len*300);
+}
+function digitCheck(D){
+  if(!D.shown) return;
+  if(D.inp.value.trim()===D.target){
+    D.round++;
+    if(D.round-1>D.best){ D.best=D.round-1; store.set('digit.best',D.best); $('#dgB').textContent=D.best; }
+    $('#dgR').textContent=D.round;
+    D.len=Math.min(9,D.len+1);
+    startDigit(D); sfx.point();
+  } else {
+    D.msg.textContent='记错啦！正确是 '+D.target+'。回合 '+D.round+' 结束，点「开始」再来。';
+    D.shown=false; D.num.textContent='·'; sfx.lose();
+  }
+}
+
+/* 斯特鲁普 */
+const STROOP_COLORS={'红':'#ff3d5a','绿':'#3ddc84','蓝':'#4da6ff','黄':'#ffc53d','紫':'#b18cff','青':'#5eead4'};
+let stroop = null;
+GAMES.stroop = {
+  title:'斯特鲁普',
+  mount(mountEl, statsEl){
+    const S = stroop = { score:0, best:store.get('stroop.best', 0), current:'' };
+    statsEl.innerHTML = '<div class="stat">得分<b id="stS">0</b></div><div class="stat">最佳<b id="stB">'+S.best+'</b></div>';
+    const card=document.createElement('div'); card.className='stroop-card';
+    const word=document.createElement('div'); word.className='stroop-word';
+    card.appendChild(word);
+    mountEl.appendChild(card);
+    const msg=document.createElement('div'); msg.className='stroop-msg'; msg.textContent='选出字的颜色（不是字的意思）。';
+    mountEl.appendChild(msg);
+    const btns=document.createElement('div'); btns.className='rps-btns';
+    Object.keys(STROOP_COLORS).forEach(name=>{
+      const b=document.createElement('button'); b.className='px-btn'; b.style.background=STROOP_COLORS[name]; b.textContent=name;
+      b.addEventListener('click', ()=>stroopAnswer(S,name));
+      btns.appendChild(b);
+    });
+    mountEl.appendChild(btns);
+    S.word=word;
+    stroopNext(S);
+  },
+  destroy(){ stroop=null; }
+};
+function stroopNext(S){
+  const names=Object.keys(STROOP_COLORS);
+  const wordName=names[Math.floor(Math.random()*names.length)];
+  let colorName;
+  do{ colorName=names[Math.floor(Math.random()*names.length)]; }while(colorName===wordName);
+  S.current=colorName;
+  S.word.textContent=wordName;
+  S.word.style.color=STROOP_COLORS[colorName];
+}
+function stroopAnswer(S,chosen){
+  if(chosen===S.current){ S.score++; if(S.score>S.best){ S.best=S.score; store.set('stroop.best',S.best); $('#stB').textContent=S.best; } sfx.point(); }
+  else { S.score=Math.max(0,S.score-1); sfx.bonk(); }
+  $('#stS').textContent=S.score;
+  stroopNext(S);
+}
+
+const TOYS = {};
+
+/* ---------------- 捏泡泡 ---------------- */
+let bubble = null;
+TOYS.bubble = {
+  title: '捏泡泡',
+  mount(mountEl, statsEl){
+    mountEl.classList.add('stage');
+    const B = bubble = { total:70, popped:0, grid:null };
+    statsEl.innerHTML =
+      '<div class="stat">已捏爆<b id="bbCount">0 / 70</b></div>' +
+      '<button class="px-btn yellow" id="bbAll" type="button">一键全捏</button>' +
+      '<button class="px-btn ghost" id="bbReset" type="button">重新铺一张</button>';
+    const grid = document.createElement('div');
+    grid.className = 'bubble-grid';
+    mountEl.appendChild(grid);
+    const cnt = document.createElement('div');
+    cnt.className = 'bubble-count';
+    cnt.textContent = '每捏一下，烦恼少一个。';
+    mountEl.appendChild(cnt);
+    B.grid = grid; B.cnt = cnt;
+    for(let i=0;i<B.total;i++){
+      const d = document.createElement('div');
+      d.className = 'bubble';
+      d.addEventListener('click', () => popBubble(B, d));
+      grid.appendChild(d);
+    }
+    $('#bbAll').addEventListener('click', () => popAllBubble(B));
+    $('#bbReset').addEventListener('click', () => resetBubble(B));
+  },
+  destroy(){ bubble = null; }
+};
+function updateBubbleHud(B){
+  $('#bbCount').textContent = B.popped + ' / ' + B.total;
+  B.cnt.textContent = B.popped >= B.total ? '全部捏完！爽不爽？再铺一张继续。' : ('已捏爆 ' + B.popped + ' / ' + B.total);
+}
+function popBubble(B, d){
+  if(d.classList.contains('popped')) return;
+  d.classList.add('popped');
+  B.popped++;
+  sfx.pop();
+  updateBubbleHud(B);
+  if(B.popped === B.total) sfx.win();
+}
+function popAllBubble(B){
+  B.grid.querySelectorAll('.bubble:not(.popped)').forEach(d => d.classList.add('popped'));
+  B.popped = B.total;
+  sfx.win();
+  updateBubbleHud(B);
+}
+function resetBubble(B){
+  B.popped = 0;
+  B.grid.querySelectorAll('.bubble').forEach(d => d.classList.remove('popped'));
+  updateBubbleHud(B);
+  sfx.click();
+}
+
+/* ---------------- 像素涂鸦 ---------------- */
+let doodle = null;
+TOYS.doodle = {
+  title: '像素涂鸦',
+  mount(mountEl, statsEl){
+    mountEl.classList.add('stage');
+    const D = doodle = {
+      size:24, scale:10, color:'#ff3d5a', drawing:false,
+      cv:null, ctx:null, pixels:null, mm:null, mu:null
+    };
+    statsEl.innerHTML =
+      '<button class="px-btn red" id="dlClear" type="button">清除</button>' +
+      '<button class="px-btn green" id="dlSave" type="button">保存 PNG</button>';
+    const wrap = document.createElement('div');
+    wrap.className = 'doodle-wrap';
+    const cw = document.createElement('div');
+    cw.className = 'doodle-canvas-wrap';
+    const cv = document.createElement('canvas');
+    cv.width = D.size * D.scale; cv.height = D.size * D.scale;
+    cv.className = 'pix-canvas';
+    cv.style.width = '100%'; cv.style.height = 'auto';
+    cw.appendChild(cv);
+    wrap.appendChild(cw);
+    const tools = document.createElement('div');
+    tools.className = 'doodle-tools';
+    const pal = document.createElement('div');
+    pal.className = 'palette';
+    const colors = ['#0b0c18','#eef0ff','#ff3d5a','#ffc53d','#3ddc84','#4da6ff','#b18cff','#ff8ac2','#8a5a33','#9aa0d8'];
+    const swatches = [];
+    colors.forEach((col, i) => {
+      const s = document.createElement('button');
+      s.className = 'pal-swatch' + (i === 0 ? ' sel' : '');
+      s.style.background = col;
+      s.dataset.col = col;
+      s.setAttribute('aria-label', '颜色 ' + (i+1));
+      s.addEventListener('click', () => {
+        D.color = col;
+        swatches.forEach(x => x.classList.toggle('sel', x === s));
+        sfx.click();
+      });
+      pal.appendChild(s);
+      swatches.push(s);
+    });
+    const eraser = document.createElement('button');
+    eraser.className = 'px-btn ghost';
+    eraser.textContent = '橡皮';
+    eraser.addEventListener('click', () => {
+      D.color = null;
+      swatches.forEach(x => x.classList.remove('sel'));
+      sfx.click();
+    });
+    tools.appendChild(pal);
+    tools.appendChild(eraser);
+    wrap.appendChild(tools);
+    mountEl.appendChild(wrap);
+    D.cv = cv; D.ctx = cv.getContext('2d');
+    D.pixels = Array.from({length:D.size}, () => Array(D.size).fill(null));
+    const toCell = e => {
+      const r = cv.getBoundingClientRect();
+      const x = Math.floor((e.clientX - r.left) / r.width * D.size);
+      const y = Math.floor((e.clientY - r.top) / r.height * D.size);
+      return {x, y};
+    };
+    cv.addEventListener('mousedown', e => { D.drawing = true; paintDoodle(D, toCell(e)); });
+    D.mm = e => { if(D.drawing) paintDoodle(D, toCell(e)); };
+    D.mu = () => { D.drawing = false; };
+    window.addEventListener('mousemove', D.mm);
+    window.addEventListener('mouseup', D.mu);
+    cv.addEventListener('touchstart', e => {
+      e.preventDefault();
+      D.drawing = true;
+      paintDoodle(D, toCell(e.touches[0]));
+    }, {passive:false});
+    cv.addEventListener('touchmove', e => {
+      e.preventDefault();
+      if(D.drawing) paintDoodle(D, toCell(e.touches[0]));
+    }, {passive:false});
+    cv.addEventListener('touchend', () => { D.drawing = false; });
+    renderDoodle(D);
+    $('#dlClear').addEventListener('click', () => clearDoodle(D));
+    $('#dlSave').addEventListener('click', () => saveDoodle(D));
+  },
+  destroy(){
+    if(doodle){
+      window.removeEventListener('mousemove', doodle.mm);
+      window.removeEventListener('mouseup', doodle.mu);
+      doodle = null;
+    }
+  }
+};
+function renderDoodle(D){
+  const { ctx, cv, size, scale, pixels } = D;
+  ctx.fillStyle = '#101120';
+  ctx.fillRect(0, 0, cv.width, cv.height);
+  for(let y=0;y<size;y++) for(let x=0;x<size;x++){
+    const c = pixels[y][x];
+    if(c){ ctx.fillStyle = c; ctx.fillRect(x*scale, y*scale, scale, scale); }
+  }
+  ctx.strokeStyle = 'rgba(255,255,255,.06)';
+  ctx.lineWidth = 1;
+  for(let i=0;i<=size;i++){
+    ctx.beginPath(); ctx.moveTo(i*scale + .5, 0); ctx.lineTo(i*scale + .5, cv.height); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, i*scale + .5); ctx.lineTo(cv.width, i*scale + .5); ctx.stroke();
+  }
+}
+function paintDoodle(D, p){
+  if(!p || p.x<0 || p.y<0 || p.x>=D.size || p.y>=D.size) return;
+  D.pixels[p.y][p.x] = D.color;
+  renderDoodle(D);
+}
+function clearDoodle(D){
+  D.pixels = D.pixels.map(r => r.map(() => null));
+  renderDoodle(D);
+  sfx.click();
+}
+function saveDoodle(D){
+  try{
+    const a = document.createElement('a');
+    a.href = D.cv.toDataURL('image/png');
+    a.download = '像素涂鸦.png';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    sfx.point();
+  }catch(e){}
+}
+
+/* ---------------- 蹦蹦球 ---------------- */
+const BALL_COLORS = ['#ff3d5a','#ffc53d','#3ddc84','#4da6ff','#b18cff','#ff8ac2'];
+let bounce = null;
+TOYS.bounce = {
+  title: '蹦蹦球',
+  mount(mountEl, statsEl){
+    mountEl.classList.add('stage');
+    const B = bounce = { balls:[], raf:0, box:null };
+    statsEl.innerHTML =
+      '<div class="stat">球数<b id="bnCount">0</b></div>' +
+      '<button class="px-btn red" id="bnClear" type="button">清空</button>';
+    const box = document.createElement('div');
+    box.className = 'bounce-box';
+    mountEl.appendChild(box);
+    B.box = box;
+    box.addEventListener('click', e => {
+      const r = box.getBoundingClientRect();
+      spawnBall(B, e.clientX - r.left, e.clientY - r.top);
+    });
+    $('#bnClear').addEventListener('click', () => {
+      B.balls = [];
+      box.innerHTML = '';
+      updateBounceHud(B);
+      sfx.click();
+    });
+    B.loop = () => { stepBounce(B); B.raf = requestAnimationFrame(B.loop); };
+    B.raf = requestAnimationFrame(B.loop);
+  },
+  destroy(){
+    if(bounce){ cancelAnimationFrame(bounce.raf); bounce = null; }
+  }
+};
+function spawnBall(B, x, y){
+  if(B.balls.length >= 60) return;
+  const size = 14 + Math.random()*12;
+  const col = BALL_COLORS[Math.floor(Math.random()*BALL_COLORS.length)];
+  const d = document.createElement('div');
+  d.className = 'ball';
+  d.style.width = size + 'px';
+  d.style.height = size + 'px';
+  d.style.background = col;
+  B.box.appendChild(d);
+  B.balls.push({
+    el:d, x:x - size/2, y:y - size/2,
+    vx:(Math.random()-.5)*7, vy:-2 - Math.random()*4,
+    r:size/2, g:.25, damp:.78
+  });
+  updateBounceHud(B);
+  sfx.pop();
+}
+function stepBounce(B){
+  const w = B.box.clientWidth, h = B.box.clientHeight;
+  for(let i=B.balls.length-1;i>=0;i--){
+    const b = B.balls[i];
+    b.vy += b.g;
+    b.x += b.vx; b.y += b.vy;
+    if(b.x < b.r){ b.x = b.r; b.vx = Math.abs(b.vx) * b.damp; }
+    if(b.x + b.r > w){ b.x = w - b.r; b.vx = -Math.abs(b.vx) * b.damp; }
+    if(b.y < b.r){ b.y = b.r; b.vy = Math.abs(b.vy) * b.damp; }
+    if(b.y + b.r > h){ b.y = h - b.r; b.vy = -Math.abs(b.vy) * b.damp; }
+    if(Math.abs(b.vx) < .08 && Math.abs(b.vy) < .08 && b.y + b.r >= h - .5){ b.vx = 0; b.vy = 0; }
+    b.el.style.transform = 'translate(' + b.x + 'px,' + b.y + 'px)';
+  }
+}
+function updateBounceHud(B){
+  const el = $('#bnCount');
+  if(el) el.textContent = B.balls.length;
+}
+
+/* ---------------- 像素宠物：果冻 ---------------- */
+const SLIME_ROWS = [
+  '....kkkkkkkk....',
+  '..kkggggggggkk..',
+  '.kggggggggggggk.',
+  'kggggwwggggggggk',
+  'kggggwwggggggggk',
+  'kgddggggggggddgk',
+  'kgddggggggggddgk',
+  'kggggpggggggpggk',
+  'kgggggmmmmgggggk',
+  'kggggggggggggggk',
+  'kggggggggggggggk',
+  '.kggggggggggggk.',
+  '..kkggggggggkk..',
+  '....kkkkkkkk....'
+];
+const SLIME_COLORS = { k:'#0b0c18', g:'#3ddc84', w:'#b8f5d4', d:'#0b0c18', m:'#0b0c18', p:'#ff8ac2' };
+const EYE_CLOSED = 'kgkkggggggggkkgk';
+const MOUTH_HAPPY = 'kggg.mmmmmm.gggk';
+const MOUTH_SAD   = 'kggg.m....m.gggk';
+let pet = null;
+TOYS.pet = {
+  title: '像素宠物',
+  mount(mountEl, statsEl){
+    mountEl.classList.add('stage');
+    const P = pet = {
+      hunger:80, mood:70, raf:0, frameN:0,
+      lastBlink:0, blinkUntil:0, eatUntil:0, happyUntil:0,
+      reduced: !!window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches
+    };
+    const wrap = document.createElement('div');
+    wrap.className = 'pet-wrap';
+    const stage = document.createElement('div');
+    stage.className = 'pet-stage';
+    const cv = document.createElement('canvas');
+    cv.width = 180; cv.height = 180;
+    cv.className = 'pet-canvas';
+    stage.appendChild(cv);
+    const name = document.createElement('div');
+    name.className = 'pet-name';
+    name.textContent = '果冻';
+    stage.appendChild(name);
+    const status = document.createElement('div');
+    status.className = 'pet-status';
+    status.textContent = '状态不错';
+    stage.appendChild(status);
+    wrap.appendChild(stage);
+    const bars = document.createElement('div');
+    bars.className = 'pet-bars';
+    bars.innerHTML =
+      '<div class="pet-bar"><div class="lbl">饱食度</div><div class="bar"><div class="fill hunger" id="petHunger"></div></div></div>' +
+      '<div class="pet-bar"><div class="lbl">心情</div><div class="bar"><div class="fill mood" id="petMood"></div></div></div>';
+    wrap.appendChild(bars);
+    const acts = document.createElement('div');
+    acts.className = 'pet-actions';
+    const feed = document.createElement('button');
+    feed.className = 'px-btn green';
+    feed.textContent = '喂食';
+    const pat = document.createElement('button');
+    pat.className = 'px-btn pink';
+    pat.textContent = '摸摸';
+    acts.appendChild(feed);
+    acts.appendChild(pat);
+    wrap.appendChild(acts);
+    mountEl.appendChild(wrap);
+    P.canvas = cv; P.ctx = cv.getContext('2d'); P.stage = stage; P.status = status;
+    feed.addEventListener('click', feedPet);
+    pat.addEventListener('click', () => patPet(P, stage));
+    cv.addEventListener('click', () => patPet(P, stage));
+    P.loop = t => { petFrame(P, t); P.raf = requestAnimationFrame(P.loop); };
+    P.raf = requestAnimationFrame(P.loop);
+  },
+  destroy(){
+    if(pet){ cancelAnimationFrame(pet.raf); pet = null; }
+  }
+};
+function slimeRowsFor(state){
+  const rows = SLIME_ROWS.slice();
+  if(state === 'blink' || state === 'sad'){
+    rows[5] = EYE_CLOSED;
+    rows[6] = EYE_CLOSED;
+  }
+  if(state === 'sad') rows[8] = MOUTH_SAD;
+  if(state === 'happy') rows[8] = MOUTH_HAPPY;
+  if(state === 'eat'){
+    rows[8] = MOUTH_HAPPY;
+    rows[9] = MOUTH_HAPPY;
+  }
+  return rows;
+}
+function slimeState(P, t){
+  if(P.eatUntil && t < P.eatUntil) return 'eat';
+  if(P.blinkUntil && t < P.blinkUntil) return 'blink';
+  if(t - P.lastBlink > 3200 + Math.random()*1200){ P.lastBlink = t; P.blinkUntil = t + 190; return 'blink'; }
+  if(P.hunger < 25) return 'sad';
+  if(P.happyUntil && t < P.happyUntil) return 'happy';
+  return 'idle';
+}
+function petFrame(P, t){
+  const ctx = P.ctx;
+  if(!ctx) return;
+  const W = P.canvas.width, H = P.canvas.height;
+  ctx.clearRect(0, 0, W, H);
+  // 地面阴影
+  ctx.fillStyle = 'rgba(0,0,0,.35)';
+  ctx.fillRect(W/2 - 46, 140, 92, 10);
+  // 呼吸晃动
+  const wob = P.reduced ? 1 : 1 + 0.03 * Math.sin(t/260);
+  ctx.save();
+  ctx.translate(W/2, 42);
+  ctx.scale(wob, 1);
+  ctx.translate(-W/2, -42);
+  const state = slimeState(P, t);
+  const rows = slimeRowsFor(state);
+  const scale = 8, ox = (W - 16*scale)/2, oy = 34;
+  for(let y=0;y<rows.length;y++){
+    for(let x=0;x<16;x++){
+      const ch = rows[y][x];
+      if(ch === '.') continue;
+      ctx.fillStyle = SLIME_COLORS[ch] || '#3ddc84';
+      ctx.fillRect(ox + x*scale, oy + y*scale, scale, scale);
+    }
+  }
+  ctx.restore();
+  // 状态与数值（每 15 帧刷新一次）
+  P.frameN++;
+  if(P.frameN % 15 === 0){
+    P.hunger = Math.max(0, P.hunger - 1);
+    P.mood = Math.max(0, P.mood - 1);
+    updatePetUI(P);
+  }
+}
+function updatePetUI(P){
+  const h = $('#petHunger'), m = $('#petMood');
+  if(h) h.style.width = P.hunger + '%';
+  if(m) m.style.width = P.mood + '%';
+  if(!P.status) return;
+  if(P.hunger >= 100) P.status.textContent = '吃撑了，动不了';
+  else if(P.hunger <= 20) P.status.textContent = '好饿……求投喂';
+  else if(P.mood >= 75) P.status.textContent = '开心得冒泡泡';
+  else if(P.mood <= 20) P.status.textContent = '有点低落，摸摸我';
+  else P.status.textContent = '状态不错';
+}
+function feedPet(){
+  const P = pet; if(!P) return;
+  if(P.hunger >= 100){ P.status.textContent = '吃撑了！再喂要吐了'; sfx.bonk(); return; }
+  P.hunger = Math.min(100, P.hunger + 25);
+  P.mood = Math.min(100, P.mood + 5);
+  P.eatUntil = performance.now() + 1400;
+  sfx.eat();
+  updatePetUI(P);
+}
+function patPet(P, stage){
+  if(!P) return;
+  P.mood = Math.min(100, P.mood + 15);
+  P.happyUntil = performance.now() + 1600;
+  sfx.point();
+  spawnHearts(stage);
+  updatePetUI(P);
+}
+function spawnHearts(stage){
+  for(let i=0;i<3;i++){
+    const h = document.createElement('div');
+    h.className = 'heart-fly';
+    h.innerHTML = '<svg width="22" height="22" viewBox="0 0 32 32" aria-hidden="true"><g transform="translate(4,6) scale(4)" fill="#ff3d5a"><rect x="1" y="0" width="1" height="1"/><rect x="4" y="0" width="1" height="1"/><rect x="0" y="1" width="6" height="1"/><rect x="0" y="2" width="6" height="1"/><rect x="1" y="3" width="4" height="1"/><rect x="2" y="4" width="2" height="1"/></g></svg>';
+    h.style.left = (32 + Math.random()*40) + '%';
+    h.style.top = (16 + Math.random()*16) + '%';
+    h.style.animationDelay = (i*0.15) + 's';
+    stage.appendChild(h);
+    setTimeout(() => h.remove(), 1300 + i*150);
+  }
+}
+/* ---------------- 解压捏捏 ---------------- */
+let squishy = null;
+TOYS.squishy = {
+  title:'解压捏捏',
+  mount(mountEl, statsEl){
+    mountEl.classList.add('stage');
+    const S = squishy = { n:0 };
+    statsEl.innerHTML =
+      '<div class="stat">捏了<b id="sqCount">0</b>次</div>' +
+      '<button class="px-btn red" id="sqReset" type="button">清零</button>';
+    const box = document.createElement('div');
+    box.className = 'squishy-box';
+    const blob = document.createElement('div');
+    blob.className = 'squishy-blob';
+    blob.innerHTML = '<div class="squishy-face"><span></span></div>';
+    box.appendChild(blob);
+    mountEl.appendChild(box);
+    const tip = document.createElement('div');
+    tip.className = 'squishy-tip';
+    tip.textContent = '按住它，捏一捏，松手回弹。';
+    mountEl.appendChild(tip);
+    blob.addEventListener('pointerdown', () => {
+      blob.classList.add('squishing');
+      S.n++;
+      $('#sqCount').textContent = S.n;
+      sfx.eat();
+    });
+    window.addEventListener('pointerup', () => blob.classList.remove('squishing'));
+    $('#sqReset').addEventListener('click', () => { S.n = 0; $('#sqCount').textContent = '0'; sfx.click(); });
+  },
+  destroy(){ squishy = null; }
+};
+
+/* ---------------- 像素钢琴 ---------------- */
+const PIANO_KEYS = [
+  ['C4', 261.63], ['D4', 293.66], ['E4', 329.63], ['F4', 349.23],
+  ['G4', 392.00], ['A4', 440.00], ['B4', 493.88], ['C5', 523.25]
+];
+const PIANO_HOTKEYS = { z:0, x:1, c:2, v:3, b:4, n:5, m:6, ',':7 };
+let piano = null;
+TOYS.piano = {
+  title:'像素钢琴',
+  mount(mountEl, statsEl){
+    mountEl.classList.add('stage');
+    const P = piano = {};
+    statsEl.innerHTML = '<div class="stat">音符<b id="pnNote">-</b></div>';
+    const row = document.createElement('div');
+    row.className = 'piano-keys';
+    PIANO_KEYS.forEach(([name, freq]) => {
+      const k = document.createElement('button');
+      k.className = 'piano-key';
+      k.textContent = name;
+      k.addEventListener('click', () => playPianoKey(k, name, freq));
+      row.appendChild(k);
+    });
+    mountEl.appendChild(row);
+    const hint = document.createElement('div');
+    hint.className = 'piano-hint';
+    hint.textContent = '也可以用键盘：Z X C V B N M ,';
+    mountEl.appendChild(hint);
+    P.row = row;
+    P.kd = e => {
+      const i = PIANO_HOTKEYS[e.key];
+      if(i == null) return;
+      const k = row.children[i];
+      playPianoKey(k, PIANO_KEYS[i][0], PIANO_KEYS[i][1]);
+      e.preventDefault();
+    };
+    document.addEventListener('keydown', P.kd);
+  },
+  destroy(){
+    if(piano){ if(piano.kd) document.removeEventListener('keydown', piano.kd); piano = null; }
+  }
+};
+function playPianoKey(k, name, freq){
+  tone(freq, 0.35, 'square', 0.05);
+  k.classList.add('pressed');
+  setTimeout(() => k.classList.remove('pressed'), 220);
+  const el = $('#pnNote');
+  if(el) el.textContent = name;
+}
+
+/* ---------------- 像素烟花 ---------------- */
+let fireworks = null;
+TOYS.fireworks = {
+  title:'像素烟花',
+  mount(mountEl, statsEl){
+    mountEl.classList.add('stage');
+    const F = fireworks = { rockets:[], parts:[], raf:0, n:0, auto:false };
+    statsEl.innerHTML =
+      '<div class="stat">绽放<b id="fwCount">0</b></div>' +
+      '<button class="px-btn purple" id="fwAuto" type="button">自动 开</button>' +
+      '<button class="px-btn ghost" id="fwClear" type="button">清空</button>';
+    const { cv, ctx } = makeCanvas(480, 320);
+    cv.className = 'pix-canvas';
+    mountEl.appendChild(cv);
+    F.cv = cv; F.ctx = ctx;
+    cv.addEventListener('click', e => {
+      const r = cv.getBoundingClientRect();
+      const x = (e.clientX - r.left) / r.width * 480;
+      const y = (e.clientY - r.top) / r.height * 320;
+      launchRocket(F, x, y);
+    });
+    $('#fwAuto').addEventListener('click', () => { F.auto = !F.auto; $('#fwAuto').textContent = F.auto ? '自动 关' : '自动 开'; sfx.click(); });
+    $('#fwClear').addEventListener('click', () => { F.rockets = []; F.parts = []; sfx.click(); });
+    let last = 0;
+    F.loop = t => {
+      stepFireworks(F);
+      if(F.auto && t - last > 900){ last = t; launchRocket(F, 60 + Math.random()*360, 70 + Math.random()*160); }
+      F.raf = requestAnimationFrame(F.loop);
+    };
+    F.raf = requestAnimationFrame(F.loop);
+  },
+  destroy(){
+    if(fireworks){ cancelAnimationFrame(fireworks.raf); fireworks = null; }
+  }
+};
+function launchRocket(F, x, y){
+  F.rockets.push({ x:240, y:320, vx:(x-240)/55, vy:-((320-y)/55), targetY:y });
+}
+function burstFireworks(F, x, y){
+  const cols = ['#ff3d5a','#ffc53d','#3ddc84','#4da6ff','#b18cff','#ff8ac2'];
+  const col = cols[Math.floor(Math.random()*cols.length)];
+  const n = 38 + Math.floor(Math.random()*20);
+  for(let i=0;i<n;i++){
+    const a = Math.random()*Math.PI*2, sp = 1 + Math.random()*2.4;
+    F.parts.push({ x, y, vx:Math.cos(a)*sp, vy:Math.sin(a)*sp, life:1, col, size:2 + (Math.random()<.4?2:0) });
+  }
+  F.n++;
+  $('#fwCount').textContent = F.n;
+  sfx.pop();
+}
+function stepFireworks(F){
+  const { ctx, cv } = F;
+  ctx.fillStyle = 'rgba(12,13,26,.24)';
+  ctx.fillRect(0, 0, cv.width, cv.height);
+  for(let i=F.rockets.length-1;i>=0;i--){
+    const r = F.rockets[i];
+    r.x += r.vx; r.y += r.vy;
+    ctx.fillStyle = '#ffc53d';
+    ctx.fillRect(r.x - 1, r.y - 1, 3, 6);
+    if(r.y <= r.targetY || r.y <= 28){ burstFireworks(F, r.x, r.y); F.rockets.splice(i, 1); }
+  }
+  for(let i=F.parts.length-1;i>=0;i--){
+    const p = F.parts[i];
+    p.x += p.vx; p.y += p.vy; p.vy += 0.03; p.vx *= 0.985; p.vy *= 0.985; p.life -= 0.012;
+    if(p.life <= 0){ F.parts.splice(i, 1); continue; }
+    ctx.globalAlpha = Math.max(0, p.life);
+    ctx.fillStyle = p.col;
+    ctx.fillRect(p.x - p.size/2, p.y - p.size/2, p.size, p.size);
+  }
+  ctx.globalAlpha = 1;
+}
+
+/* ---------------- 摸鱼鱼缸 ---------------- */
+let fishtank = null;
+TOYS.fishtank = {
+  title:'摸鱼鱼缸',
+  mount(mountEl, statsEl){
+    mountEl.classList.add('stage');
+    const F = fishtank = { raf:0, fish:[], bubbles:[] };
+    statsEl.innerHTML =
+      '<div class="stat">鱼<b id="ftCount">6</b></div>' +
+      '<button class="px-btn blue" id="ftFeed" type="button">投食</button>' +
+      '<button class="px-btn ghost" id="ftStartle" type="button">敲缸</button>';
+    const { cv, ctx } = makeCanvas(480, 300);
+    cv.className = 'pix-canvas';
+    mountEl.appendChild(cv);
+    F.cv = cv; F.ctx = ctx;
+    const colors = ['#ff3d5a','#ffc53d','#3ddc84','#4da6ff','#b18cff','#ff8ac2'];
+    for(let i=0;i<6;i++){
+      F.fish.push({ x:40 + Math.random()*400, y:60 + Math.random()*190, vx:(Math.random()<.5?-1:1)*(0.6+Math.random()*0.8), size:8 + Math.random()*6, col:colors[i], startled:0 });
+    }
+    cv.addEventListener('click', e => {
+      const r = cv.getBoundingClientRect();
+      const x = (e.clientX - r.left) / r.width * 480, y = (e.clientY - r.top) / r.height * 300;
+      F.bubbles.push({ x, y, vy:-1, life:1 });
+      F.fish.forEach(f => { f.vx = Math.sign(f.x - x || 1) * (Math.abs(f.vx) + 2.4); f.startled = 30; });
+      sfx.pop();
+    });
+    $('#ftFeed').addEventListener('click', () => {
+      F.bubbles.push({ x:60 + Math.random()*360, y:290, vy:-1, life:1 });
+      F.fish.forEach(f => { f.vx *= 1.2; });
+      sfx.eat();
+    });
+    $('#ftStartle').addEventListener('click', () => {
+      F.fish.forEach(f => { f.vx = -f.vx + (Math.random()<.5?-1.5:1.5); f.startled = 40; });
+      sfx.bonk();
+    });
+    F.loop = () => { stepFish(F); F.raf = requestAnimationFrame(F.loop); };
+    F.raf = requestAnimationFrame(F.loop);
+  },
+  destroy(){
+    if(fishtank){ cancelAnimationFrame(fishtank.raf); fishtank = null; }
+  }
+};
+function stepFish(F){
+  const { ctx, cv } = F;
+  ctx.fillStyle = '#10182e';
+  ctx.fillRect(0, 0, cv.width, cv.height);
+  ctx.fillStyle = 'rgba(0,0,0,.22)';
+  ctx.fillRect(0, cv.height - 30, cv.width, 30);
+  for(let i=F.bubbles.length-1;i>=0;i--){
+    const b = F.bubbles[i];
+    b.y += b.vy; b.life -= 0.02;
+    ctx.fillStyle = 'rgba(180,200,255,' + Math.max(0, b.life) + ')';
+    ctx.fillRect(b.x - 2, b.y - 2, 4, 4);
+    if(b.life <= 0 || b.y < 0) F.bubbles.splice(i, 1);
+  }
+  for(const f of F.fish){
+    f.x += f.vx;
+    if(f.x < 12){ f.x = 12; f.vx = Math.abs(f.vx); }
+    if(f.x > cv.width - 12){ f.x = cv.width - 12; f.vx = -Math.abs(f.vx); }
+    if(f.startled > 0) f.startled--;
+    const dir = f.vx > 0 ? 1 : -1;
+    ctx.fillStyle = f.col;
+    ctx.fillRect(f.x - f.size, f.y - f.size/2, f.size*2, f.size);
+    ctx.fillRect(f.x - dir*f.size, f.y - f.size/2 - 2, 3, f.size + 4);
+    ctx.fillStyle = '#0b0c18';
+    ctx.fillRect(f.x + dir*f.size*0.6, f.y - 2, 2, 2);
+  }
+}
+
+/* ---------------- 占卜水晶球 ---------------- */
+const ORACLE_FORTUNES = [
+  '运气不错：今天会遇到一件让你笑出声的小事。',
+  '宜摸鱼，忌焦虑。',
+  '莫问吉凶，先喝口水。',
+  '前方高能：可能转角就会遇到一只猫。',
+  '今日提示：早睡，你会感谢明天的自己。',
+  '你的直觉很准，这一次听它的。',
+  '会有意外的惊喜，但别把它当成彩票。',
+  '适合整理桌面，顺便整理心情。',
+  '别急着下结论，再等等。',
+  '今天宜说真话，忌说气话。',
+  '你担心的那件事，大概率不会发生。',
+  '想吃就吃，想睡就睡，这是天意。',
+  '试着换个角度，答案就在背面。',
+  '贵人正在路上，可能是快递小哥。',
+  '此刻宜发呆，不宜乱想。',
+  '你比你以为的更受欢迎。',
+  '小事顺遂，大事别慌。',
+  '把手机放下两分钟，你会看到不一样的世界。',
+  '好运正在加载，请耐心等待。',
+  '今天适合开始一件你拖了很久的事。'
+];
+let oracle = null;
+TOYS.oracle = {
+  title:'占卜水晶球',
+  mount(mountEl, statsEl){
+    mountEl.classList.add('stage');
+    const O = oracle = { n:0 };
+    statsEl.innerHTML = '<div class="stat">问过<b id="orCount">0</b>次</div>';
+    const box = document.createElement('div');
+    box.className = 'oracle-box';
+    const ball = document.createElement('div');
+    ball.className = 'oracle-ball';
+    const label = document.createElement('div');
+    label.className = 'oracle-label';
+    label.textContent = '点击水晶球';
+    box.appendChild(ball);
+    box.appendChild(label);
+    mountEl.appendChild(box);
+    const out = document.createElement('div');
+    out.className = 'oracle-out';
+    out.textContent = '心中默念一个问题，然后点击水晶球。';
+    mountEl.appendChild(out);
+    O.out = out;
+    ball.addEventListener('click', () => {
+      const f = ORACLE_FORTUNES[Math.floor(Math.random()*ORACLE_FORTUNES.length)];
+      out.textContent = f;
+      O.n++;
+      $('#orCount').textContent = O.n;
+      ball.classList.remove('pulse');
+      void ball.offsetWidth;
+      ball.classList.add('pulse');
+      sfx.pop();
+    });
+  },
+  destroy(){ oracle = null; }
+};
+
+/* ---------------- 像素雪景球 ---------------- */
+let snowglobe = null;
+TOYS.snowglobe = {
+  title:'像素雪景球',
+  mount(mountEl, statsEl){
+    mountEl.classList.add('stage');
+    const S = snowglobe = { raf:0, flakes:[], shaking:0 };
+    statsEl.innerHTML =
+      '<div class="stat">雪花<b id="sgCount">0</b></div>' +
+      '<button class="px-btn blue" id="sgShake" type="button">摇一摇</button>';
+    const { cv, ctx } = makeCanvas(320, 320);
+    cv.className = 'pix-canvas';
+    mountEl.appendChild(cv);
+    S.cv = cv; S.ctx = ctx;
+    for(let i=0;i<130;i++){
+      S.flakes.push({ x:Math.random()*320, y:Math.random()*320, vy:0.4 + Math.random()*0.8, vx:(Math.random()-.5)*0.4, size:(Math.random()<.3?2:1) });
+    }
+    $('#sgCount').textContent = S.flakes.length;
+    cv.addEventListener('click', () => shakeSnow(S));
+    $('#sgShake').addEventListener('click', () => shakeSnow(S));
+    S.loop = () => { stepSnow(S); S.raf = requestAnimationFrame(S.loop); };
+    S.raf = requestAnimationFrame(S.loop);
+  },
+  destroy(){
+    if(snowglobe){ cancelAnimationFrame(snowglobe.raf); snowglobe = null; }
+  }
+};
+function shakeSnow(S){
+  S.shaking = 40;
+  S.flakes.forEach(f => { f.vx = (Math.random()-.5)*3; f.vy = 1 + Math.random()*2; });
+  sfx.pop();
+}
+function stepSnow(S){
+  const { ctx, cv } = S;
+  ctx.fillStyle = '#171826';
+  ctx.fillRect(0, 0, cv.width, cv.height);
+  ctx.fillStyle = '#20304a';
+  ctx.beginPath(); ctx.arc(160, 150, 138, 0, Math.PI*2); ctx.fill();
+  ctx.strokeStyle = '#0b0c18'; ctx.lineWidth = 4; ctx.stroke();
+  ctx.fillStyle = '#2c2d5c';
+  ctx.fillRect(112, 282, 96, 34);
+  if(S.shaking > 0) S.shaking--;
+  for(const f of S.flakes){
+    f.x += f.vx; f.y += f.vy;
+    const dx = f.x - 160, dy = f.y - 150;
+    if(dx*dx + dy*dy > (130 - f.size) * (130 - f.size)){
+      if(f.x < 160) f.x += (160 - f.x) * 0.02; else f.x -= (f.x - 160) * 0.02;
+      if(f.y < 150) f.y += (150 - f.y) * 0.02; else f.y -= (f.y - 150) * 0.02;
+    }
+    if(f.y > 295){ f.y = 150; f.x = 100 + Math.random()*120; f.vy = 0.4 + Math.random()*0.8; }
+    ctx.fillStyle = '#eef0ff';
+    ctx.fillRect(f.x - f.size/2, f.y - f.size/2, f.size, f.size);
+  }
+}
+
+/* ---------------- 电子蜡烛 ---------------- */
+let candle = null;
+TOYS.candle = {
+  title:'电子蜡烛',
+  mount(mountEl, statsEl){
+    mountEl.classList.add('stage');
+    const C = candle = { lit:false, raf:0 };
+    statsEl.innerHTML = '<div class="stat">状态<b id="cdSt">熄灭</b></div><button class="px-btn yellow" id="cdTo" type="button">点亮</button>';
+    const { cv, ctx } = makeCanvas(160, 220);
+    cv.className = 'pix-canvas'; cv.style.maxWidth = '240px';
+    mountEl.appendChild(cv);
+    C.cv=cv; C.ctx=ctx;
+    const toggle=()=>{
+      C.lit=!C.lit; sfx.click();
+      $('#cdTo').textContent = C.lit ? '吹灭' : '点亮';
+      $('#cdSt').textContent = C.lit ? '燃烧中' : '熄灭';
+    };
+    cv.addEventListener('click', toggle);
+    $('#cdTo').addEventListener('click', toggle);
+    C.loop=(t)=>{ drawCandle(C, t); C.raf=requestAnimationFrame(C.loop); };
+    C.raf=requestAnimationFrame(C.loop);
+  },
+  destroy(){ if(candle){ cancelAnimationFrame(candle.raf); candle=null; } }
+};
+function drawCandle(C,t){
+  const {ctx,cv}=C;
+  ctx.fillStyle='#14151f'; ctx.fillRect(0,0,cv.width,cv.height);
+  ctx.fillStyle='#eef0ff'; ctx.fillRect(60,110,40,100);
+  ctx.fillStyle='#c9cdf0'; ctx.fillRect(60,110,40,8);
+  ctx.fillStyle='#0b0c18'; ctx.fillRect(78,96,4,16);
+  if(C.lit){
+    const h=26+Math.sin(t/90)*4+Math.sin(t/37)*3;
+    ctx.fillStyle='#ffc53d'; ctx.fillRect(74,70,12,h);
+    ctx.fillStyle='#ff8ac2'; ctx.fillRect(77,78,6,h-10);
+    ctx.fillStyle='rgba(255,200,120,.25)'; ctx.fillRect(58,100,44,20);
+    ctx.fillStyle='#5b6bff'; ctx.fillRect(70,64,20,6);
+  }
+}
+
+/* ---------------- 彩纸屑 ---------------- */
+let confetti = null;
+TOYS.confetti = {
+  title:'彩纸屑',
+  mount(mountEl, statsEl){
+    mountEl.classList.add('stage');
+    const C = confetti = { raf:0, parts:[], burst:0 };
+    statsEl.innerHTML = '<div class="stat">撒了<b id="cfC">0</b>次</div><button class="px-btn purple" id="cfB" type="button">撒一把</button>';
+    const { cv, ctx } = makeCanvas(480, 300);
+    cv.className = 'pix-canvas';
+    mountEl.appendChild(cv);
+    C.cv=cv; C.ctx=ctx;
+    cv.addEventListener('click', e=>{
+      const r=cv.getBoundingClientRect();
+      confettiBurst(C,(e.clientX-r.left)/r.width*480,(e.clientY-r.top)/r.height*300);
+    });
+    $('#cfB').addEventListener('click', ()=>confettiBurst(C,240,80));
+    C.loop=()=>{ stepConfetti(C); C.raf=requestAnimationFrame(C.loop); };
+    C.raf=requestAnimationFrame(C.loop);
+  },
+  destroy(){ if(confetti){ cancelAnimationFrame(confetti.raf); confetti=null; } }
+};
+const CONFETTI_COLS=['#ff3d5a','#ffc53d','#3ddc84','#4da6ff','#b18cff','#ff8ac2'];
+function confettiBurst(C,x,y){
+  for(let i=0;i<40;i++){
+    C.parts.push({x:x,y:y,vx:(Math.random()-.5)*6,vy:-(2+Math.random()*4),g:0.18,life:1,w:3+Math.floor(Math.random()*3),h:3+Math.floor(Math.random()*3),col:CONFETTI_COLS[Math.floor(Math.random()*CONFETTI_COLS.length)],rot:Math.random()*6});
+  }
+  C.burst++; $('#cfC').textContent=C.burst; sfx.pop();
+}
+function stepConfetti(C){
+  const {ctx,cv}=C;
+  ctx.fillStyle='rgba(20,21,31,.25)'; ctx.fillRect(0,0,cv.width,cv.height);
+  for(let i=C.parts.length-1;i>=0;i--){
+    const p=C.parts[i];
+    p.vy+=p.g; p.x+=p.vx; p.y+=p.vy; p.rot+=0.1; p.vx*=0.99; p.life-=0.006;
+    if(p.life<=0||p.y>cv.height+10){ C.parts.splice(i,1); continue; }
+    ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rot);
+    ctx.globalAlpha=Math.max(0,p.life); ctx.fillStyle=p.col; ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h);
+    ctx.restore();
+  }
+  ctx.globalAlpha=1;
+}
+
+/* ---------------- 涟漪池塘 ---------------- */
+let ripple = null;
+TOYS.ripple = {
+  title:'涟漪池塘',
+  mount(mountEl, statsEl){
+    mountEl.classList.add('stage');
+    const R = ripple = { raf:0, ripples:[] };
+    statsEl.innerHTML = '<div class="stat">涟漪<b id="rpC">0</b></div>';
+    const { cv, ctx } = makeCanvas(480, 300);
+    cv.className = 'pix-canvas';
+    mountEl.appendChild(cv);
+    R.cv=cv; R.ctx=ctx;
+    cv.addEventListener('click', e=>{
+      const r=cv.getBoundingClientRect();
+      spawnRipple(R,(e.clientX-r.left)/r.width*480,(e.clientY-r.top)/r.height*300);
+    });
+    R.loop=()=>{ stepRipple(R); R.raf=requestAnimationFrame(R.loop); };
+    R.raf=requestAnimationFrame(R.loop);
+  },
+  destroy(){ if(ripple){ cancelAnimationFrame(ripple.raf); ripple=null; } }
+};
+function spawnRipple(R,x,y){
+  R.ripples.push({x:x,y:y,r:2,life:1});
+  $('#rpC').textContent=R.ripples.length; sfx.pop();
+}
+function stepRipple(R){
+  const {ctx,cv}=R;
+  ctx.fillStyle='#1b5b8a'; ctx.fillRect(0,0,cv.width,cv.height);
+  ctx.fillStyle='rgba(0,40,80,.25)'; ctx.fillRect(0,cv.height-30,cv.width,30);
+  for(let i=R.ripples.length-1;i>=0;i--){
+    const p=R.ripples[i];
+    p.r+=1.6; p.life-=0.018;
+    if(p.life<=0){ R.ripples.splice(i,1); continue; }
+    ctx.globalAlpha=Math.max(0,p.life);
+    ctx.strokeStyle='#b8e2ff'; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.stroke();
+    ctx.strokeStyle='rgba(255,255,255,.4)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.arc(p.x,p.y,p.r*0.7,0,Math.PI*2); ctx.stroke();
+  }
+  ctx.globalAlpha=1;
+  $('#rpC').textContent=R.ripples.length;
+}
+
+/* ---------------- 敲鼓 ---------------- */
+let drums = null;
+TOYS.drums = {
+  title:'敲鼓',
+  mount(mountEl, statsEl){
+    mountEl.classList.add('stage');
+    const D = drums = { n:0, kd:null };
+    statsEl.innerHTML = '<div class="stat">敲了<b id="drC">0</b></div>';
+    const row=document.createElement('div'); row.className='drums-row';
+    const kit=[['咚','#ff3d5a',90],['嗒','#ffc53d',180],['嘣','#4da6ff',60],['哒','#3ddc84',240]];
+    kit.forEach(([name,col,freq])=>{
+      const b=document.createElement('button'); b.className='drum-pad'; b.style.background=col; b.textContent=name;
+      const hit=()=>drumHit(b);
+      b.addEventListener('click', hit);
+      b.addEventListener('mousedown', e=>{ e.preventDefault(); hit(); });
+      row.appendChild(b);
+    });
+    mountEl.appendChild(row);
+    const hint=document.createElement('div'); hint.className='piano-hint'; hint.textContent='也可以用键盘：J K L ;';
+    mountEl.appendChild(hint);
+    D.kd=e=>{
+      const map={j:0,k:1,l:2,';':3};
+      const i=map[e.key];
+      if(i==null) return;
+      const b=row.children[i];
+      drumHit(b); e.preventDefault();
+    };
+    document.addEventListener('keydown', D.kd);
+  },
+  destroy(){ if(drums){ if(drums.kd) document.removeEventListener('keydown',drums.kd); drums=null; } }
+};
+function drumHit(b){
+  b.classList.add('hit'); setTimeout(()=>b.classList.remove('hit'),120);
+  const freq={ '咚':90, '嗒':180, '嘣':60, '哒':240 }[b.textContent] || 120;
+  tone(freq, 0.18, 'square', 0.06, freq*0.4);
+  tone(freq*2, 0.06, 'triangle', 0.03);
+  if(drums){ drums.n++; $('#drC').textContent=drums.n; }
+}
+
+/* ---------------- 沙画 ---------------- */
+let sand = null;
+TOYS.sand = {
+  title:'沙画',
+  mount(mountEl, statsEl){
+    mountEl.classList.add('stage');
+    const S = sand = { raf:0, grains:[], color:'#ffc53d', painting:false };
+    statsEl.innerHTML = '<div class="stat">沙粒<b id="sdC">0</b></div><button class="px-btn red" id="sdClear" type="button">清空</button>';
+    const { cv, ctx } = makeCanvas(360, 320);
+    cv.className = 'pix-canvas';
+    mountEl.appendChild(cv);
+    S.cv=cv; S.ctx=ctx;
+    const pal=document.createElement('div'); pal.className='palette';
+    ['#ffc53d','#ff8ac2','#3ddc84','#4da6ff','#b18cff','#eef0ff'].forEach(col=>{
+      const sw=document.createElement('button'); sw.className='pal-swatch'+(col==='#ffc53d'?' sel':''); sw.style.background=col;
+      sw.addEventListener('click', ()=>{
+        S.color=col;
+        $$('.palette .pal-swatch').forEach(x=>x.classList.toggle('sel',x===sw));
+        sfx.click();
+      });
+      pal.appendChild(sw);
+    });
+    mountEl.appendChild(pal);
+    const pos=e=>{ const r=cv.getBoundingClientRect(); return {x:(e.clientX-r.left)/r.width*360, y:(e.clientY-r.top)/r.height*320}; };
+    cv.addEventListener('pointerdown', e=>{ S.painting=true; pourSand(S,pos(e)); });
+    cv.addEventListener('pointermove', e=>{ if(S.painting) pourSand(S,pos(e)); });
+    window.addEventListener('pointerup', ()=>{ S.painting=false; });
+    $('#sdClear').addEventListener('click', ()=>{ S.grains=[]; $('#sdC').textContent='0'; sfx.click(); });
+    S.loop=()=>{ stepSand(S); S.raf=requestAnimationFrame(S.loop); };
+    S.raf=requestAnimationFrame(S.loop);
+  },
+  destroy(){ if(sand){ cancelAnimationFrame(sand.raf); sand=null; } }
+};
+function pourSand(S,p){
+  if(S.grains.length>2000) return;
+  for(let i=0;i<8;i++){ S.grains.push({x:p.x+(Math.random()-.5)*6, y:p.y, col:S.color}); }
+  $('#sdC').textContent=Math.min(2000,S.grains.length);
+}
+function stepSand(S){
+  const {ctx,cv}=S;
+  ctx.fillStyle='#1a1b30'; ctx.fillRect(0,0,cv.width,cv.height);
+  const cell=3, gx=Math.floor(cv.width/cell), gy=Math.floor(cv.height/cell);
+  const occ=Array.from({length:gy},()=>Array(gx).fill(false));
+  for(const g of S.grains){
+    let xx=Math.max(0,Math.min(gx-1,Math.floor(g.x/cell)));
+    let yy=Math.max(0,Math.min(gy-1,Math.floor(g.y/cell)));
+    while(yy+1<gy && !occ[yy+1][xx]){ yy++; }
+    if(yy+1<gy){
+      if(xx>0 && !occ[yy+1][xx-1] && !occ[yy][xx-1]){ occ[yy+1][xx-1]=true; ctx.fillStyle=g.col; ctx.fillRect((xx-1)*cell,(yy+1)*cell,cell,cell); }
+      else if(xx<gx-1 && !occ[yy+1][xx+1] && !occ[yy][xx+1]){ occ[yy+1][xx+1]=true; ctx.fillStyle=g.col; ctx.fillRect((xx+1)*cell,(yy+1)*cell,cell,cell); }
+      else { occ[yy][xx]=true; ctx.fillStyle=g.col; ctx.fillRect(xx*cell,yy*cell,cell,cell); }
+    } else { occ[yy][xx]=true; ctx.fillStyle=g.col; ctx.fillRect(xx*cell,yy*cell,cell,cell); }
+  }
+}
+
+/* ---------------- 像素时钟 ---------------- */
+let clock = null;
+TOYS.clock = {
+  title:'像素时钟',
+  mount(mountEl, statsEl){
+    mountEl.classList.add('stage');
+    const C = clock = { timer:null };
+    statsEl.innerHTML = '<div class="stat">本地时间</div>';
+    const box=document.createElement('div'); box.className='clock-box';
+    const time=document.createElement('div'); time.className='clock-time'; time.textContent='--:--:--';
+    const date=document.createElement('div'); date.className='clock-date';
+    box.appendChild(time); box.appendChild(date);
+    mountEl.appendChild(box);
+    C.time=time; C.date=date;
+    updateClock(C);
+    C.timer=setInterval(()=>updateClock(C), 200);
+  },
+  destroy(){ if(clock){ if(clock.timer) clearInterval(clock.timer); clock=null; } }
+};
+function updateClock(C){
+  const now=new Date();
+  const p=n=>String(n).padStart(2,'0');
+  C.time.textContent=p(now.getHours())+':'+p(now.getMinutes())+':'+p(now.getSeconds());
+  const days=['日','一','二','三','四','五','六'];
+  C.date.textContent=now.getFullYear()+'年'+p(now.getMonth()+1)+'月'+p(now.getDate())+'日 星期'+days[now.getDay()];
+}
+
+/* ---------------- 魔法喷泉 ---------------- */
+let fountain = null;
+TOYS.fountain = {
+  title:'魔法喷泉',
+  mount(mountEl, statsEl){
+    mountEl.classList.add('stage');
+    const F = fountain = { raf:0, drops:[], burst:0 };
+    statsEl.innerHTML = '<div class="stat">喷出<b id="ftnC">0</b></div><button class="px-btn blue" id="ftnB" type="button">喷一下</button>';
+    const { cv, ctx } = makeCanvas(480, 320);
+    cv.className = 'pix-canvas';
+    mountEl.appendChild(cv);
+    F.cv=cv; F.ctx=ctx;
+    cv.addEventListener('click', ()=>sprayFountain(F,240,300));
+    $('#ftnB').addEventListener('click', ()=>sprayFountain(F,240,300));
+    F.loop=()=>{ stepFountain(F); F.raf=requestAnimationFrame(F.loop); };
+    F.raf=requestAnimationFrame(F.loop);
+  },
+  destroy(){ if(fountain){ cancelAnimationFrame(fountain.raf); fountain=null; } }
+};
+const FOUNTAIN_COLS=['#4da6ff','#3ddc84','#ffc53d','#ff8ac2','#b18cff','#eef0ff'];
+function sprayFountain(F,x,y){
+  for(let i=0;i<30;i++){
+    const a=-Math.PI/2+(Math.random()-.5)*1.6;
+    const sp=3+Math.random()*4;
+    F.drops.push({x:x,y:y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,g:0.16,life:1,col:FOUNTAIN_COLS[Math.floor(Math.random()*FOUNTAIN_COLS.length)]});
+  }
+  F.burst++; $('#ftnC').textContent=F.burst; sfx.pop();
+}
+function stepFountain(F){
+  const {ctx,cv}=F;
+  ctx.fillStyle='rgba(16,17,31,.28)'; ctx.fillRect(0,0,cv.width,cv.height);
+  ctx.fillStyle='rgba(60,70,120,.6)'; ctx.fillRect(200,290,80,30);
+  for(let i=F.drops.length-1;i>=0;i--){
+    const p=F.drops[i];
+    p.vy+=p.g; p.x+=p.vx; p.y+=p.vy; p.life-=0.012;
+    if(p.life<=0||p.y>cv.height+6){ F.drops.splice(i,1); continue; }
+    ctx.globalAlpha=Math.max(0,p.life);
+    ctx.fillStyle=p.col; ctx.fillRect(p.x-2,p.y-2,4,4);
+  }
+  ctx.globalAlpha=1;
+}
+
+/* ---------------- 气球派对 ---------------- */
+let balloon = null;
+TOYS.balloon = {
+  title:'气球派对',
+  mount(mountEl, statsEl){
+    mountEl.classList.add('stage');
+    const B = balloon = { raf:0, balloons:[], popped:0 };
+    statsEl.innerHTML = '<div class="stat">捏爆<b id="blC">0</b></div><button class="px-btn purple" id="blB" type="button">加一个</button>';
+    const { cv, ctx } = makeCanvas(480, 320);
+    cv.className = 'pix-canvas';
+    mountEl.appendChild(cv);
+    B.cv=cv; B.ctx=ctx;
+    for(let i=0;i<6;i++) spawnBalloon(B);
+    cv.addEventListener('click', e=>{
+      const r=cv.getBoundingClientRect();
+      popBalloon(B,(e.clientX-r.left)/r.width*480,(e.clientY-r.top)/r.height*320);
+    });
+    $('#blB').addEventListener('click', ()=>{ spawnBalloon(B); sfx.pop(); });
+    B.loop=()=>{ stepBalloons(B); B.raf=requestAnimationFrame(B.loop); };
+    B.raf=requestAnimationFrame(B.loop);
+  },
+  destroy(){ if(balloon){ cancelAnimationFrame(balloon.raf); balloon=null; } }
+};
+const BALLOON_COLS=['#ff3d5a','#ffc53d','#3ddc84','#4da6ff','#b18cff','#ff8ac2'];
+function spawnBalloon(B){
+  if(B.balloons.length>=20) return;
+  B.balloons.push({x:20+Math.random()*440, y:320, vy:-(0.7+Math.random()*0.7), t:Math.random()*10, size:16+Math.random()*10, col:BALLOON_COLS[Math.floor(Math.random()*BALLOON_COLS.length)]});
+}
+function popBalloon(B,x,y){
+  for(let i=B.balloons.length-1;i>=0;i--){
+    const b=B.balloons[i];
+    if(Math.abs(b.x-x)<b.size && Math.abs(b.y-y)<b.size*1.3){
+      B.balloons.splice(i,1); B.popped++; $('#blC').textContent=B.popped; sfx.pop(); return;
+    }
+  }
+}
+function stepBalloons(B){
+  const {ctx,cv}=B;
+  ctx.fillStyle='#1a2a4a'; ctx.fillRect(0,0,cv.width,cv.height);
+  for(const b of B.balloons){
+    b.t+=0.02; b.y+=b.vy; b.x+=Math.sin(b.t)*0.6;
+    if(b.y<-b.size){ b.y=cv.height+b.size; }
+    ctx.fillStyle=b.col; ctx.fillRect(b.x-b.size/2, b.y-b.size, b.size, b.size*1.2);
+    ctx.fillStyle='rgba(255,255,255,.35)'; ctx.fillRect(b.x-b.size/4, b.y-b.size*0.8, b.size/4, b.size/3);
+    ctx.fillStyle='#0b0c18'; ctx.fillRect(b.x-2, b.y+b.size*0.2, 4, 6);
+    ctx.strokeStyle='rgba(238,240,255,.5)';
+    ctx.beginPath(); ctx.moveTo(b.x, b.y+b.size*0.2+6); ctx.lineTo(b.x+Math.sin(b.t*3)*3, b.y+b.size*0.2+16); ctx.stroke();
+  }
+}
+
+/* ---------------- 摘星瓶 ---------------- */
+let stars = null;
+TOYS.stars = {
+  title:'摘星瓶',
+  mount(mountEl, statsEl){
+    mountEl.classList.add('stage');
+    const S = stars = { raf:0, dots:[], caught:0, wishes:0 };
+    statsEl.innerHTML = '<div class="stat">抓到<b id="stC">0</b></div><div class="stat">祝福<b id="stW">0</b></div>';
+    const { cv, ctx } = makeCanvas(480, 300);
+    cv.className = 'pix-canvas';
+    mountEl.appendChild(cv);
+    S.cv=cv; S.ctx=ctx;
+    for(let i=0;i<40;i++){ S.dots.push({x:Math.random()*480,y:Math.random()*300,tw:Math.random()*6,size:(Math.random()<.3?2:1)}); }
+    cv.addEventListener('click', e=>{
+      const r=cv.getBoundingClientRect();
+      catchStar(S,(e.clientX-r.left)/r.width*480,(e.clientY-r.top)/r.height*300);
+    });
+    S.loop=(t)=>{ stepStars(S,t); S.raf=requestAnimationFrame(S.loop); };
+    S.raf=requestAnimationFrame(S.loop);
+  },
+  destroy(){ if(stars){ cancelAnimationFrame(stars.raf); stars=null; } }
+};
+function catchStar(S,x,y){
+  let best=null, bd=900;
+  for(const st of S.dots){
+    const dx=st.x-x, dy=st.y-y;
+    const d=dx*dx+dy*dy;
+    if(d<bd){ bd=d; best=st; }
+  }
+  if(best){ best.caught=true; S.caught++; $('#stC').textContent=S.caught; sfx.point(); }
+  else { S.wishes++; $('#stW').textContent=S.wishes; sfx.pop(); }
+}
+function stepStars(S,t){
+  const {ctx,cv}=S;
+  ctx.fillStyle='#0e1030'; ctx.fillRect(0,0,cv.width,cv.height);
+  ctx.fillStyle='#ffec9c'; ctx.fillRect(400,30,20,20);
+  for(const st of S.dots){
+    if(st.caught) continue;
+    ctx.globalAlpha=0.4+0.6*Math.abs(Math.sin(t/500+st.tw));
+    ctx.fillStyle='#eef0ff'; ctx.fillRect(st.x-st.size/2, st.y-st.size/2, st.size, st.size);
+  }
+  ctx.globalAlpha=1;
+}
+
+/* ---------------- 打气筒 ---------------- */
+let pump = null;
+TOYS.pump = {
+  title:'打气筒',
+  mount(mountEl, statsEl){
+    mountEl.classList.add('stage');
+    const P = pump = { size:24, popped:0, over:false };
+    statsEl.innerHTML = '<div class="stat">打爆<b id="pmC">0</b></div><button class="px-btn green" id="pmTo" type="button">打气</button>';
+    const box=document.createElement('div'); box.className='pump-box';
+    const ball=document.createElement('div'); ball.className='pump-ball'; ball.textContent='气球';
+    box.appendChild(ball);
+    mountEl.appendChild(box);
+    P.ball=ball;
+    const msg=document.createElement('div'); msg.className='pump-msg'; msg.textContent='使劲打气，别吹爆了！';
+    mountEl.appendChild(msg); P.msg=msg;
+    $('#pmTo').addEventListener('click', ()=>{
+      if(P.over){
+        P.size=24; P.over=false;
+        ball.classList.remove('popped'); ball.textContent='气球';
+        ball.style.width='24px'; ball.style.height='28px'; ball.style.fontSize='8px';
+        msg.textContent='使劲打气，别吹爆了！';
+        $('#pmTo').textContent='打气';
+        return;
+      }
+      P.size+=14; sfx.eat();
+      ball.style.width=P.size+'px'; ball.style.height=(P.size*1.15)+'px';
+      ball.style.fontSize=Math.max(8, P.size*0.16)+'px';
+      if(P.size>=190){
+        P.popped++; P.over=true;
+        $('#pmC').textContent=P.popped;
+        ball.classList.add('popped'); ball.textContent='砰！';
+        msg.textContent='吹爆了！点「换个气球」再来。';
+        $('#pmTo').textContent='换个气球';
+        sfx.win();
+      }
+    });
+  },
+  destroy(){ pump=null; }
+};
+
+/* ---------- 启动 ---------- */
+window.__audioReady = false;
+document.addEventListener('pointerdown', () => { window.__audioReady = true; }, { once:true });
+$$('#gameLobby .game-card').forEach(c => c.addEventListener('click', () => mountGame(c.dataset.game)));
+$$('#toyLobby .game-card').forEach(c => c.addEventListener('click', () => mountToy(c.dataset.toy)));
+syncHeader();
+const initialHash = (location.hash || '').replace('#', '');
+if(VIEWS[initialHash]) setTab(initialHash);
+renderRandom();
+</script>
+</body>
+</html>
