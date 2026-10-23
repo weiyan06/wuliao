@@ -6,7 +6,7 @@
 <title>像素无聊屋 · 打发无聊神器</title>
 <meta name="description" content="复古像素风的无聊终结器：小游戏合集、趣味随机内容、互动小玩具，一个网页全搞定。">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23171826'/%3E%3Cg transform='translate(4,6) scale(4)' fill='%23ff3d5a'%3E%3Crect x='1' y='0' width='1' height='1'/%3E%3Crect x='4' y='0' width='1' height='1'/%3E%3Crect x='0' y='1' width='6' height='1'/%3E%3Crect x='0' y='2' width='6' height='1'/%3E%3Crect x='1' y='3' width='4' height='1'/%3E%3Crect x='2' y='4' width='2' height='1'/%3E%3C/g%3E%3C/svg%3E">
-<link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Press+Start+2P&family=DotGothic16&display=swap">
+<link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Press+Start+2P&family=DotGothic16&display=swap" onerror="this.onerror=null;this.href='https://fonts.loli.net/css2?family=Press+Start+2P&amp;family=DotGothic16&amp;display=swap';">
 <style>
 /* ============ 设计令牌：复古街机风 ============ */
 :root{
@@ -262,6 +262,13 @@ body.no-crt .scanlines{display:none}
 .piano-key{width:64px;height:110px;background:#eef0ff;color:var(--line);border:3px solid var(--line);box-shadow:3px 3px 0 rgba(0,0,0,.5);font-family:'Press Start 2P',monospace;font-size:12px;cursor:pointer;display:flex;align-items:flex-end;justify-content:center;padding-bottom:8px}
 .piano-key.pressed{background:var(--yellow);transform:translate(2px,2px);box-shadow:1px 1px 0 rgba(0,0,0,.5)}
 .piano-hint{text-align:center;margin-top:12px;color:var(--muted);font-size:12px}
+/* ============ 触屏虚拟方向键（仅粗指针设备显示） ============ */
+.dpad{display:none; grid-template-columns:repeat(3,1fr); gap:8px; width:190px; margin:18px auto 2px; user-select:none; -webkit-user-select:none}
+@media (pointer: coarse){
+  .dpad{display:grid}
+}
+.dpad .px-btn{width:54px;height:50px;padding:0;text-align:center;font-size:16px;justify-self:center;touch-action:none}
+.dpad-gap{width:54px}
 /* ============ 占卜水晶球 ============ */
 .oracle-box{display:flex;flex-direction:column;align-items:center;max-width:420px;margin:0 auto;padding:20px;background:var(--panel);border:3px solid var(--line);box-shadow:5px 5px 0 rgba(0,0,0,.5)}
 .oracle-ball{width:160px;height:160px;border-radius:50%;background:radial-gradient(circle at 35% 30%, #5b6bff, #3a3f9e 55%, #23244a 100%);border:4px solid var(--line);box-shadow:0 0 30px rgba(91,107,255,.45);cursor:pointer;position:relative;margin:8px 0}
@@ -960,6 +967,7 @@ function mountGame(name){
   $('#gameStats').innerHTML = '';
   $('#gameMount').innerHTML = '';
   g.mount($('#gameMount'), $('#gameStats'));
+  mountDpad($('#gameMount'), name);
 }
 function backToLobby(){
   stopActive();
@@ -1282,6 +1290,44 @@ document.addEventListener('keydown', (e) => {
     if(handled) e.preventDefault();
   }
 });
+
+/* ---------- 触屏虚拟方向键（键盘类游戏用，粗指针设备显示） ---------- */
+const DPAD_GAMES = {
+  snake:  { mid:{key:' ', label:'⏸', title:'暂停'} },
+  g2048:  {},
+  tetris: { mid:{key:' ', label:'⇓', title:'硬降'} },
+  pong:   {},
+};
+function dpadDown(key){ document.dispatchEvent(new KeyboardEvent('keydown', {key, bubbles:true})); }
+function dpadUp(key){ document.dispatchEvent(new KeyboardEvent('keyup', {key, bubbles:true})); }
+function mountDpad(mountEl, name){
+  const cfg = DPAD_GAMES[name];
+  if(!cfg || !window.matchMedia || !matchMedia('(pointer: coarse)').matches) return;
+  const labels = {ArrowUp:'▲', ArrowDown:'▼', ArrowLeft:'◀', ArrowRight:'▶'};
+  const layout = [null, 'ArrowUp', null, 'ArrowLeft', cfg.mid, 'ArrowRight', null, 'ArrowDown', null];
+  const box = document.createElement('div');
+  box.className = 'dpad';
+  layout.forEach(cell => {
+    const el = document.createElement('button');
+    if(cell){
+      el.className = 'px-btn'; el.type = 'button';
+      const key = typeof cell === 'string' ? cell : cell.key;
+      el.textContent = typeof cell === 'string' ? labels[cell] : cell.label;
+      el.setAttribute('aria-label', typeof cell === 'string' ? cell : (cell.title || cell.key));
+      let rep = null;
+      el.addEventListener('pointerdown', e => { e.preventDefault(); dpadDown(key); clearInterval(rep); rep = setInterval(() => { if(!el.isConnected){ clearInterval(rep); return; } dpadDown(key); }, 170); });
+      const release = () => { clearInterval(rep); rep = null; dpadUp(key); };
+      el.addEventListener('pointerup', release);
+      el.addEventListener('pointerleave', release);
+      el.addEventListener('pointercancel', release);
+      el.addEventListener('contextmenu', e => e.preventDefault());
+    } else {
+      el.className = 'dpad-gap'; el.disabled = true; el.setAttribute('aria-hidden','true');
+    }
+    box.appendChild(el);
+  });
+  mountEl.appendChild(box);
+}
 /* ============================================================
    小游戏：贪吃蛇 / 2048 / 扫雷 / 打地鼠
    ============================================================ */
@@ -2150,7 +2196,7 @@ function endBreakoutWin(B){
 function drawBreakout(B){
   const { ctx, cv } = B;
   ctx.fillStyle = '#101120';
-  ctx.fillRect(0, 0, cv.width, cv.height);
+  ctx.fillRect(0, 0, 480, 360); /* 逻辑尺寸，与 makeCanvas 的 dpr 缩放无关 */
   for(const br of B.bricks){
     if(!br.alive) continue;
     ctx.fillStyle = br.color;
@@ -2250,13 +2296,13 @@ function endPong(P, win){
 function drawPong(P){
   const { ctx, cv } = P;
   ctx.fillStyle = '#0e0f1d';
-  ctx.fillRect(0, 0, cv.width, cv.height);
+  ctx.fillRect(0, 0, 520, 360);
   ctx.fillStyle = 'rgba(255,255,255,.14)';
-  for(let y=0;y<cv.height;y+=16) ctx.fillRect(cv.width/2 - 2, y, 4, 8);
+  for(let y=0;y<360;y+=16) ctx.fillRect(520/2 - 2, y, 4, 8);
   ctx.fillStyle = '#4da6ff';
   ctx.fillRect(6, P.p1.y, 8, P.p1.h);
   ctx.fillStyle = '#ff3d5a';
-  ctx.fillRect(cv.width - 14, P.p2.y, 8, P.p2.h);
+  ctx.fillRect(520 - 14, P.p2.y, 8, P.p2.h);
   ctx.fillStyle = '#eef0ff';
   ctx.fillRect(P.ball.x - P.ball.r, P.ball.y - P.ball.r, P.ball.r*2, P.ball.r*2);
 }
@@ -2496,7 +2542,7 @@ function updateTetrisHud(T){
 function drawTetris(T){
   const { ctx, cv, cell } = T;
   ctx.fillStyle = '#101120';
-  ctx.fillRect(0, 0, cv.width, cv.height);
+  ctx.fillRect(0, 0, T.cols*cell, T.rows*cell);
   for(let y=0;y<T.rows;y++) for(let x=0;x<T.cols;x++){
     if(T.board[y][x]){ ctx.fillStyle = TETRIS_COLORS[T.board[y][x]]; ctx.fillRect(x*cell+1, y*cell+1, cell-2, cell-2); }
   }
@@ -2507,8 +2553,8 @@ function drawTetris(T){
   }
   ctx.strokeStyle = 'rgba(255,255,255,.05)';
   ctx.lineWidth = 1;
-  for(let i=1;i<T.cols;i++){ ctx.beginPath(); ctx.moveTo(i*cell+.5, 0); ctx.lineTo(i*cell+.5, cv.height); ctx.stroke(); }
-  for(let i=1;i<T.rows;i++){ ctx.beginPath(); ctx.moveTo(0, i*cell+.5); ctx.lineTo(cv.width, i*cell+.5); ctx.stroke(); }
+  for(let i=1;i<T.cols;i++){ ctx.beginPath(); ctx.moveTo(i*cell+.5, 0); ctx.lineTo(i*cell+.5, T.rows*cell); ctx.stroke(); }
+  for(let i=1;i<T.rows;i++){ ctx.beginPath(); ctx.moveTo(0, i*cell+.5); ctx.lineTo(T.cols*cell, i*cell+.5); ctx.stroke(); }
 }
 
 /* ============ 游戏 11-20 ============ */
@@ -2604,9 +2650,9 @@ function gomokuAIMove(G){
 }
 function drawGomoku(G){
   const {ctx,cv}=G;
-  ctx.fillStyle='#d9a25f'; ctx.fillRect(0,0,cv.width,cv.height);
+  ctx.fillStyle='#d9a25f'; ctx.fillRect(0,0,G.N*G.cell,G.N*G.cell);
   ctx.strokeStyle='#a86a2f'; ctx.lineWidth=1;
-  for(let i=0;i<G.N;i++){ ctx.beginPath(); ctx.moveTo(G.cell/2, i*G.cell+G.cell/2); ctx.lineTo(cv.width-G.cell/2, i*G.cell+G.cell/2); ctx.stroke(); ctx.beginPath(); ctx.moveTo(i*G.cell+G.cell/2, G.cell/2); ctx.lineTo(i*G.cell+G.cell/2, cv.height-G.cell/2); ctx.stroke(); }
+  for(let i=0;i<G.N;i++){ ctx.beginPath(); ctx.moveTo(G.cell/2, i*G.cell+G.cell/2); ctx.lineTo(G.N*G.cell-G.cell/2, i*G.cell+G.cell/2); ctx.stroke(); ctx.beginPath(); ctx.moveTo(i*G.cell+G.cell/2, G.cell/2); ctx.lineTo(i*G.cell+G.cell/2, G.N*G.cell-G.cell/2); ctx.stroke(); }
   ctx.fillStyle='#a86a2f';
   [[3,3],[7,7],[11,11],[7,3],[3,7],[11,7],[7,11],[3,11],[11,3]].forEach(([sx,sy])=>{
     const cx=sx*G.cell+G.cell/2, cy=sy*G.cell+G.cell/2;
@@ -2782,7 +2828,7 @@ function stepCatch(C){
     if(a.y+a.size>=C.paddle.y&&a.y<=C.paddle.y+12&&a.x>=C.paddle.x-a.size&&a.x<=C.paddle.x+C.paddle.w+a.size){
       C.score++; C.items.splice(i,1); sfx.point(); updateCatchHud(C); continue;
     }
-    if(a.y>cv.height){ C.items.splice(i,1); C.lives--; sfx.bonk(); updateCatchHud(C);
+    if(a.y>360){ C.items.splice(i,1); C.lives--; sfx.bonk(); updateCatchHud(C);
       if(C.lives<=0){ endCatch(C); return; } }
   }
   drawCatch(C);
@@ -2795,7 +2841,7 @@ function endCatch(C){
 }
 function drawCatch(C){
   const {ctx,cv}=C;
-  ctx.fillStyle='#101120'; ctx.fillRect(0,0,cv.width,cv.height);
+  ctx.fillStyle='#101120'; ctx.fillRect(0,0,480,360);
   ctx.fillStyle='#9aa0d8'; ctx.fillRect(C.paddle.x,C.paddle.y,C.paddle.w,12);
   for(const a of C.items){
     ctx.fillStyle='#ff3d5a'; ctx.fillRect(a.x-a.size/2,a.y-a.size/2,a.size,a.size);
@@ -3630,7 +3676,7 @@ function burstFireworks(F, x, y){
 function stepFireworks(F){
   const { ctx, cv } = F;
   ctx.fillStyle = 'rgba(12,13,26,.24)';
-  ctx.fillRect(0, 0, cv.width, cv.height);
+  ctx.fillRect(0, 0, 480, 320);
   for(let i=F.rockets.length-1;i>=0;i--){
     const r = F.rockets[i];
     r.x += r.vx; r.y += r.vy;
@@ -3694,9 +3740,9 @@ TOYS.fishtank = {
 function stepFish(F){
   const { ctx, cv } = F;
   ctx.fillStyle = '#10182e';
-  ctx.fillRect(0, 0, cv.width, cv.height);
+  ctx.fillRect(0, 0, 480, 300);
   ctx.fillStyle = 'rgba(0,0,0,.22)';
-  ctx.fillRect(0, cv.height - 30, cv.width, 30);
+  ctx.fillRect(0, 270, 480, 30);
   for(let i=F.bubbles.length-1;i>=0;i--){
     const b = F.bubbles[i];
     b.y += b.vy; b.life -= 0.02;
@@ -3707,7 +3753,7 @@ function stepFish(F){
   for(const f of F.fish){
     f.x += f.vx;
     if(f.x < 12){ f.x = 12; f.vx = Math.abs(f.vx); }
-    if(f.x > cv.width - 12){ f.x = cv.width - 12; f.vx = -Math.abs(f.vx); }
+    if(f.x > 480 - 12){ f.x = 480 - 12; f.vx = -Math.abs(f.vx); }
     if(f.startled > 0) f.startled--;
     const dir = f.vx > 0 ? 1 : -1;
     ctx.fillStyle = f.col;
@@ -3812,7 +3858,7 @@ function shakeSnow(S){
 function stepSnow(S){
   const { ctx, cv } = S;
   ctx.fillStyle = '#171826';
-  ctx.fillRect(0, 0, cv.width, cv.height);
+  ctx.fillRect(0, 0, 320, 320);
   ctx.fillStyle = '#20304a';
   ctx.beginPath(); ctx.arc(160, 150, 138, 0, Math.PI*2); ctx.fill();
   ctx.strokeStyle = '#0b0c18'; ctx.lineWidth = 4; ctx.stroke();
@@ -3858,7 +3904,7 @@ TOYS.candle = {
 };
 function drawCandle(C,t){
   const {ctx,cv}=C;
-  ctx.fillStyle='#14151f'; ctx.fillRect(0,0,cv.width,cv.height);
+  ctx.fillStyle='#14151f'; ctx.fillRect(0,0,160,220);
   ctx.fillStyle='#eef0ff'; ctx.fillRect(60,110,40,100);
   ctx.fillStyle='#c9cdf0'; ctx.fillRect(60,110,40,8);
   ctx.fillStyle='#0b0c18'; ctx.fillRect(78,96,4,16);
@@ -3902,11 +3948,11 @@ function confettiBurst(C,x,y){
 }
 function stepConfetti(C){
   const {ctx,cv}=C;
-  ctx.fillStyle='rgba(20,21,31,.25)'; ctx.fillRect(0,0,cv.width,cv.height);
+  ctx.fillStyle='rgba(20,21,31,.25)'; ctx.fillRect(0,0,480,300);
   for(let i=C.parts.length-1;i>=0;i--){
     const p=C.parts[i];
     p.vy+=p.g; p.x+=p.vx; p.y+=p.vy; p.rot+=0.1; p.vx*=0.99; p.life-=0.006;
-    if(p.life<=0||p.y>cv.height+10){ C.parts.splice(i,1); continue; }
+    if(p.life<=0||p.y>310){ C.parts.splice(i,1); continue; }
     ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rot);
     ctx.globalAlpha=Math.max(0,p.life); ctx.fillStyle=p.col; ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h);
     ctx.restore();
@@ -3941,8 +3987,8 @@ function spawnRipple(R,x,y){
 }
 function stepRipple(R){
   const {ctx,cv}=R;
-  ctx.fillStyle='#1b5b8a'; ctx.fillRect(0,0,cv.width,cv.height);
-  ctx.fillStyle='rgba(0,40,80,.25)'; ctx.fillRect(0,cv.height-30,cv.width,30);
+  ctx.fillStyle='#1b5b8a'; ctx.fillRect(0,0,480,300);
+  ctx.fillStyle='rgba(0,40,80,.25)'; ctx.fillRect(0,270,480,30);
   for(let i=R.ripples.length-1;i>=0;i--){
     const p=R.ripples[i];
     p.r+=1.6; p.life-=0.018;
@@ -4036,8 +4082,8 @@ function pourSand(S,p){
 }
 function stepSand(S){
   const {ctx,cv}=S;
-  ctx.fillStyle='#1a1b30'; ctx.fillRect(0,0,cv.width,cv.height);
-  const cell=3, gx=Math.floor(cv.width/cell), gy=Math.floor(cv.height/cell);
+  ctx.fillStyle='#1a1b30'; ctx.fillRect(0,0,360,320);
+  const cell=3, gx=Math.floor(360/cell), gy=Math.floor(320/cell);
   const occ=Array.from({length:gy},()=>Array(gx).fill(false));
   for(const g of S.grains){
     let xx=Math.max(0,Math.min(gx-1,Math.floor(g.x/cell)));
@@ -4108,12 +4154,12 @@ function sprayFountain(F,x,y){
 }
 function stepFountain(F){
   const {ctx,cv}=F;
-  ctx.fillStyle='rgba(16,17,31,.28)'; ctx.fillRect(0,0,cv.width,cv.height);
+  ctx.fillStyle='rgba(16,17,31,.28)'; ctx.fillRect(0,0,480,320);
   ctx.fillStyle='rgba(60,70,120,.6)'; ctx.fillRect(200,290,80,30);
   for(let i=F.drops.length-1;i>=0;i--){
     const p=F.drops[i];
     p.vy+=p.g; p.x+=p.vx; p.y+=p.vy; p.life-=0.012;
-    if(p.life<=0||p.y>cv.height+6){ F.drops.splice(i,1); continue; }
+    if(p.life<=0||p.y>326){ F.drops.splice(i,1); continue; }
     ctx.globalAlpha=Math.max(0,p.life);
     ctx.fillStyle=p.col; ctx.fillRect(p.x-2,p.y-2,4,4);
   }
@@ -4158,10 +4204,10 @@ function popBalloon(B,x,y){
 }
 function stepBalloons(B){
   const {ctx,cv}=B;
-  ctx.fillStyle='#1a2a4a'; ctx.fillRect(0,0,cv.width,cv.height);
+  ctx.fillStyle='#1a2a4a'; ctx.fillRect(0,0,480,320);
   for(const b of B.balloons){
     b.t+=0.02; b.y+=b.vy; b.x+=Math.sin(b.t)*0.6;
-    if(b.y<-b.size){ b.y=cv.height+b.size; }
+    if(b.y<-b.size){ b.y=320+b.size; }
     ctx.fillStyle=b.col; ctx.fillRect(b.x-b.size/2, b.y-b.size, b.size, b.size*1.2);
     ctx.fillStyle='rgba(255,255,255,.35)'; ctx.fillRect(b.x-b.size/4, b.y-b.size*0.8, b.size/4, b.size/3);
     ctx.fillStyle='#0b0c18'; ctx.fillRect(b.x-2, b.y+b.size*0.2, 4, 6);
@@ -4204,7 +4250,7 @@ function catchStar(S,x,y){
 }
 function stepStars(S,t){
   const {ctx,cv}=S;
-  ctx.fillStyle='#0e1030'; ctx.fillRect(0,0,cv.width,cv.height);
+  ctx.fillStyle='#0e1030'; ctx.fillRect(0,0,480,300);
   ctx.fillStyle='#ffec9c'; ctx.fillRect(400,30,20,20);
   for(const st of S.dots){
     if(st.caught) continue;
