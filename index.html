@@ -132,6 +132,15 @@ body.no-crt .scanlines{display:none}
 .food-meta-row{display:flex; gap:8px; flex-wrap:wrap; margin:10px 0 0}
 .food-step li{margin-bottom:10px; line-height:1.8}
 @media (max-width:640px){ .food-spin-display{font-size:20px} }
+.story-hero{max-width:720px; margin:0 auto 20px; background:var(--panel,#151733); border:3px solid var(--line,#0b0c18); box-shadow:5px 5px 0 0 rgba(0,0,0,.5); padding:18px 20px}
+.story-top{display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+.story-top h2{flex:1; min-width:120px; margin:0; font-size:17px}
+.story-night{font-family:'Press Start 2P','DotGothic16',monospace; font-size:10px; color:var(--muted,#9aa0d8); margin:10px 0 4px}
+.story-text{font-family:Georgia,'STSong','SimSun',serif; font-size:22px; line-height:2.1; color:var(--ink,#eef0ff); white-space:pre-line; margin:10px 0 16px}
+.story-tools{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:10px}
+.story-moon{font-size:22px}
+.story-clock-label{font-size:12.5px; color:var(--muted,#9aa0d8)}
+#storyClock{font-family:'Press Start 2P','DotGothic16',monospace; font-size:11px; color:#ffc53d}
 @media (max-width:640px){
   .poem-body p{font-size:15.5px}
   .poem-body.long-poem p{font-size:13px}
@@ -415,7 +424,7 @@ body.no-crt .scanlines{display:none}
       </svg>
       <div>
         <h1>像素快乐星球</h1>
-        <div class="tagline">BOREDOM KILLER v2.6</div>
+        <div class="tagline">BOREDOM KILLER v2.7</div>
       </div>
     </div>
     <div class="hdr-actions">
@@ -431,6 +440,7 @@ body.no-crt .scanlines{display:none}
     <button class="tab-btn" data-tab="poems" type="button">唐诗三百首</button>
     <button class="tab-btn" data-tab="speak" type="button">每日练嘴</button>
     <button class="tab-btn" data-tab="food" type="button">每日菜谱</button>
+    <button class="tab-btn" data-tab="story" type="button">睡前故事</button>
     <button class="tab-btn" data-tab="toys" type="button">互动玩具</button>
   </nav>
 
@@ -962,6 +972,47 @@ body.no-crt .scanlines{display:none}
       </div>
     </section>
 
+    <!-- ===== 视图：睡前故事 ===== -->
+    <section id="view-story" class="view">
+      <div id="storyLobby" class="lobby">
+        <p class="view-tip">睡前故事 · <span id="storyCount">…</span> 篇 · 今晚的枕头已就位</p>
+        <div id="storyHero" class="story-hero">
+          <div class="story-top">
+            <span id="storyTag" class="speak-lv">📖</span>
+            <h2 id="storyTitle">…</h2>
+            <button id="storyFavBtn" class="px-btn ghost" type="button">☆ 收藏</button>
+          </div>
+          <p class="story-night" id="storyNight">🌛 今晚的故事</p>
+          <div id="storyText" class="story-text"></div>
+          <div class="story-tools">
+            <button id="storyFontDown" class="chip" type="button">A－</button>
+            <button id="storyFontUp" class="chip" type="button">A＋</button>
+            <span id="storyMoon" class="story-moon">🌙</span>
+            <button id="storyGn" class="px-btn yellow" type="button">💤 晚安，睡个好觉</button>
+            <button id="storySwap" class="px-btn ghost" type="button">↻ 换一篇</button>
+          </div>
+          <div class="story-tools">
+            <span class="story-clock-label">⏳ 眠钟：</span>
+            <button class="chip story-min" data-min="5" type="button">5 分钟后提醒</button>
+            <button class="chip story-min" data-min="10" type="button">10 分钟后提醒</button>
+            <button class="chip story-min" data-min="0" type="button">关</button>
+            <span id="storyClock"></span>
+          </div>
+          <p class="view-tip" id="storyTotal">本星球已收到 <b id="storyGnTotal"><span>0</span></b> 个晚安</p>
+        </div>
+        <div class="speak-filters" id="storyFilters">
+          <button class="chip active" data-st="" type="button">全部</button>
+          <button class="chip" data-st="成语故事" type="button">📜 成语故事</button>
+          <button class="chip" data-st="寓言故事" type="button">🦊 寓言故事</button>
+          <button class="chip" data-st="晚安小文" type="button">🌠 晚安小文</button>
+          <button class="chip" data-st="fav" type="button" id="storyChipFav">☆ 收藏(0)</button>
+        </div>
+        <div class="card-grid" id="storyGrid"></div>
+        <p class="view-tip" id="storyEmptyTip" style="display:none">这个分类下暂时没有——换个筛选试试。</p>
+        <div class="pager" id="storyPager" aria-label="故事分页"></div>
+      </div>
+    </section>
+
     <!-- ===== 视图：互动玩具 ===== -->
     <section id="view-toys" class="view">
       <div id="toyLobby" class="lobby">
@@ -1380,7 +1431,7 @@ $('#crtBtn').addEventListener('click', ()=>{ crtOn=!crtOn; syncHeader(); sfx.cli
 $('#muteBtn').addEventListener('click', ()=>{ muted=!muted; store.set('muted', muted); syncHeader(); if(!muted) sfx.click(); });
 
 /* ---------- 标签页切换（支持 hash） ---------- */
-const VIEWS = { games:'view-games', random:'view-random', poems:'view-poems', speak:'view-speak', food:'view-food', toys:'view-toys' };
+const VIEWS = { games:'view-games', random:'view-random', poems:'view-poems', speak:'view-speak', food:'view-food', story:'view-story', toys:'view-toys' };
 const state = { tab:'games', game:null, toy:null };
 
 function stopActive(){
@@ -7615,6 +7666,205 @@ $$('#foodTagRow .chip').forEach(ch => ch.addEventListener('click', () => {
   });
   foodCur = seed % DISHES.length;
   renderFoodList();
+})();
+
+/* ---------- 睡前故事 ---------- */
+const STORIES = [
+  { t:'守株待兔', k:'成语故事', p:'宋国有个农夫在田里锄地，忽然一只兔子飞奔过来，一头撞在田边的树桩上，折断脖子死了。农夫捡回去美美吃了一顿。从此他扔下锄头，天天守在树桩旁边，等下一只兔子来撞。兔子再也没有来，地里的庄稼全荒了，他也成了全国人的笑柄。\n——今天的甜头，要靠自己的手，别守着运气过日子。' },
+  { t:'亡羊补牢', k:'成语故事', p:'有个牧羊人养了一圈羊。一天早上他发现羊圈破了个洞，夜里狼进来叼走了一只羊。邻居劝他快把洞补上，他摆摆手：「羊都丢了，补圈还有什么用？」第二天狼又钻进来，又叼走一只羊。牧羊人这回后悔了，把破洞补得结结实实，从此羊再也没有丢过。\n——做错了不怕，笑着补上就还是好日子。' },
+  { t:'掩耳盗铃', k:'成语故事', p:'有个人想偷人家门口挂着的铃铛，铃铛太大搬不动，只能用锤子敲碎再拿。他心里嘀咕：铃声这么响，别人一定听得见。于是他先捂住自己的耳朵，抡起锤子敲下去。自己听不见，别人听得清清楚楚。人们闻声赶来，把他当场抓住。\n——世界骗不过去，只能骗骗自己，还总赔上锤子。' },
+  { t:'刻舟求剑', k:'成语故事', p:'楚国有个人坐船渡江。船到江心，心爱的宝剑不小心滑进了水里。大家都喊：「快下去捞呀！」他不慌不忙，在船帮上剑落水的地方刻了个记号：「我记下了，剑是从这儿掉的。」船靠了岸，他从刻记号的地方跳进水里，摸来摸去，什么也没有摸到。\n——船在走，水在流，过去的事要换新办法找。' },
+  { t:'画蛇添足', k:'成语故事', p:'楚国几个门客分一壶酒。酒只有一壶，商量之后决定：在地上画蛇，谁先画完谁喝。有个人最先画完，端起酒壶，见别人都还在画，得意地说：「我再给蛇添上脚。」这时第二个人也画完了，一把夺过酒壶：「蛇本来没有脚，你画的不是蛇！」说完一口把酒喝光了。\n——差不多就停手，故事讲给贪心的人听。' },
+  { t:'塞翁失马', k:'成语故事', p:'边塞住着一位老人，大家叫他塞翁。一天他的马跑丢了，邻居来安慰，塞翁笑笑：「怎么知道这不是好事呢？」几个月后，那匹马自己回来了，还领回一匹骏马。邻居赶来道贺，塞翁摇头：「怎么知道这不是坏事呢？」不久，他儿子骑骏马摔断了腿。村里征兵，青壮年去打仗，很多没能回来；塞翁的儿子因为腿伤留下来，保住了性命。\n——好的坏的，都会长成往后日子的养分。' },
+  { t:'狐假虎威', k:'成语故事', p:'老虎捉住一只狐狸，正要吃它。狐狸眼珠一转，大声说：「你敢吃我？天帝派我做百兽之王！不信你跟在我后面走一圈，看百兽是不是见了我都逃。」老虎半信半疑跟着走进林子。野兽远远看见它们，吓得四处奔逃。老虎叹服：果然大王威风！其实野兽们怕的是它身后那只老虎。\n——借来的光最会走，还是自己点灯最亮堂。' },
+  { t:'鹬蚌相争', k:'成语故事', p:'河蚌张开壳在沙滩上晒太阳，一只鹬鸟伸嘴去啄蚌肉，蚌立刻合上壳，紧紧夹住鸟嘴。鹬说：「今天不下雨，明天不下雨，你就晒成干贝啦！」蚌说：「今天不放你，明天不放你，你也吃不成啦！」两个谁也不松口，刚好打渔的老人路过，把它们一起收进了鱼篓。\n——都让一小步，海边就多两个安稳的夜晚。' },
+  { t:'自相矛盾', k:'成语故事', p:'集市上有个人卖矛又卖盾。他举起盾吆喝：「天下没有哪种矛戳得穿它！」又举起矛吆喝：「天下没有哪种盾挡得住它！」旁边的小孩问：「那用你的矛，戳你的盾，会怎么样呀？」那人张着嘴半天说不出话，悄悄收摊走了。\n——牛皮一次吹一个就好，睡前更不宜贪多。' },
+  { t:'井底之蛙', k:'成语故事', p:'一只青蛙住在枯井里，对来做客的海龟说：「我可幸福啦！抬头是井口那么大的天，低头是我自己的水潭，谁也比不过我。」海龟告诉它：大海有几千里的宽、几千丈的深，下十年雨，海水涨不了多少；再旱十年，海也减不了半分。青蛙听完，愣在井底，半天说出一句：「原来天，真的很大呀。」\n——安心住小井没关系，留一扇看得见天的窗。' },
+  { t:'揠苗助长', k:'成语故事', p:'宋国有个农夫，嫌禾苗长得太慢，天天蹲在田边发愁。他干脆把苗一棵棵往上拔，从日出忙到日落，回来说：「今天可累坏了，我帮苗长高了一大截！」儿子跑到田里一瞧，禾苗全枯死了。\n——慢慢长，才长得到秋天。' },
+  { t:'杯弓蛇影', k:'成语故事', p:'乐广请朋友来喝酒。朋友举杯时，看见杯底有条小蛇晃来晃去，硬着头皮喝下，回家越想越怕，竟病倒了。乐广想了想，回到原来的座位重新斟酒一看——那是墙上挂着的弓，映进酒杯里的影子。他把朋友请回来，指着墙上的弓说明白。朋友心里的疙瘩一下解开，病当天就好了。\n——很多害怕，只是灯下的一个影子，走近看看就散了。' },
+  { t:'画龙点睛', k:'成语故事', p:'传说张僧繇在金陵安乐寺墙上画了四条白龙，鱼鳞风爪样样传神，却都不点眼睛。他解释：「点了眼睛，龙会飞走。」大家不信，非要他点。他提笔，给其中两条点睛。刹那间雷电劈壁，两条龙破壁腾云而去，墙上只剩没点睛的两条。\n——压轴的那一笔，平时就在攒着不露。' },
+  { t:'呆若木鸡', k:'成语故事', p:'纪渻子给国王训练斗鸡。十天后国王去问：成了吗？答：还早，它一听见响声就跳。又过十天：还不行，它眼神太凶。再过十天：快了，它沉下来了。二十天后，鸡终于是那只该有的鸡了：不管别的鸡怎么挑衅叫唤，它都安安静静站着，看上去像木头刻的鸡。别的鸡一照面，掉头就跑。\n——真正稳的人从不吵闹，连晚安都走得很轻。' },
+  { t:'买椟还珠', k:'成语故事', p:'楚国有个珠宝商人去郑国卖宝珠。他用名贵的木兰木雕了盒子，熏了香料，缀了珠玉，镶了翡翠，宝珠就放在盒子里。郑国人捧着盒子看了半天，爱不释手，付了钱——抱着盒子走了，把宝珠掏出来还给了商人。商人捧着还回来的宝珠，站在原地半天没动。\n——各有各的喜欢，只是别把最贵重的那个忘了带走。' },
+  { t:'龟兔赛跑', k:'寓言故事', p:'兔子嘲笑乌龟走得慢，乌龟慢慢说：「那我们比比谁先到山下那棵大树。」比赛开始，兔子一溜烟没了影，回头一看，乌龟还远远在山腰，就靠在路边打了个盹。太阳偏西，乌龟一步一步挪到了树下。兔子惊醒狂追，追到终点时，晚了好久。\n——不怕慢，就怕停。今晚按自己的节奏来，就很赢。' },
+  { t:'狼来了', k:'寓言故事', p:'放羊的孩子在山坡上看羊，闲得发慌，冲山下大喊：「狼来了！狼来了！」乡亲们扔下手里的事跑上山，孩子却笑得直打滚。第二天他又喊，乡亲们又跑上山，又被骗了一回。后来狼真的来了，孩子喊破喉咙，山坡下再没有人抬头。狼把羊群吃得精光。\n——好话要省着用，用完的那天，喊真的也没人来了。' },
+  { t:'乌鸦喝水', k:'寓言故事', p:'一只口渴的乌鸦飞了很久，找到一个细颈小瓶，里面有半瓶水。瓶口太窄、水位太低，嘴怎么也够不着。乌鸦围着瓶子转了三圈，捡来一颗颗小石子投进去。水位一点点升高，它终于低下头，喝到了水。\n——只要愿意一颗一颗地想办法，渴是难得倒聪明的。' },
+  { t:'狐狸和葡萄', k:'寓言故事', p:'葡萄架下挂着一串熟透的葡萄，紫得发亮。狐狸又蹦又跳，试了三次四次都够不着。它只好转身走开，边走边安慰自己：「哼，那葡萄，没准还是酸的。」\n——够不着就放缓步子，把想吃的记在明天。' },
+  { t:'农夫与蛇', k:'寓言故事', p:'寒冬的路边，农夫看见一条蛇冻僵了，一动不动。他动了恻隐之心，把它揣进怀里慢慢焐暖。蛇一醒过来，转头狠狠咬了他一口。农夫叹着气说：「心是热的，暖的人，也该看看你怀里搂着的是谁。」\n——温柔要留给值得，这一点，连睡前都要记得。' },
+  { t:'狮子和老鼠', k:'寓言故事', p:'狮子在树荫下睡午觉，一只小老鼠不小心爬过它的鼻子。狮子一巴掌按住它，老鼠抖着声求饶：「这次放了我，将来也许能救您！」狮子笑着放了它。几天后，狮子落进猎人的网里，怎么挣都挣不开，吼声传得老远。小老鼠听见，顺着吼声跑来，一根根咬断绳网，狮子从缺口钻出来。\n——成全过的小事，某天都会回来看看你。' },
+  { t:'北风和太阳', k:'寓言故事', p:'北风和太阳争谁本领大，恰好路面走来一个戴厚帽子的行人。他们约定：谁先让行人肯摘下帽子，谁赢。北风鼓足了劲呼呼地吹，越吹，行人把帽子按得越紧。轮到太阳，它安安静静把光洒下去，一会儿，行人自己热了，摘下帽子扇起风来。\n——温柔比用力管用，尤其在睡前。' },
+  { t:'蚂蚁和蝉', k:'寓言故事', p:'夏天，蚂蚁顶着日头把粮食一粒一粒往家搬，蝉站在树上唱歌，唱得冗长又华丽。冬天到了，蝉饿着肚子去蚂蚁家讨口吃的。蚂蚁问：「夏天怎么不备粮？」蝉说：「忙着唱歌呀。」蚂蚁说：「那冬天，你就唱支歌当饭吧。」\n——秋天存一粒粮，冬天唱一支歌，两样都备着，日子才稳。' },
+  { t:'挤牛奶的姑娘', k:'寓言故事', p:'姑娘提着一桶刚挤的牛奶去镇上，一路美美地盘算：卖了牛奶换鸡蛋，鸡蛋孵小鸡，小鸡卖了买裙子，穿裙子去跳舞，小伙子们都来看……想到高兴处，她轻轻地笑起来，头一晃，桶「咚」地翻在地上，奶洒了一地。\n——梦做到一半也不坏，但要记得手里还提着桶。' },
+  { t:'狗和影子', k:'寓言故事', p:'狗叼着一块肉过独木桥，低头看见河水里也有一条狗，嘴里同样叼着一块肉。它心想那块肯定更肥，张嘴就去抢。嘴里的肉「咚」地掉了下去，水里那条狗的肉，也是瞬间的幻影。它站在桥中央，一块都没有了。\n——嘴里那块先咬稳，桥对岸更好的，明天再说。' },
+  { t:'下金蛋的鹅', k:'寓言故事', p:'农家的鹅每天下一个金蛋，不多，正正好一个。主人渐渐嫌慢：「一天一个，攒到哪年？」他一咬牙把鹅杀了，想着一口气全取出来。鹅开了膛，里面一个金蛋都没有。金光闪闪的日子，从此断了。\n——好日子是一天一天慢慢下的，慢慢攒，慢慢花。' },
+  { t:'蚊子和狮子', k:'寓言故事', p:'小蚊子在狮子耳边嗡嗡叫着吹牛，专挑狮子没毛的地方叮，狮子又抓又挠，把自己抓破了也不再提。蚊子唱起凯歌，得意洋洋嗡嗡飞开，忘了看路——一头粘进蜘蛛网，成了蜘蛛的晚餐。\n——赢了别唱上头，看路才是正事。' },
+  { t:'月亮邮差', k:'晚安小文', p:'月亮是天上的邮差，每晚背着布袋子绕一大圈，专门投递说不出口的话：白天咽回去的道歉、没送出的关心、口袋里攒了一天的想说……今晚轮到我们的窗口，它投下一句话：「放心，所有没做完的事，都会由明天接着操心，夜里一律休业。」它拍拍布袋飞走了。今夜只收信，不收账。好梦。' },
+  { t:'云朵裁缝店', k:'晚安小文', p:'天上有一家裁缝店，只做一个业务：云朵被子。云婆婆攒了三个月的白棉花，今晚铺成一条新被子。星星们排队领被子，盖上后纷纷说「很、很、很暖」。裁到收尾，被子角上掉下来一小朵绒毛，慢悠悠飘过夜空，落在我们的窗台上。云婆婆说：「今夜的绒毛，送给那个还没睡的，让枕头也软一点。」接住了就睡吧。' },
+  { t:'瞌睡虫修理铺', k:'晚安小文', p:'街角有一家不挂牌的小铺子，店主是一只蓝紫色的小瞌睡虫，专门修理打盹。白天打了一半的盹、没打尽的哈欠，都可以拿去续。它把碎散热气一行行收好，缝进旧棉纱里，等主人睡熟时再原样奉还。今晚它就候在枕头边，本子摊开记账：这位客人，白天欠三个哈欠、半个盹，现在开始补，百分百不丢。慢慢呼吸就行，剩下的交给它。' },
+  { t:'星星晚安站', k:'晚安小文', p:'天上有一站，叫晚安站。每晚九点，星星们列队出勤：一半上夜班守夜，一半下班回到云里。跨过天边那道细细的栅栏，每有一只羊跳过去，人间就亮一颗星。今晚的小羊跳到一半，回头对排队的人说：「别数啦，我先下班，你替我睡。」栅栏还空着，星星各就各位。那就把数羊的工作交给星星，我们去睡云的那头。' },
+  { t:'小熊的蜂蜜日历', k:'晚安小文', p:'小熊有一本蜂蜜日历。哪天过得好，它就在那一格涂薄薄一层蜂蜜；哪天过得难，就涂厚一点——难的日子要更甜些才熬得动。今天它路过我们的窗，朝里望了一眼，然后回到树洞，给今晚涂了最大的、最亮的一格。它说：「把一点点蜜留给梦境，剩下的留给明天的阳光。」晚安，小熊也在睡。' },
+  { t:'银河泡澡夜', k:'晚安小文', p:'银河每隔一段时间要泡一次澡。众星来帮忙放水，水汽洒下来，人间就叫它流星雨。今晚银河就在泡澡，池边还留了一口小池子，散着薄薄的暖汽。宇宙见了纷纷告假。可以想象那种感觉：被子松软，肩头沉下来，肩、背、脚，一块一块沉进枕头，像泡进正好热度的水。睡着以后，人间也是泡着暖汽的一池。睡吧，水汽今晚够用。' },
+  { t:'深夜面包房', k:'晚安小文', p:'巷子尽头有家只在深夜开业的面包房。烤的不是面粉，是白天剩下的碎片：没说完的话、没做完的事、偶尔的一声叹气。老师傅利落地把它们揉进面团，烤得又松又软又甜。出炉时间是明早六点，到时候开门，一屋子麦香，白天的碎片就都只是早饭的甜味了。今夜你交上来的每一样，师傅都先收着。请安心睡，就当帮他把火看着。' },
+  { t:'会打呼噜的云', k:'晚安小文', p:'有朵年纪很大的云，夜里飞得慢，呼噜打得也大。小云们捂着耳朵提意见，老云慢悠悠地说：「呼噜是云的白噪音，走夜路的人听见才安心。」果然，跟着它的云都睡得沉，翻来覆去的云也慢慢沉下来。今晚不去吵它了。把窗留一条缝，听着云的呼噜，一起哈欠，一起合眼。天亮前它自会唱着退到天边去。' },
+  { t:'枕头飞行员', k:'晚安小文', p:'每晚有一位枕头飞行员来接您上机，目的地写的是「好梦」。起飞不固定时间，只有一个上机条件：起飞前，请把今天的担子，一件一件放进头顶的行李舱。别担心拿错，舱门上写着各位的名字。今晚的航班已经准备就绪，担子放好了吗？放好了就靠好椅背，机舱灯光调暗，缓缓闭上眼。本次飞行禁止多发消息，欢迎登机，晚安。' },
+  { t:'失眠的猫头鹰', k:'晚安小文', p:'猫头鹰咕咕今晚翻来覆去睡不着，飞去问月亮。月亮说：「我这里有个秘密——不用急着睡着。安安静静待在黑暗里，把眼睛眯起来，感觉一下睫毛的重量，星星会自己从睫毛上跳过去。这样待着，就已经是休息了。」猫头鹰抱着这个法子回窝，安安静静地眯眼数星星——不知不觉，天微微亮了，它整个夜里，睡得好好的。\n睡不着不硬来，安静地眯一会儿，就已经是好觉的前半段。' },
+  { t:'世界在打哈欠', k:'晚安小文', p:'到了点，世界会自己打哈欠：风变轻了，路灯变得暖黄，狗不叫了，店门一扇一扇合上，电视换了晚间频道，连河水都放慢了脚步。哈欠是全世界通用的晚安用语，传得比感冒还快。今晚就轮到我传染给你了——阿……啊——好了，接住了吧？接住了就等于上床成功。关灯，收工，明早哈欠会原样收走，谁再还你一个崭新的早晨。' },
+  { t:'星星灯塔', k:'晚安小文', p:'海边有一座老灯塔，守塔人每晚点亮最先的一盏灯，为晚归的船指路。天上的星星看着他日复一日，也学着亮起来，一颗、两颗、一整片，像是在夜里做同一件温暖的事。今晚我们的窗外也有一座小小的灯塔：卧室灯熄灭前最后的半格光。灯关了以后它并不离开，改成贴着桌角站岗，一直守到我们睡着，再悄悄换成月亮值。安心睡。' },
+  { t:'一寸月光', k:'晚安小文', p:'月光是限量供应的：一天只裁一寸。以前它按远近分配，谁住得高给谁多一点。后来它改了主意，改做通用款——一寸月光摊开，平平整整铺满整张床，谁来睡，都盖得着。月光说：「白天的账请白天算，夜里只发月光，不发心事。」现在它正在你的被子外面站岗。把心事挂回门后，闭上眼，这一寸月光，连人带梦，一起收好。' }
+];
+let storyFavs = store.get('story.favs', []);
+if (!Array.isArray(storyFavs)) storyFavs = [];
+let storyStreak = store.get('story.stamp', null);
+if (!storyStreak || typeof storyStreak !== 'object') storyStreak = { last:'', cur:0, best:0 };
+let storyFsz = parseInt(store.get('story.fsz', '22'), 10) || 22;
+let storyFilter = '';
+let storyCur = 0;
+let storyTimerId = null;
+function storyIcon(k){
+  if (k === '成语故事') return '📜 成语故事';
+  if (k === '寓言故事') return '🦊 寓言故事';
+  return '🌠 晚安小文';
+}
+function storyMoonPic(){
+  if (!storyStreak.cur) return '🌙';
+  return ['🌑','🌒','🌓','🌔'][Math.min(storyStreak.cur - 1, 4)];
+}
+function storyGnTotalN(){ return parseInt(store.get('story.count', '0'), 10) || 0; }
+function storyShow(i){
+  if (i < 0 || i >= STORIES.length) return;
+  storyCur = i;
+  const s = STORIES[i];
+  $('#storyTag').textContent = storyIcon(s.k);
+  $('#storyTitle').textContent = s.t;
+  const t = $('#storyText');
+  t.textContent = s.p;
+  t.style.fontSize = storyFsz + 'px';
+  $('#storyNight').textContent = '🌛 今晚的故事 · ' + spanToday();
+  syncStoryFav();
+  syncStoryGn();
+}
+function syncStoryFav(){
+  const on = storyFavs.includes(storyCur);
+  $('#storyFavBtn').textContent = on ? '★ 已收藏' : '☆ 收藏';
+  $('#storyFavBtn').className = 'px-btn ' + (on ? 'yellow' : 'ghost');
+}
+function syncStoryGn(){
+  const b = $('#storyGn');
+  if (storyStreak.last === spanToday()){
+    b.textContent = '✅ 已打卡 ' + storyMoonPic() + ' 连续 ' + storyStreak.cur + ' 晚';
+    b.className = 'px-btn ghost';
+  } else {
+    b.textContent = '💤 晚安，睡个好觉';
+    b.className = 'px-btn yellow';
+  }
+  $('#storyMoon').textContent = storyMoonPic();
+  $('#storyGnTotal').textContent = storyGnTotalN() + (storyGnTotalN() > 1 ? ' 个' : '');
+}
+$('#storyGn').addEventListener('click', () => {
+  if (storyStreak.last === spanToday()){ sfx.bonk(); return; }
+  const today = spanToday();
+  storyStreak.cur = (storyStreak.last === spanYesterday()) ? storyStreak.cur + 1 : 1;
+  storyStreak.best = Math.max(storyStreak.best, storyStreak.cur);
+  storyStreak.last = today;
+  store.set('story.stamp', storyStreak);
+  store.set('story.count', storyGnTotalN() + 1);
+  syncStoryGn();
+  sfx.point();
+});
+$('#storyFavBtn').addEventListener('click', () => {
+  const k = storyFavs.indexOf(storyCur);
+  if (k >= 0){ storyFavs.splice(k, 1); sfx.bonk(); } else { storyFavs.push(storyCur); sfx.point(); }
+  store.set('story.favs', storyFavs);
+  syncStoryFav(); renderStoryList();
+});
+$('#storySwap').addEventListener('click', () => {
+  let i;
+  do { i = Math.floor(Math.random() * STORIES.length); } while (STORIES.length > 1 && i === storyCur);
+  storyShow(i); sfx.pop();
+});
+$('#storyFontUp').addEventListener('click', () => {
+  storyFsz = Math.min(30, storyFsz + 2);
+  store.set('story.fsz', String(storyFsz));
+  $('#storyText').style.fontSize = storyFsz + 'px'; sfx.click();
+});
+$('#storyFontDown').addEventListener('click', () => {
+  storyFsz = Math.max(15, storyFsz - 2);
+  store.set('story.fsz', String(storyFsz));
+  $('#storyText').style.fontSize = storyFsz + 'px'; sfx.click();
+});
+function storyClockStop(){
+  if (storyTimerId){ clearInterval(storyTimerId); storyTimerId = null; }
+}
+function storyClockStart(mins){
+  storyClockStop();
+  const end = Date.now() + mins * 60000;
+  const draw = () => {
+    const rem = end - Date.now();
+    if (rem <= 0){
+      storyClockStop();
+      $('#storyClock').textContent = '🔔 到点了，放下手机睡觉 🌛';
+      sfx.bonk();
+      return;
+    }
+    const m = Math.floor(rem / 60000);
+    const sec = Math.floor((rem % 60000) / 1000);
+    $('#storyClock').textContent = '还剩 ' + m + ':' + ('0' + sec).slice(-2);
+  };
+  draw();
+  storyTimerId = setInterval(draw, 1000);
+}
+$$('#view-story .story-min').forEach(ch => ch.addEventListener('click', () => {
+  $$('#view-story .story-min').forEach(c => c.classList.toggle('active', c === ch));
+  const m = +ch.dataset.min;
+  if (m) storyClockStart(m); else { storyClockStop(); $('#storyClock').textContent = ''; }
+  sfx.click();
+}));
+$$('#view-story #storyFilters .chip').forEach(ch => ch.addEventListener('click', () => {
+  storyFilter = ch.dataset.st || '';
+  $$('#view-story #storyFilters .chip').forEach(c => c.classList.toggle('active', c === ch));
+  renderStoryList(); sfx.click();
+}));
+function storyFilterIdx(){
+  let idx = STORIES.map((s, i) => i);
+  if (storyFilter === 'fav') idx = idx.filter(i => storyFavs.includes(i));
+  else if (storyFilter) idx = idx.filter(i => STORIES[i].k === storyFilter);
+  return idx;
+}
+function renderStoryList(){
+  const idx = storyFilterIdx();
+  const grid = $('#storyGrid');
+  grid.innerHTML = idx.length ? idx.map(i => {
+    const s = STORIES[i];
+    const star = storyFavs.includes(i) ? '<span class="speak-star">★</span>' : '';
+    return '<button class="game-card speak-card" data-sti="' + i + '" type="button">'
+      + '<span class="card-icon" aria-hidden="true"><svg width="40" height="40" viewBox="0 0 32 32">'
+      + '<rect x="4" y="6" width="24" height="20" fill="#101229"/>'
+      + '<rect x="21" y="9" width="6" height="6" fill="#ffc53d"/>'
+      + '<rect x="10" y="11" width="2" height="2" fill="#e8e9ff"/>'
+      + '<rect x="14" y="16" width="2" height="2" fill="#e8e9ff"/>'
+      + '<rect x="7" y="20" width="2" height="2" fill="#8ee08e"/>'
+      + '<rect x="4" y="26" width="24" height="2" fill="#0b0c18"/>'
+      + '</svg></span>'
+      + '<span class="card-name">' + escHtml(s.t) + '</span>'
+      + '<span class="card-desc">' + storyIcon(s.k) + '</span>'
+      + star + '</button>';
+  }).join('') : '';
+  $('#storyEmptyTip').style.display = idx.length ? 'none' : 'block';
+  $('#storyCount').textContent = STORIES.length;
+  $('#storyChipFav').textContent = '☆ 收藏(' + storyFavs.length + ')';
+  $$('#storyGrid .speak-card').forEach(c => c.addEventListener('click', () => {
+    storyShow(+c.dataset.sti);
+    $('#storyHero').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    sfx.click();
+  }));
+  initPager('#storyPager', '#storyGrid .speak-card', 16);
+}
+(function storyInit(){
+  const d = new Date();
+  const seed = d.getFullYear() * 372 + (d.getMonth() + 1) * 31 + d.getDate();
+  syncStoryGn();
+  $('#storyText').style.fontSize = storyFsz + 'px';
+  storyShow(seed % STORIES.length);
+  renderStoryList();
 })();
 
 /* ---------- 启动 ---------- */
