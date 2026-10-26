@@ -195,6 +195,19 @@ body.no-crt .scanlines{display:none}
 }
 .chip.active{background:var(--red); color:var(--line)}
 .chip:hover:not(.active){filter:brightness(1.15)}
+
+.mov-result{border:2px solid var(--line); background:rgba(255,255,255,.05); padding:14px; margin:12px 0}
+.mov-c-title{font-size:18px; margin:0 0 10px; letter-spacing:1px}
+.mov-c-actions{display:flex; gap:8px; flex-wrap:wrap; margin-top:12px}
+.mov-hero{display:flex; gap:14px; flex-wrap:wrap; align-items:flex-start}
+.mov-cover{display:inline-flex; align-items:center; justify-content:center; width:64px; height:86px; color:#0b0c18; font-weight:bold; font-size:20px; border:2px solid rgba(0,0,0,.25); box-shadow:3px 3px 0 rgba(0,0,0,.25); flex:none}
+.mov-cover.big{width:84px; height:112px; font-size:26px}
+.mov-rate{font-size:14px; margin:2px 0 8px}
+.mov-rate b{font-size:22px}
+.mov-stars{letter-spacing:2px; color:#ffcd3d}
+.mov-line{margin:2px 0; font-size:12px; color:var(--dim,#9aa0d8)}
+.mov-syn{margin:12px 0 6px; line-height:1.8; font-size:13px}
+.mov-kudo{margin:0; font-size:12px; color:#ffd76e; line-height:1.8}
 .random-card{
   background:var(--panel); border:3px solid var(--line); box-shadow:5px 5px 0 0 rgba(0,0,0,.5);
   padding:22px 20px; min-height:190px; display:flex; flex-direction:column; gap:14px;
@@ -437,7 +450,7 @@ body.no-crt .scanlines{display:none}
       </svg>
       <div>
         <h1>像素快乐星球</h1>
-        <div class="tagline">BOREDOM KILLER v2.9.1</div>
+        <div class="tagline">BOREDOM KILLER v3.0</div>
       </div>
     </div>
     <div class="hdr-actions">
@@ -455,6 +468,7 @@ body.no-crt .scanlines{display:none}
     <button class="tab-btn" data-tab="food" type="button">每日菜谱</button>
     <button class="tab-btn" data-tab="story" type="button">睡前故事</button>
     <button class="tab-btn" data-tab="vocab" type="button">每日背单词</button>
+    <button class="tab-btn" data-tab="movies" type="button">电影推荐</button>
     <button class="tab-btn" data-tab="toys" type="button">互动玩具</button>
   </nav>
 
@@ -1065,6 +1079,82 @@ body.no-crt .scanlines{display:none}
       </div>
     </section>
 
+    <!-- ===== 视图：电影推荐 ===== -->
+    <section id="view-movies" class="view">
+      <div id="movLobby" class="lobby">
+        <p class="view-tip">每日观影 · <span id="movCount">…</span> 部精选 · 挑好心情掷骰子，今晚就看它</p>
+        <div class="vocab-hero">
+          <div class="story-top">
+            <span class="speak-lv">🎞️ 选片机</span>
+            <h2>今晚看什么？</h2>
+            <span id="movStatsTag" class="story-moon">🎲 0</span>
+          </div>
+          <p class="story-night" id="movHint">想怎么过这一晚？先选个心情。</p>
+          <div class="chips" id="movMoods">
+            <button class="chip active" data-md="" type="button">🍉 随便瞅瞅</button>
+            <button class="chip" data-md="cry" type="button">🥲 想哭一场</button>
+            <button class="chip" data-md="laugh" type="button">😄 想笑一会</button>
+            <button class="chip" data-md="brain" type="button">🧠 想动动脑</button>
+            <button class="chip" data-md="bang" type="button">💥 想爽一把</button>
+            <button class="chip" data-md="heal" type="button">🌱 想被治愈</button>
+          </div>
+          <p class="view-tip">再筛一下口味（可跳过）：</p>
+          <div class="chips" id="movRgn">
+            <button class="chip active" data-rg="" type="button">不限地区</button>
+            <button class="chip" data-rg="cn" type="button">华语</button>
+            <button class="chip" data-rg="us" type="button">欧美</button>
+            <button class="chip" data-rg="jk" type="button">日韩</button>
+            <button class="chip" data-rg="ot" type="button">其他</button>
+          </div>
+          <div class="chips" id="movGen">
+            <button class="chip active" data-gn="" type="button">全部类型</button>
+            <button class="chip" data-gn="剧情" type="button">剧情</button>
+            <button class="chip" data-gn="喜剧" type="button">喜剧</button>
+            <button class="chip" data-gn="爱情" type="button">爱情</button>
+            <button class="chip" data-gn="科幻" type="button">科幻</button>
+            <button class="chip" data-gn="悬疑" type="button">悬疑</button>
+            <button class="chip" data-gn="动作" type="button">动作</button>
+            <button class="chip" data-gn="动画" type="button">动画</button>
+            <button class="chip" data-gn="奇幻" type="button">奇幻</button>
+            <button class="chip" data-gn="冒险" type="button">冒险</button>
+            <button class="chip" data-gn="犯罪" type="button">犯罪</button>
+            <button class="chip" data-gn="战争" type="button">战争</button>
+            <button class="chip" data-gn="纪录" type="button">纪录</button>
+          </div>
+          <div class="chips" id="movLen">
+            <button class="chip active" data-ln="0" type="button">不限片长</button>
+            <button class="chip" data-ln="1" type="button">🥤 90 分钟内</button>
+            <button class="chip" data-ln="2" type="button">🍿 半包爆米花 90-120</button>
+            <button class="chip" data-ln="3" type="button">🛋️ 长片 120 分钟起</button>
+          </div>
+          <div class="story-tools">
+            <span id="movPool" class="story-clock-label">筛出 0 部</span>
+            <button id="movRoll" class="px-btn yellow" type="button">🎲 抽一部！</button>
+            <button id="movFavOnly" class="px-btn ghost" type="button">☆ 只抽想看</button>
+          </div>
+          <div id="movCard" class="mov-result hidden"></div>
+          <p class="view-tip">🎲 骰子已掷 <b id="movRollN">0</b> 次 · 想看单 <b id="movFavN">0</b> 部</p>
+        </div>
+        <p class="view-tip">想慢慢翻片库？点卡片看详情。</p>
+        <div class="card-grid" id="movGrid"></div>
+        <p class="view-tip" id="movEmpty" style="display:none">这个组合太窄了，放宽一个条件再来。</p>
+        <div class="pager" id="movPager" aria-label="片库翻页"></div>
+        <p class="view-tip">评分取自豆瓣公开评分（精选片目人工整理，如有出入以豆瓣页面为准）。</p>
+      </div>
+      <div id="movView" class="game-view hidden">
+        <div class="game-topbar">
+          <button id="movBack" class="px-btn ghost" type="button">← 返回</button>
+          <h2 id="movTitle">…</h2>
+          <div class="poem-meta" id="movMeta"></div>
+        </div>
+        <div id="movBody" class="poem-body"></div>
+        <div class="poem-actions">
+          <button id="movFavToggle" class="px-btn ghost" type="button">☆ 收藏</button>
+          <button id="movCopy" class="px-btn ghost" type="button">📋 复制片名</button>
+        </div>
+      </div>
+    </section>
+
     <!-- ===== 视图：互动玩具 ===== -->
     <section id="view-toys" class="view">
       <div id="toyLobby" class="lobby">
@@ -1429,6 +1519,7 @@ body.no-crt .scanlines{display:none}
 
 </div>
 
+<script src="data/movies.js"></script>
 <script src="data/site.js"></script>
 <script>
 "use strict";
@@ -1484,7 +1575,7 @@ $('#crtBtn').addEventListener('click', ()=>{ crtOn=!crtOn; syncHeader(); sfx.cli
 $('#muteBtn').addEventListener('click', ()=>{ muted=!muted; store.set('muted', muted); syncHeader(); if(!muted) sfx.click(); });
 
 /* ---------- 标签页切换（支持 hash） ---------- */
-const VIEWS = { games:'view-games', random:'view-random', poems:'view-poems', speak:'view-speak', food:'view-food', story:'view-story', vocab:'view-vocab', toys:'view-toys' };
+const VIEWS = { games:'view-games', random:'view-random', poems:'view-poems', speak:'view-speak', food:'view-food', story:'view-story', vocab:'view-vocab', movies:'view-movies', toys:'view-toys' };
 const state = { tab:'games', game:null, toy:null };
 
 function stopActive(){
@@ -7539,6 +7630,198 @@ $('#vocabRevDone').addEventListener('click', () => {
   vocabRenderNext();
   vocabStreakShow();
 })();
+
+/* ---------- 每日观影 ---------- */
+let movMood = '', movRg = '', movGn = '', movLn = 0;
+let movFavOnly = false;
+let movCur = 0, movRolling = false;
+let movFavs = store.get('movie.favs', []);
+if (!Array.isArray(movFavs)) movFavs = [];
+let movRolls = store.get('movie.rolls', 0);
+const MOV_RGN = { cn: '华语', us: '欧美', jk: '日韩', ot: '其他' };
+const MOV_COLS = ['#3ddc84','#4da6ff','#b18cff','#ff8ac2','#ffc53d','#ff7a5c','#5ce0e0','#c0e84d'];
+function movStars(r){
+  const f = Math.min(5, Math.max(0, Math.round(r / 2)));
+  return '★'.repeat(f) + '☆'.repeat(5 - f);
+}
+function movFilter(){
+  return MOVIES.map((p, i) => i).filter(i => {
+    const p = MOVIES[i];
+    if (movMood && !(p.md || []).includes(movMood)) return false;
+    if (movRg && p.c !== movRg) return false;
+    if (movGn && !p.g.includes(movGn)) return false;
+    if (movLn === 1 && p.m > 90) return false;
+    if (movLn === 2 && (p.m <= 90 || p.m > 120)) return false;
+    if (movLn === 3 && p.m < 120) return false;
+    if (movFavOnly && !movFavs.includes(i)) return false;
+    return true;
+  });
+}
+function movCover(i, big){
+  const p = MOVIES[i];
+  return '<span class="mov-cover' + (big ? ' big' : '') + '" style="background:' + MOV_COLS[i % MOV_COLS.length] + '">' + p.r.toFixed(1) + '</span>';
+}
+function movCardHtml(i){
+  const p = MOVIES[i];
+  return '<div class="mov-hero">'
+    + movCover(i, true)
+    + '<div>'
+    + '<p class="mov-rate">豆瓣 <b>' + p.r.toFixed(1) + '</b> <span class="mov-stars">' + movStars(p.r) + '</span></p>'
+    + '<p class="mov-line">' + p.y + ' 年 · ' + p.m + ' 分钟 · ' + p.g.join(' / ') + ' · ' + MOV_RGN[p.c] + '</p>'
+    + (p.o ? '<p class="mov-line">原名：' + escHtml(p.o) + '</p>' : '')
+    + '<p class="mov-line">导演：' + escHtml(p.d) + '</p>'
+    + '<p class="mov-line">主演：' + escHtml(p.a) + '</p>'
+    + '</div></div>'
+    + '<p class="mov-syn">' + escHtml(p.s) + '</p>'
+    + '<p class="mov-kudo">✨ ' + escHtml(p.k) + '</p>';
+}
+function syncMovFav(){
+  const on = movFavs.includes(movCur);
+  const b1 = $('#movFavToggle');
+  b1.textContent = on ? '★ 已收藏' : '☆ 收藏';
+  b1.className = 'px-btn ' + (on ? 'yellow' : 'ghost');
+  const b2 = $('#movCardFav');
+  if (b2){
+    b2.textContent = on ? '★ 已想看' : '☆ 想看';
+    b2.className = 'px-btn ' + (on ? 'yellow' : 'ghost');
+  }
+}
+function syncMovStats(){
+  $('#movRollN').textContent = movRolls;
+  $('#movFavN').textContent = movFavs.length;
+  $('#movStatsTag').textContent = '🎲 ' + movRolls;
+  $('#movFavOnly').textContent = movFavOnly ? ('★ 只抽想看（' + movFavs.length + '）') : '☆ 只抽想看';
+  $('#movFavOnly').className = 'px-btn ' + (movFavOnly ? 'yellow' : 'ghost');
+}
+function renderMovGrid(){
+  const idx = movFilter();
+  $('#movPool').textContent = '筛出 ' + idx.length + ' 部';
+  $('#movEmpty').style.display = idx.length ? 'none' : '';
+  $('#movGrid').innerHTML = idx.map(i => {
+    const p = MOVIES[i];
+    const star = movFavs.includes(i) ? '<span class="poem-star">★</span>' : '';
+    return '<button class="game-card" data-mi="' + i + '" type="button">'
+      + '<span class="card-icon">' + movCover(i, false) + '</span>'
+      + '<span class="card-name">' + escHtml(p.t) + star + '</span>'
+      + '<span class="card-desc">' + p.y + ' · ' + escHtml(p.g.join(' / ')) + ' · 豆瓣 ' + p.r.toFixed(1) + '</span>'
+      + '</button>';
+  }).join('');
+  $$('#movGrid .game-card').forEach(c => c.addEventListener('click', () => openMovie(+c.dataset.mi)));
+  initPager('#movPager', '#movGrid .game-card', 12);
+  syncMovStats();
+}
+function openMovie(i){
+  if (i < 0 || i >= MOVIES.length) return;
+  movCur = i;
+  const p = MOVIES[i];
+  $('#movLobby').classList.add('hidden');
+  $('#movView').classList.remove('hidden');
+  $('#movTitle').textContent = p.t;
+  $('#movMeta').innerHTML = '<span class="speak-lv">' + MOV_RGN[p.c] + '</span>';
+  $('#movBody').innerHTML = movCardHtml(i);
+  syncMovFav();
+  sfx.click();
+}
+function toggleMovFav(){
+  const k = movFavs.indexOf(movCur);
+  if (k >= 0){ movFavs.splice(k, 1); sfx.bonk(); } else { movFavs.push(movCur); sfx.point(); }
+  store.set('movie.favs', movFavs);
+  syncMovFav(); renderMovGrid();
+}
+function copyMovText(){
+  const p = MOVIES[movCur];
+  if (!p) return;
+  const text = p.t + '（' + p.y + '）豆瓣 ' + p.r.toFixed(1) + ' 分\n' + p.d + ' / ' + p.a + '\n' + p.s;
+  const done = () => sfx.point();
+  if (navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(done).catch(() => copyFallback(text, done));
+  } else copyFallback(text, done);
+}
+function fillMovCard(i, shaking){
+  const p = MOVIES[i];
+  $('#movCard').innerHTML
+    = '<h3 class="mov-c-title">' + (shaking ? '🎲 正在摇…' : escHtml(p.t)) + '</h3>'
+    + movCardHtml(i)
+    + '<div class="mov-c-actions">'
+    + '<button class="px-btn ghost" data-act="again" type="button">🔀 换一部</button>'
+    + '<button class="px-btn yellow" data-act="open" type="button">📖 看详情</button>'
+    + '<button class="px-btn ghost" data-act="fav" type="button" id="movCardFav"></button>'
+    + '<button class="px-btn ghost" data-act="copy" type="button">📋 复制片名</button>'
+    + '</div>';
+  syncMovFav();
+}
+$('#movRoll').addEventListener('click', () => {
+  if (movRolling) return;
+  const idx = movFilter();
+  if (!idx.length){
+    $('#movHint').textContent = '这个组合筛出了 0 部，放宽点再掷吧';
+    $('#movCard').classList.add('hidden');
+    sfx.bonk();
+    return;
+  }
+  movRolling = true;
+  $('#movCard').classList.remove('hidden');
+  let tick = 0, last = -1;
+  const t = setInterval(() => {
+    let i;
+    do { i = idx[Math.floor(Math.random() * idx.length)]; } while (idx.length > 1 && i === last);
+    fillMovCard(i, tick < 6);
+    sfx.pop(); last = i; tick++;
+    if (tick >= 7){
+      clearInterval(t);
+      movCur = last;
+      fillMovCard(movCur, false);
+      movRolls++;
+      store.set('movie.rolls', movRolls);
+      $('#movHint').textContent = '今晚就看它：' + MOVIES[movCur].t;
+      syncMovStats(); syncMovFav();
+      movRolling = false;
+      sfx.win();
+    }
+  }, 80);
+});
+$('#movCard').addEventListener('click', e => {
+  const b = e.target.closest('[data-act]');
+  if (!b) return;
+  const act = b.dataset.act;
+  if (act === 'again') $('#movRoll').click();
+  else if (act === 'open') openMovie(movCur);
+  else if (act === 'fav') toggleMovFav();
+  else if (act === 'copy') copyMovText();
+});
+$('#movFavToggle').addEventListener('click', toggleMovFav);
+$('#movCopy').addEventListener('click', copyMovText);
+$('#movBack').addEventListener('click', () => {
+  $('#movView').classList.add('hidden');
+  $('#movLobby').classList.remove('hidden');
+  renderMovGrid(); sfx.click();
+});
+$('#movFavOnly').addEventListener('click', () => {
+  movFavOnly = !movFavOnly;
+  syncMovStats(); renderMovGrid(); sfx.click();
+});
+$$('#movMoods .chip').forEach(c => c.addEventListener('click', () => {
+  movMood = c.dataset.md;
+  $$('#movMoods .chip').forEach(x => x.classList.toggle('active', x === c));
+  renderMovGrid(); sfx.click();
+}));
+$$('#movRgn .chip').forEach(c => c.addEventListener('click', () => {
+  movRg = c.dataset.rg;
+  $$('#movRgn .chip').forEach(x => x.classList.toggle('active', x === c));
+  renderMovGrid(); sfx.click();
+}));
+$$('#movGen .chip').forEach(c => c.addEventListener('click', () => {
+  movGn = c.dataset.gn;
+  $$('#movGen .chip').forEach(x => x.classList.toggle('active', x === c));
+  renderMovGrid(); sfx.click();
+}));
+$$('#movLen .chip').forEach(c => c.addEventListener('click', () => {
+  movLn = +c.dataset.ln;
+  $$('#movLen .chip').forEach(x => x.classList.toggle('active', x === c));
+  renderMovGrid(); sfx.click();
+}));
+$('#movCount').textContent = MOVIES.length;
+renderMovGrid(); syncMovStats();
 
 /* ---------- 启动 ---------- */
 
