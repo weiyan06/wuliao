@@ -102,6 +102,22 @@ body.no-crt .scanlines{display:none}
 .poem-note summary{cursor:pointer; padding:10px 14px; font-size:14px; color:#ffc53d; user-select:none}
 .poem-note summary::marker{color:#ffc53d}
 .poem-note>div{padding:2px 14px 14px; font-size:13.5px; line-height:1.9; color:var(--muted,#9aa0d8); white-space:pre-line}
+.speak-hero{max-width:720px; margin:0 auto 20px; background:var(--panel,#151733); border:3px solid var(--line,#0b0c18); box-shadow:5px 5px 0 0 rgba(0,0,0,.5); padding:18px 20px}
+.speak-top{display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+.speak-top h2{flex:1; min-width:120px; margin:0; font-size:17px}
+.speak-lv{font-size:13px}
+.speak-text{font-family:Georgia,'STSong','SimSun',serif; font-size:21px; line-height:2.2; letter-spacing:.04em; margin:16px 0 8px; color:var(--ink,#eef0ff)}
+.speak-hud{display:flex; gap:14px; flex-wrap:wrap; font-family:'Press Start 2P','DotGothic16',monospace; font-size:11px; color:var(--muted,#9aa0d8); margin-bottom:14px}
+.speak-timer{color:#ffc53d}
+.speak-actions{display:flex; gap:10px; flex-wrap:wrap}
+.speak-best{margin:10px 0 0; font-size:12px; color:var(--muted,#9aa0d8)}
+.speak-filters{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px}
+.speak-card{position:relative}
+.speak-star{position:absolute; top:8px; right:10px; color:#ffc53d; font-size:15px}
+.speak-card[data-lv="1"] .card-icon rect:nth-child(2){fill:#8ee08e}
+.speak-card[data-lv="2"] .card-icon rect:nth-child(2){fill:#ffc53d}
+.speak-card[data-lv="3"] .card-icon rect:nth-child(2){fill:#ff6b6b}
+@media (max-width:640px){ .speak-text{font-size:18px} }
 @media (max-width:640px){
   .poem-body p{font-size:15.5px}
   .poem-body.long-poem p{font-size:13px}
@@ -385,7 +401,7 @@ body.no-crt .scanlines{display:none}
       </svg>
       <div>
         <h1>像素无聊屋</h1>
-        <div class="tagline">BOREDOM KILLER v2.2</div>
+        <div class="tagline">BOREDOM KILLER v2.3</div>
       </div>
     </div>
     <div class="hdr-actions">
@@ -399,6 +415,7 @@ body.no-crt .scanlines{display:none}
     <button class="tab-btn active" data-tab="games" type="button">小游戏</button>
     <button class="tab-btn" data-tab="random" type="button">随机内容</button>
     <button class="tab-btn" data-tab="poems" type="button">唐诗三百首</button>
+    <button class="tab-btn" data-tab="speak" type="button">每日练嘴</button>
     <button class="tab-btn" data-tab="toys" type="button">互动玩具</button>
   </nav>
 
@@ -829,6 +846,43 @@ body.no-crt .scanlines{display:none}
       </div>
     </section>
 
+    <!-- ===== 视图：每日练嘴 ===== -->
+    <section id="view-speak" class="view">
+      <div class="lobby">
+        <p class="view-tip">每日练嘴 · <span id="speakCount">…</span> 篇 · 说顺了为止，小心舌头打结</p>
+        <div id="speakHero" class="speak-hero">
+          <div class="speak-top">
+            <span id="speakLv" class="speak-lv">🌶️</span>
+            <h2 id="speakTitle">…</h2>
+            <button id="speakFavBtn" class="px-btn ghost" type="button">☆ 收藏</button>
+          </div>
+          <p id="speakText" class="speak-text"></p>
+          <div class="speak-hud">
+            <span id="speakTimer" class="speak-timer">0.0 秒</span>
+            <span id="speakReps">今天 0 遍</span>
+            <span id="speakStreak">🔥 连练 0 天</span>
+          </div>
+          <div class="speak-actions">
+            <button id="speakGo" class="px-btn green" type="button">▶ 开始读</button>
+            <button id="speakLap" class="px-btn yellow" type="button">✓ 完成一遍</button>
+            <button id="speakReset" class="px-btn ghost" type="button">⟳ 重置</button>
+            <button id="speakNext" class="px-btn ghost" type="button">↻ 换一条</button>
+          </div>
+          <p id="speakBest" class="speak-best"></p>
+        </div>
+        <div class="speak-filters">
+          <button class="chip active" data-slvl="0" type="button" id="speakChipAll">全部</button>
+          <button class="chip" data-slvl="1" type="button">🌶️ 入门</button>
+          <button class="chip" data-slvl="2" type="button">🌶️🌶️ 进阶</button>
+          <button class="chip" data-slvl="3" type="button">🌶️🌶️🌶️ 地狱</button>
+          <button class="chip" data-slvl="-1" type="button" id="speakChipFav">☆ 收藏(0)</button>
+        </div>
+        <div class="card-grid" id="speakGrid"></div>
+        <p class="view-tip" id="speakEmptyTip" style="display:none">这个分类还没有内容——先去练一条收藏吧。</p>
+        <div class="pager" id="speakPager" aria-label="绕口令分页"></div>
+      </div>
+    </section>
+
     <!-- ===== 视图：互动玩具 ===== -->
     <section id="view-toys" class="view">
       <div id="toyLobby" class="lobby">
@@ -1247,7 +1301,7 @@ $('#crtBtn').addEventListener('click', ()=>{ crtOn=!crtOn; syncHeader(); sfx.cli
 $('#muteBtn').addEventListener('click', ()=>{ muted=!muted; store.set('muted', muted); syncHeader(); if(!muted) sfx.click(); });
 
 /* ---------- 标签页切换（支持 hash） ---------- */
-const VIEWS = { games:'view-games', random:'view-random', poems:'view-poems', toys:'view-toys' };
+const VIEWS = { games:'view-games', random:'view-random', poems:'view-poems', speak:'view-speak', toys:'view-toys' };
 const state = { tab:'games', game:null, toy:null };
 
 function stopActive(){
@@ -7018,6 +7072,177 @@ $('#poemFavToggle').addEventListener('click', () => {
 $('#poemCopy').addEventListener('click', copyPoemText);
 syncPoemFavBtn();
 renderPoems();
+
+/* ---------- 每日练嘴 ---------- */
+const SPEAKS = [
+  { t:'吃葡萄不吐葡萄皮', lv:1, p:'吃葡萄不吐葡萄皮，不吃葡萄倒吐葡萄皮。\n吃葡萄不吐葡萄皮，不吃葡萄倒吐葡萄皮。\n吃葡萄不吐葡萄皮，不吃葡萄倒吐葡萄皮。' },
+  { t:'妈妈骑马', lv:1, p:'妈妈骑马，马慢，妈妈骂马。\n姐姐养牛，牛拗，姐姐扭牛。\n牛拗姐姐扭，马慢妈妈骂。' },
+  { t:'数青蛙', lv:1, p:'一只青蛙一张嘴，两只眼睛四条腿，扑通一声跳下水。\n两只青蛙两张嘴，四只眼睛八条腿，扑通扑通两声跳下水。\n数到五只，再倒着数回来。' },
+  { t:'扁担长，板凳宽', lv:1, p:'扁担长，板凳宽，扁担没有板凳宽，板凳没有扁担长。\n扁担绑在板凳上，板凳偏不让扁担绑在板凳上。' },
+  { t:'白石塔', lv:1, p:'白石塔，白石搭，白石搭石塔，白塔白石搭。\n搭好白石塔，白塔白又大。' },
+  { t:'数枣', lv:1, p:'出东门，过大桥，大桥底下一树枣。\n青的多，红的少，拿着杆子去打枣。\n一个枣，两个枣，三个枣，四个枣，五个枣，六个枣，七个枣，八个枣，九个枣，十个枣。\n再倒着数回来：九个枣，八个枣，七个枣……一个枣。' },
+  { t:'天上日头', lv:1, p:'天上日头，地下石头，嘴里舌头，手上指头。\n连说八遍，不许咬字。' },
+  { t:'颠倒歌', lv:1, p:'东西路，南北走，出门碰见人咬狗。\n拾起狗来打砖头，砖头倒咬狗一口。' },
+  { t:'稀奇歌', lv:1, p:'稀奇稀奇真稀奇，麻雀踩死老母鸡。\n蚂蚁身长三尺六，老爷爷睡在摇篮里。' },
+  { t:'蓝布棉门帘', lv:2, p:'出前门，往正南，有个面铺面冲南，门口挂着蓝布棉门帘。\n摘了它的蓝布棉门帘，面铺还是面冲南。\n给他挂上蓝布棉门帘，面铺还是面冲南。' },
+  { t:'哥挎瓜筐过宽沟', lv:2, p:'哥挎瓜筐过宽沟，赶快过沟看怪狗。\n光看怪狗瓜筐扣，瓜滚狗咬哥翻沟。' },
+  { t:'高高山上一条藤', lv:2, p:'高高山上一条藤，藤条头上挂铜铃。\n风吹藤动铜铃动，风停藤停铜铃停。' },
+  { t:'天连水，水连天', lv:2, p:'天连水，水连天，水天一色望无边。\n蓝蓝的天似绿水，绿绿的水如蓝天。' },
+  { t:'鹅过河', lv:2, p:'坡上卧着一只鹅，坡下流着一条河。\n哥哥说：宽宽的河。弟弟说：肥肥的鹅。\n鹅要过河，河要渡鹅，不知是那鹅过河，还是河渡鹅。' },
+  { t:'四是四，十是十', lv:2, p:'四是四，十是十，十四是十四，四十是四十。\n谁把十四说成四十，就打他十四；谁把四十说成十四，就打他四十。' },
+  { t:'八百标兵', lv:2, p:'八百标兵奔北坡，炮兵并排北边跑。\n炮兵怕把标兵碰，标兵怕碰炮兵炮。' },
+  { t:'老龙与老农', lv:2, p:'老龙恼怒闹老农，老农恼怒闹老龙。\n农怒龙恼农更怒，龙恼农怒龙怕农。' },
+  { t:'牛郎恋刘娘', lv:2, p:'牛郎年年恋刘娘，刘娘连连念牛郎。\n牛郎恋刘娘，刘娘念牛郎，郎恋娘来娘恋郎。' },
+  { t:'白猫黑鼻子', lv:2, p:'白猫黑鼻子，黑猫白鼻子。\n黑猫的白鼻子，碰破了白猫的黑鼻子。\n白猫黑鼻子，黑猫白鼻子——再快一遍。' },
+  { t:'刘奶奶买牛奶', lv:2, p:'刘奶奶找牛奶奶买榴莲牛奶。\n刘奶奶找牛奶奶买榴莲牛奶。\n连说五遍，别说成「牛奶奶找刘奶奶」。' },
+  { t:'粉凤凰', lv:2, p:'粉红墙上画凤凰，凤凰画在粉红墙。\n红凤凰，黄凤凰，粉红凤凰花凤凰。' },
+  { t:'铜勺舀热油', lv:2, p:'铜勺舀热油，铁勺舀凉油。\n铜勺舀了热油舀凉油，铁勺舀了凉油舀热油。' },
+  { t:'炖冻豆腐', lv:2, p:'你会炖冻豆腐，就来炖我炖的冻豆腐。\n你不会炖冻豆腐，就别胡炖乱炖炖坏了我的冻豆腐。' },
+  { t:'盆和瓶', lv:2, p:'桌上有个盆，盆里有个瓶。\n砰！啪！不知是瓶碰盆，还是盆碰瓶。' },
+  { t:'黑化肥·初级', lv:2, p:'黑化肥发灰，灰化肥发黑。\n黑化肥发灰会挥发，灰化肥挥发会发黑。' },
+  { t:'黑化肥·地狱', lv:3, p:'黑化肥发灰，灰化肥发黑。\n黑化肥发灰会挥发，灰化肥挥发会发黑。\n黑化肥挥发发灰会花飞，灰化肥挥发发黑会飞花。' },
+  { t:'石狮子与涩柿子', lv:3, p:'石狮寺前有四十四个石狮子，寺前树上结了四十四个涩柿子。\n四十四个石狮子不吃四十四个涩柿子，四十四个涩柿子倒吃四十四个石狮子。' },
+  { t:'喇嘛与哑巴', lv:3, p:'打南边来了个喇嘛，手里提拉着五斤鳎目；打北边来了个哑巴，腰里别个喇叭。\n提拉鳎目的喇嘛要拿鳎目换别喇叭哑巴的喇叭，别喇叭的哑巴不愿意拿喇叭换提拉鳎目的喇嘛的鳎目。\n喇嘛回家炖鳎目，哑巴滴滴哒哒吹喇叭。' },
+  { t:'红鲤鱼与绿鲤鱼与驴', lv:3, p:'红鲤鱼与绿鲤鱼与驴。\n红鲤鱼与绿鲤鱼与驴。\n红鲤鱼与绿鲤鱼与驴——最后这遍闭着眼说。' },
+  { t:'六十六岁的陆老头', lv:3, p:'六十六岁的陆老头，盖了六十六间楼。\n买了六十六篓油，栽了六十六棵垂杨柳。\n连说三遍，楼房不塌、油不洒。' }
+];
+let spanFavs = store.get('speak.favs', []);
+if (!Array.isArray(spanFavs)) spanFavs = [];
+let spanStreak = store.get('speak.streak', null);
+if (!spanStreak || typeof spanStreak !== 'object') spanStreak = { last:'', cur:0, best:0, day:'', dayReps:0 };
+let spanFilter = 0;
+let spanCur = 0;
+let spanRunning = false;
+let spanT0 = 0;
+let spanTicker = null;
+let spanBestLap = 0;
+function spanToday(){
+  const d = new Date();
+  return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+}
+function spanYesterday(){
+  const d = new Date(); d.setDate(d.getDate() - 1);
+  return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+}
+function lvIcon(lv){ return lv >= 3 ? '🌶️🌶️🌶️' : (lv === 2 ? '🌶️🌶️' : '🌶️'); }
+function lvName(lv){ return lv >= 3 ? '地狱' : (lv === 2 ? '进阶' : '入门'); }
+function speakShow(i){
+  if (i < 0 || i >= SPEAKS.length) return;
+  spanCur = i;
+  const s = SPEAKS[i];
+  $('#speakLv').textContent = lvIcon(s.lv) + ' ' + lvName(s.lv);
+  $('#speakTitle').textContent = s.t;
+  $('#speakText').textContent = s.p;
+  syncSpeakFav();
+  $('#speakTimer').textContent = '0.0 秒';
+  $('#speakBest').textContent = spanBestLap ? ('上一遍 ' + spanBestLap.toFixed(1) + ' 秒 · 连读打结？先慢后快。') : '口诀：先慢三遍，再快三遍。';
+}
+function speakTick(){
+  $('#speakTimer').textContent = ((Date.now() - spanT0) / 1000).toFixed(1) + ' 秒';
+}
+function spanBumpDay(){
+  const today = spanToday();
+  if (spanStreak.day !== today){ spanStreak.day = today; spanStreak.dayReps = 0; }
+  if (spanStreak.last !== today){
+    spanStreak.cur = (spanStreak.last === spanYesterday()) ? spanStreak.cur + 1 : 1;
+    spanStreak.best = Math.max(spanStreak.best, spanStreak.cur);
+    spanStreak.last = today;
+  }
+  spanStreak.dayReps++;
+  store.set('speak.streak', spanStreak);
+  syncSpeakHud();
+}
+function syncSpeakHud(){
+  $('#speakReps').textContent = '今天 ' + (spanStreak.day === spanToday() ? spanStreak.dayReps : 0) + ' 遍';
+  $('#speakStreak').textContent = '🔥 连练 ' + spanStreak.cur + ' 天 · 最长 ' + spanStreak.best + ' 天';
+}
+function syncSpeakFav(){
+  const on = spanFavs.includes(spanCur);
+  const b = $('#speakFavBtn');
+  b.textContent = on ? '★ 已收藏' : '☆ 收藏';
+  b.className = 'px-btn ' + (on ? 'yellow' : 'ghost');
+}
+$('#speakGo').addEventListener('click', () => {
+  if (spanRunning) return;
+  spanRunning = true; spanT0 = Date.now();
+  spanTicker = setInterval(speakTick, 100);
+  sfx.click();
+});
+$('#speakLap').addEventListener('click', () => {
+  let lap;
+  if (spanRunning){ clearInterval(spanTicker); lap = (Date.now() - spanT0) / 1000; } else { lap = spanBestLap || 0; }
+  spanRunning = false;
+  if (lap > 0){
+    if (!spanBestLap || lap < spanBestLap) spanBestLap = lap;
+    $('#speakBest').textContent = '上一遍 ' + lap.toFixed(1) + ' 秒 · 最快纪录 ' + spanBestLap.toFixed(1) + ' 秒';
+  } else {
+    $('#speakBest').textContent = '先点「▶ 开始读」再完成才有成绩哦。';
+  }
+  spanBumpDay();
+  $('#speakTimer').textContent = '0.0 秒';
+  sfx.point();
+});
+$('#speakReset').addEventListener('click', () => {
+  spanRunning = false;
+  if (spanTicker) clearInterval(spanTicker);
+  $('#speakTimer').textContent = '0.0 秒';
+  $('#speakBest').textContent = '口诀：先慢三遍，再快三遍。';
+  sfx.click();
+});
+$('#speakNext').addEventListener('click', () => {
+  let i;
+  do { i = Math.floor(Math.random() * SPEAKS.length); } while (SPEAKS.length > 1 && i === spanCur);
+  speakShow(i); sfx.pop();
+});
+$('#speakFavBtn').addEventListener('click', () => {
+  const k = spanFavs.indexOf(spanCur);
+  if (k >= 0){ spanFavs.splice(k, 1); sfx.bonk(); } else { spanFavs.push(spanCur); sfx.point(); }
+  store.set('speak.favs', spanFavs);
+  syncSpeakFav(); renderSpeakList();
+});
+$$('#view-speak .speak-filters .chip').forEach(ch => ch.addEventListener('click', () => {
+  spanFilter = +ch.dataset.slvl;
+  $$('#view-speak .speak-filters .chip').forEach(c => c.classList.toggle('active', c === ch));
+  renderSpeakList(); sfx.click();
+}));
+function renderSpeakList(){
+  let idx = SPEAKS.map((s, i) => i);
+  if (spanFilter > 0) idx = idx.filter(i => SPEAKS[i].lv === spanFilter);
+  if (spanFilter === -1) idx = idx.filter(i => spanFavs.includes(i));
+  const grid = $('#speakGrid');
+  grid.innerHTML = idx.length ? idx.map(i => {
+    const s = SPEAKS[i];
+    const star = spanFavs.includes(i) ? '<span class="speak-star">★</span>' : '';
+    return '<button class="game-card speak-card" data-si="' + i + '" data-lv="' + s.lv + '" type="button">'
+      + '<span class="card-icon" aria-hidden="true"><svg width="40" height="40" viewBox="0 0 32 32">'
+      + '<rect x="6" y="6" width="20" height="20" rx="2" fill="#2c2d5c"/>'
+      + '<rect x="9" y="10" width="2" height="12" fill="#ff8ac2"/>'
+      + '<rect x="13" y="10" width="2" height="12" fill="#9aa0d8"/>'
+      + '<rect x="17" y="10" width="2" height="8" fill="#9aa0d8"/>'
+      + '<rect x="9" y="24" width="12" height="1.6" fill="#0b0c18"/>'
+      + '</svg></span>'
+      + '<span class="card-name">' + lvIcon(s.lv) + ' ' + escHtml(s.t) + '</span>'
+      + '<span class="card-desc">' + escHtml((s.p.split('\n')[0] || '').slice(0, 20)) + '…</span>'
+      + star + '</button>';
+  }).join('') : '';
+  $('#speakEmptyTip').style.display = idx.length ? 'none' : 'block';
+  $('#speakCount').textContent = SPEAKS.length;
+  $$('#speakGrid .speak-card').forEach(c => c.addEventListener('click', () => {
+    speakShow(+c.dataset.si);
+    $('#speakHero').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    sfx.click();
+  }));
+  initPager('#speakPager', '#speakGrid .speak-card', 16);
+}
+(function speakInit(){
+  const d = new Date();
+  const seed = d.getFullYear() * 372 + (d.getMonth() + 1) * 31 + d.getDate();
+  spanCur = 0;
+  $('#speakChipFav').textContent = '☆ 收藏(' + spanFavs.length + ')';
+  syncSpeakHud();
+  speakShow(seed % SPEAKS.length);
+  renderSpeakList();
+})();
 
 /* ---------- 启动 ---------- */
 window.__audioReady = false;
