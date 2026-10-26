@@ -118,6 +118,20 @@ body.no-crt .scanlines{display:none}
 .speak-card[data-lv="2"] .card-icon rect:nth-child(2){fill:#ffc53d}
 .speak-card[data-lv="3"] .card-icon rect:nth-child(2){fill:#ff6b6b}
 @media (max-width:640px){ .speak-text{font-size:18px} }
+.food-hero{max-width:720px; margin:0 auto 20px; display:flex; flex-direction:column; gap:14px}
+.food-spinbox{background:var(--panel,#151733); border:3px solid var(--line,#0b0c18); box-shadow:5px 5px 0 0 rgba(0,0,0,.5); padding:20px; text-align:center}
+.food-spin-label{font-family:'Press Start 2P','DotGothic16',monospace; font-size:11px; color:var(--muted,#9aa0d8); margin:0 0 12px}
+.food-spin-display{font-size:26px; font-weight:bold; color:var(--ink,#eef0ff); margin:0 0 16px; min-height:34px; line-height:1.4}
+.food-actions{display:flex; gap:10px; flex-wrap:wrap; justify-content:center}
+.food-today{background:var(--panel2,#1b1e3c); border:3px solid var(--line,#0b0c18); padding:14px 18px; display:flex; align-items:center; gap:12px; flex-wrap:wrap; justify-content:space-between}
+.food-today-label{font-family:'Press Start 2P','DotGothic16',monospace; font-size:10px; color:var(--muted,#9aa0d8)}
+.food-today-body{display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+.food-today-body span{font-size:16px; font-weight:bold; color:var(--ink,#eef0ff)}
+.food-filters{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px}
+.food-metachip{cursor:pointer; user-select:none}
+.food-meta-row{display:flex; gap:8px; flex-wrap:wrap; margin:10px 0 0}
+.food-step li{margin-bottom:10px; line-height:1.8}
+@media (max-width:640px){ .food-spin-display{font-size:20px} }
 @media (max-width:640px){
   .poem-body p{font-size:15.5px}
   .poem-body.long-poem p{font-size:13px}
@@ -401,7 +415,7 @@ body.no-crt .scanlines{display:none}
       </svg>
       <div>
         <h1>像素无聊屋</h1>
-        <div class="tagline">BOREDOM KILLER v2.4</div>
+        <div class="tagline">BOREDOM KILLER v2.5</div>
       </div>
     </div>
     <div class="hdr-actions">
@@ -416,6 +430,7 @@ body.no-crt .scanlines{display:none}
     <button class="tab-btn" data-tab="random" type="button">随机内容</button>
     <button class="tab-btn" data-tab="poems" type="button">唐诗三百首</button>
     <button class="tab-btn" data-tab="speak" type="button">每日练嘴</button>
+    <button class="tab-btn" data-tab="food" type="button">每日菜谱</button>
     <button class="tab-btn" data-tab="toys" type="button">互动玩具</button>
   </nav>
 
@@ -892,6 +907,61 @@ body.no-crt .scanlines{display:none}
       </div>
     </section>
 
+    <!-- ===== 视图：每日菜谱 ===== -->
+    <section id="view-food" class="view">
+      <div id="foodLobby" class="lobby">
+        <p class="view-tip">每日菜谱 · <span id="foodCount">…</span> 道家常菜 · 吃饭最大，别发愁</p>
+        <div class="food-hero">
+          <div class="food-spinbox">
+            <p class="food-spin-label" id="foodSpinLabel">今天吃什么？</p>
+            <div id="foodSpinDisplay" class="food-spin-display">点下面的按钮，帮你决定 🎰</div>
+            <div class="food-actions">
+              <button id="foodSpinBtn" class="px-btn green" type="button">🎰 帮我决定！</button>
+              <button id="foodTakeIt" class="px-btn yellow" type="button" style="display:none">就看它了！</button>
+              <button id="foodRespin" class="px-btn ghost" type="button" style="display:none">不算，再抽</button>
+            </div>
+          </div>
+          <div class="food-today">
+            <span class="food-today-label">📅 今日之食（按日期轮换）</span>
+            <div class="food-today-body">
+              <span id="foodTodayName">…</span>
+              <button id="foodTodayGo" class="px-btn ghost" type="button">查看做法</button>
+            </div>
+          </div>
+        </div>
+        <div class="food-filters" id="foodCatRow">
+          <button class="chip active" data-fc="" type="button">全部</button>
+          <button class="chip" data-fc="荤菜" type="button">荤菜</button>
+          <button class="chip" data-fc="素菜" type="button">素菜</button>
+          <button class="chip" data-fc="汤羹" type="button">汤羹</button>
+          <button class="chip" data-fc="主食" type="button">主食</button>
+        </div>
+        <div class="food-filters" id="foodTagRow">
+          <button class="chip active" data-ft="" type="button">不限口味</button>
+          <button class="chip" data-ft="辣" type="button">🌶️ 爱辣</button>
+          <button class="chip" data-ft="清淡" type="button">清淡</button>
+          <button class="chip" data-ft="k15" type="button">⏱️ 15分钟快手</button>
+          <button class="chip" data-ft="fav" type="button" id="foodChipFav">⭐ 想吃清单(0)</button>
+        </div>
+        <div class="card-grid" id="foodGrid"></div>
+        <p class="view-tip" id="foodEmptyTip" style="display:none">这个分类还没有内容——换个筛选试试。</p>
+        <div class="pager" id="foodPager" aria-label="菜谱分页"></div>
+      </div>
+      <div id="foodView" class="game-view hidden">
+        <div class="game-topbar">
+          <button id="foodBack" class="px-btn ghost" type="button">← 返回</button>
+          <h2 id="foodTitle">菜名</h2>
+          <div id="foodFavToggle" class="food-metachip" role="button" tabindex="0">☆ 收藏</div>
+        </div>
+        <div id="foodBody" class="poem-body"></div>
+        <div class="poem-actions">
+          <button id="foodPrevB" class="px-btn ghost" type="button">← 上一道</button>
+          <button id="foodSpinSmall" class="px-btn ghost" type="button">🎰 随机换一道</button>
+          <button id="foodNextB" class="px-btn ghost" type="button">下一道 →</button>
+        </div>
+      </div>
+    </section>
+
     <!-- ===== 视图：互动玩具 ===== -->
     <section id="view-toys" class="view">
       <div id="toyLobby" class="lobby">
@@ -1310,7 +1380,7 @@ $('#crtBtn').addEventListener('click', ()=>{ crtOn=!crtOn; syncHeader(); sfx.cli
 $('#muteBtn').addEventListener('click', ()=>{ muted=!muted; store.set('muted', muted); syncHeader(); if(!muted) sfx.click(); });
 
 /* ---------- 标签页切换（支持 hash） ---------- */
-const VIEWS = { games:'view-games', random:'view-random', poems:'view-poems', speak:'view-speak', toys:'view-toys' };
+const VIEWS = { games:'view-games', random:'view-random', poems:'view-poems', speak:'view-speak', food:'view-food', toys:'view-toys' };
 const state = { tab:'games', game:null, toy:null };
 
 function stopActive(){
@@ -1327,6 +1397,7 @@ function setTab(name){
   if(name==='games'){ $('#gameView').classList.add('hidden'); $('#gameLobby').classList.remove('hidden'); }
   if(name==='toys'){ $('#toyView').classList.add('hidden'); $('#toyLobby').classList.remove('hidden'); }
   if(name==='poems'){ $('#poemView').classList.add('hidden'); $('#poemLobby').classList.remove('hidden'); }
+  if(name==='food'){ $('#foodView').classList.add('hidden'); $('#foodLobby').classList.remove('hidden'); }
   try{ if(location.hash !== '#'+name) history.replaceState(null, '', '#'+name); }catch(e){}
   sfx.click();
 }
@@ -7330,6 +7401,220 @@ function renderSpeakList(){
   syncSpeakHud();
   speakShow(seed % SPEAKS.length);
   renderSpeakList();
+})();
+
+/* ---------- 每日菜谱 ---------- */
+const DISHES = [
+  { n:'宫保鸡丁', c:'荤菜', d:2, mt:25, ty:'辣', i:'鸡胸肉 250g\n花生米 50g\n干辣椒 8 个、花椒少许\n葱段、姜蒜\n生抽 2 勺、醋 1 勺、糖 1 勺、料酒 1 勺、淀粉 1 勺', s:'鸡肉切丁，用料酒、生抽、淀粉腌 15 分钟。\n调碗汁：生抽 1 勺 + 醋 1 勺 + 糖 1 勺 + 淀粉半勺 + 水 2 勺。\n花生米小火炸香，捞出备用。\n热油下干辣椒、花椒爆香，下鸡丁滑炒至变色。\n下葱段、倒入碗汁，大火收浓。\n关火前放花生米翻匀。', tip:'花生米最后放才脆；碗汁提前调好，炒的时候不慌。' },
+  { n:'红烧肉', c:'荤菜', d:2, mt:90, ty:'', i:'五花肉 500g\n冰糖 20g\n姜片、葱段\n生抽 2 勺、老抽 1 勺、料酒 2 勺', s:'五花肉切块，冷水下锅焯水撇沫，捞出。\n少油下冰糖，小火炒至枣红色糖色。\n下肉块翻炒上色，加葱姜、生抽老抽、料酒。\n加热水没过肉，大火烧开转小火炖 60 分钟。\n开大火收汁至浓稠发亮。', tip:'炒糖色宁浅勿黑，黑了发苦。' },
+  { n:'可乐鸡翅', c:'荤菜', d:1, mt:30, ty:'清淡', i:'鸡翅中 8 个\n可乐 1 罐\n姜片\n生抽 2 勺、料酒 1 勺', s:'鸡翅两面划两刀，冷水焯水。\n少油煎至两面金黄。\n倒入可乐刚好没过鸡翅，加生抽、姜片。\n中小火煮约 15 分钟，大火收汁即可。' },
+  { n:'糖醋里脊', c:'荤菜', d:2, mt:30, ty:'', i:'里脊肉 300g\n鸡蛋 1 个、淀粉\n番茄酱 3 勺、糖 2 勺、醋 2 勺', s:'里脊切条，加盐、蛋液、淀粉抓匀挂糊。\n油温五成热下锅炸定型捞出，六成热再复炸一遍至金黄。\n糖 + 醋 + 番茄酱 + 少许水调成糖醋汁，下锅熬浓。\n倒入炸好的肉条快速翻匀裹汁。', tip:'复炸一次，外皮更脆。' },
+  { n:'糖醋排骨', c:'荤菜', d:2, mt:40, ty:'', i:'肋排 400g\n醋 3 勺、糖 2 勺、生抽 1 勺、料酒 1 勺\n姜、熟芝麻', s:'排骨冷水焯水捞出。\n少油煎到表面微黄。\n加糖醋汁（糖 2 : 醋 3 : 生抽 1）和热水没过排骨。\n小火焖 30 分钟，大火收汁，撒芝麻。' },
+  { n:'回锅肉', c:'荤菜', d:2, mt:30, ty:'辣', i:'五花肉 300g\n蒜苗 3 根\n豆瓣酱 1 勺、豆豉少许、甜面酱半勺', s:'五花肉整块加姜煮 20 分钟至筷子能戳透，晾凉切薄片。\n蒜苗斜切段。\n中小火煸炒肉片至吐油、卷起灯盏窝。\n下豆瓣酱、豆豉、甜面酱炒香上色。\n下蒜苗炒至断生出锅。', tip:'肉片煸到卷边才是回锅肉的魂。' },
+  { n:'鱼香肉丝', c:'荤菜', d:2, mt:25, ty:'辣', i:'里脊 200g、木耳、胡萝卜、青椒各 50g\n葱姜蒜末\n糖 2 勺、醋 2 勺、生抽 1 勺、淀粉、豆瓣酱半勺', s:'肉丝用生抽、淀粉腌 10 分钟；配菜切丝。\n调鱼香汁：糖 + 醋 + 生抽 + 淀粉 + 水 3 勺。\n热油滑炒肉丝至变色盛出。\n爆香葱姜蒜、豆瓣酱，下配菜炒 1 分钟。\n回锅肉丝，倒鱼香汁，大火收浓。' },
+  { n:'青椒肉丝', c:'荤菜', d:1, mt:15, ty:'清淡', i:'瘦肉 200g、青椒 3 根\n蒜末\n生抽 1 勺、淀粉 1 勺', s:'肉切丝，用生抽、淀粉腌 10 分钟。\n青椒切丝。\n热油下肉丝滑炒变色，盛出。\n下青椒炒至断生，回锅肉丝，加盐翻匀。' },
+  { n:'木须肉', c:'荤菜', d:1, mt:20, ty:'清淡', i:'猪肉片 150g、鸡蛋 2 个\n黄瓜半根、木耳一小把\n葱姜', s:'鸡蛋加少许盐炒散盛出。\n肉片滑炒至变色。\n下木耳、黄瓜片炒 1 分钟。\n回锅鸡蛋，加盐、生抽翻匀。' },
+  { n:'水煮肉片', c:'荤菜', d:2, mt:30, ty:'辣', i:'里脊 300g、豆芽、青菜\n豆瓣酱 1 勺、干辣椒、花椒\n蛋清 1 个、淀粉', s:'肉切薄片，用蛋清、淀粉、料酒腌 15 分钟。\n豆芽青菜焯熟垫碗底。\n爆香豆瓣酱出红油，加热水烧开。\n下肉片滑散煮 1 分钟，连汤倒进碗里。\n表面撒干辣椒段、花椒，浇一勺滚油激香。' },
+  { n:'京酱肉丝', c:'荤菜', d:2, mt:25, ty:'', i:'里脊 250g、豆皮 2 张、大葱 1 根\n甜面酱 2 勺、糖半勺', s:'肉丝用料酒、淀粉腌 10 分钟。\n豆皮切块、大葱切丝铺盘。\n肉丝滑炒至变色。\n甜面酱 + 糖 + 水 2 勺下锅炒浓，回锅肉丝裹匀酱汁，配豆皮葱丝卷着吃。' },
+  { n:'清蒸鲈鱼', c:'荤菜', d:2, mt:20, ty:'清淡', i:'鲈鱼 1 条\n葱丝、姜丝\n料酒、蒸鱼豉油 2 勺', s:'鱼身两面划刀，抹料酒腌 10 分钟。\n盘底垫葱姜，水开后上锅大火蒸 8 分钟。\n倒掉盘中汤汁，换新葱姜丝。\n烧热油浇在葱丝上激香，淋蒸鱼豉油。', tip:'8 分钟是嫩的关键，蒸过头发柴。' },
+  { n:'红烧带鱼', c:'荤菜', d:2, mt:30, ty:'', i:'带鱼 400g\n葱姜蒜\n生抽 2 勺、老抽半勺、糖 1 勺', s:'带鱼去内脏切段，擦干表面水分，裹薄淀粉。\n油煎至两面金黄。\n爆香葱姜蒜，加热水、生抽、老抽、糖。\n小火烧 15 分钟，大火收汁。', tip:'擦干再煎，不破皮不粘锅。' },
+  { n:'红烧狮子头', c:'荤菜', d:2, mt:60, ty:'清淡', i:'猪肉末 500g（肥三瘦七）、马蹄 6 个\n鸡蛋 1 个、淀粉、葱姜水\n生抽 2 勺、老抽半勺、糖 1 勺', s:'肉末加马蹄碎、蛋清、盐、淀粉、葱姜水，顺一个方向搅打上劲。\n团成大丸子，油温五成热下锅，小火炸至定型金黄。\n加热水、生抽、老抽、糖，小火炖 40 分钟。\n收汁摆盘，浇汤汁。', tip:'摔打上劲的丸子不容易散。' },
+  { n:'孜然羊肉', c:'荤菜', d:2, mt:20, ty:'辣', i:'羊肉 300g、洋葱半个\n孜然粉 2 勺、辣椒面 1 勺\n料酒、淀粉', s:'羊肉切片，用料酒、盐、淀粉腌 15 分钟。\n大火热油，羊肉快速滑炒断生。\n下洋葱炒香。\n撒孜然粉、辣椒面、盐，翻匀立刻出锅。', tip:'全程大火快炒，羊肉才嫩不膻。' },
+  { n:'蚂蚁上树', c:'荤菜', d:1, mt:15, ty:'辣', i:'肉末 100g、粉丝 1 把\n豆瓣酱半勺、葱姜蒜', s:'粉丝温水泡软，剪短。\n炒肉末至变色，下豆瓣酱炒香。\n加小半碗水烧开，下粉丝推匀。\n小火煮 2 分钟收干汤汁。', tip:'粉丝吸汤快，水别太少。' },
+  { n:'番茄牛腩', c:'荤菜', d:2, mt:100, ty:'清淡', i:'牛腩 500g、西红柿 3 个\n姜\n生抽 1 勺、老抽半勺、冰糖 3 粒', s:'牛腩切块焯水。\n西红柿去皮切块，下锅炒出沙。\n下牛腩翻炒上色，加热水没过。\n小火炖 80 分钟，加盐调味再炖 10 分钟。', tip:'用高压锅 25 分钟搞定。' },
+  { n:'葱爆牛肉', c:'荤菜', d:2, mt:15, ty:'', i:'牛肉 300g、大葱 2 根\n生抽 1 勺、料酒 1 勺、淀粉', s:'牛肉逆纹切薄片，用生抽、淀粉腌 15 分钟。\n大葱斜切段。\n大火热油，牛肉滑炒至八成熟盛出。\n大葱下锅爆香，回锅牛肉，加盐快速翻匀。', tip:'逆纹切才能咬得动。' },
+  { n:'油焖大虾', c:'荤菜', d:2, mt:15, ty:'清淡', i:'大虾 8 只\n葱姜丝\n糖半勺、生抽 1 勺、料酒 1 勺', s:'大虾剪须开背去虾线，擦干。\n少油煎大虾 2 分钟，用铲子轻压虾头煸出虾油。\n下葱姜、料酒、生抽、糖、小半碗水。\n焖 3 分钟，大火收汁。' },
+  { n:'香菇滑鸡', c:'荤菜', d:2, mt:25, ty:'清淡', i:'鸡腿肉 300g、香菇 8 朵\n生抽 1 勺、蚝油 1 勺、淀粉 1 勺', s:'鸡腿去骨切块，用生抽、淀粉腌 15 分钟。\n香菇切块。\n热油煎鸡块至表面微黄。\n下香菇、蚝油、小半碗水，焖 10 分钟收汁。' },
+  { n:'酸辣土豆丝', c:'素菜', d:1, mt:10, ty:'辣', i:'土豆 2 个、干辣椒 3 个、花椒 10 粒\n白醋 2 勺', s:'土豆切细丝，清水泡去淀粉，沥干。\n热油爆香花椒、干辣椒。\n下土豆丝大火快炒 1 分钟。\n沿锅边淋醋，加盐翻匀马上出锅。', tip:'醋沿锅边淋，酸香更立体。' },
+  { n:'西红柿炒鸡蛋', c:'素菜', d:1, mt:10, ty:'清淡', i:'西红柿 2 个、鸡蛋 3 个\n糖半勺、盐', s:'鸡蛋加盐打散，热大油炒到蓬松盛出。\n西红柿切块下锅，炒到出沙出汁。\n加糖、回锅鸡蛋翻匀，让蛋吸饱汤汁。' },
+  { n:'麻婆豆腐', c:'素菜', d:2, mt:20, ty:'辣', i:'嫩豆腐 450g、肉末 50g（可不加）\n豆瓣酱 1 勺、花椒粉、蒜苗', s:'豆腐切块，盐水焯 30 秒不易碎。\n炒肉末变色，下豆瓣酱炒出红油。\n加小半碗水，下豆腐轻轻推匀煮 3 分钟。\n水淀粉分两次勾芡，撒花椒粉、蒜苗末。', tip:'分两次勾芡，豆腐越挂汁越亮。' },
+  { n:'家常豆腐', c:'素菜', d:1, mt:15, ty:'', i:'老豆腐 400g、青红椒各 1 个\n豆瓣酱 1 勺、木耳少许', s:'豆腐切三角厚片，煎至两面金黄，盛出。\n爆香豆瓣酱，下青红椒、木耳。\n豆腐回锅，加水 2 勺、生抽翻匀。\n勾薄芡出锅。' },
+  { n:'干煸四季豆', c:'素菜', d:2, mt:15, ty:'辣', i:'四季豆 300g、肉末 50g（可不加）\n干辣椒、花椒、芽菜碎', s:'四季豆折段，务必擦干。\n多油中火炸(煸)到起皮微皱，盛出。\n爆香肉末、干辣椒、花椒。\n回锅四季豆加盐、芽菜碎炒干香。', tip:'皮皱才入油香，能煸入味。' },
+  { n:'地三鲜', c:'素菜', d:2, mt:20, ty:'', i:'土豆 1 个、茄子 1 个、青椒 1 个\n蒜末\n生抽 1 勺、糖半勺、淀粉', s:'土豆、茄子切滚刀块，分别油炸至金黄。\n青椒过油 10 秒捞出。\n爆香蒜末，三样回锅。\n加生抽、糖、水 2 勺焖 2 分钟，勾薄芡。' },
+  { n:'红烧茄子', c:'素菜', d:1, mt:15, ty:'', i:'茄子 2 根\n蒜 5 瓣\n生抽 1 勺、糖 1 勺、醋半勺、淀粉', s:'茄子切滚刀块，撒盐腌 10 分钟挤掉水分，拌干淀粉。\n调汁：生抽 + 糖 + 醋 + 淀粉 + 水。\n油炸或少油煎茄子至软身金黄。\n下蒜末翻炒，倒汁收浓。', tip:'腌过的茄子不吸油。' },
+  { n:'虎皮青椒', c:'素菜', d:1, mt:10, ty:'辣', i:'薄皮青椒 5 个\n蒜 3 瓣\n生抽 1 勺、醋半勺、糖半勺', s:'青椒去籽，用刀背压裂。\n少油中火煎到两面起虎皮斑。\n下蒜末，加生抽、醋、糖、水 1 勺。\n翻匀收干。' },
+  { n:'蒜蓉西兰花', c:'素菜', d:1, mt:10, ty:'清淡', i:'西兰花 1 棵、蒜 5 瓣', s:'西兰花掰小朵，盐水泡 10 分钟，焯 30 秒捞出。\n小火炒香蒜末。\n下西兰花大火翻炒。\n加盐快炒几下出锅。' },
+  { n:'手撕包菜', c:'素菜', d:1, mt:10, ty:'', i:'包菜半棵、五花肉几片（可不加）\n干辣椒 3 个、花椒少许\n生抽 1 勺、醋几滴', s:'包菜手撕成大片，梗和叶分开。\n爆香干辣椒、花椒（和荤油）。\n先下硬梗后下叶子，大火翻炒 1 分钟。\n淋生抽、几滴醋，加盐出锅。' },
+  { n:'干煸菜花', c:'素菜', d:1, mt:15, ty:'', i:'散花菜 1 棵、五花肉片 50g（可不加）\n干辣椒、生抽 1 勺', s:'菜花掰小朵盐水泡 10 分钟，沥干。\n少油干煸到边缘微焦，盛出。\n爆香干辣椒、肉片。\n回锅菜花，加生抽、盐炒匀。' },
+  { n:'韭菜炒蛋', c:'素菜', d:1, mt:8, ty:'清淡', i:'韭菜 200g、鸡蛋 3 个', s:'鸡蛋炒至嫩块盛出。\n韭菜切段，大火快炒 30 秒。\n回锅鸡蛋，加盐翻匀。', tip:'韭菜炒过头会出水，动作要快。' },
+  { n:'拍黄瓜', c:'素菜', d:1, mt:5, ty:'清淡', i:'黄瓜 2 根、蒜 3 瓣\n香油、醋 1 勺、生抽 1 勺', s:'黄瓜用刀拍裂切段，加盐腌 5 分钟，倒掉水。\n蒜泥 + 醋 + 生抽 + 香油调成汁。\n拌匀就能吃，冷藏 10 分钟更脆。' },
+  { n:'皮蛋豆腐', c:'素菜', d:1, mt:5, ty:'清淡', i:'内酯豆腐 1 盒、皮蛋 2 个\n葱花、生抽 1 勺、香醋 1 勺、香油', s:'豆腐盒子角剪开，扣入盘中切厚片。\n皮蛋切瓣，摆上豆腐。\n生抽 + 醋 + 香油 + 葱花淋面即成。' },
+  { n:'香菇炒油菜', c:'素菜', d:1, mt:10, ty:'清淡', i:'油菜 300g、香菇 6 朵、蒜 3 瓣、蚝油半勺', s:'香菇切厚片，油菜对半切。\n干锅少油煸香菇出香味。\n下油菜大火炒到翠绿断生。\n加蚝油、盐翻匀。' },
+  { n:'西红柿蛋花汤', c:'汤羹', d:1, mt:10, ty:'清淡', i:'西红柿 1 个、鸡蛋 2 个、香菜', s:'西红柿切片，少油炒出沙。\n加两碗水烧开。\n盐、生抽调味。\n蛋液画圈淋入，凝固后关火，点香油撒香菜。' },
+  { n:'紫菜虾皮汤', c:'汤羹', d:1, mt:5, ty:'清淡', i:'紫菜一小块、虾皮 1 勺、鸡蛋 1 个、葱花', s:'水烧开下紫菜、虾皮。\n盐、白胡椒、生抽调味。\n蛋液画圈淋入成蛋花。\n撒葱花，点几滴香油。' },
+  { n:'冬瓜排骨汤', c:'汤羹', d:2, mt:70, ty:'清淡', i:'排骨 300g、冬瓜 400g、姜 3 片', s:'排骨焯水冲净浮沫。\n加姜片、足量热水，小火炖 50 分钟。\n下冬瓜再炖 15 分钟到半透明。\n盐调味。' },
+  { n:'莲藕排骨汤', c:'汤羹', d:2, mt:80, ty:'清淡', i:'排骨 300g、粉藕 1 节、姜 3 片', s:'排骨焯水，莲藕去皮切滚刀块。\n全部材料加足热水入锅。\n小火炖 70 分钟。\n盐调味，汤甜藕粉。', tip:'炖汤选粉藕（七孔），脆藕清炒。' },
+  { n:'鲫鱼豆腐汤', c:'汤羹', d:2, mt:40, ty:'清淡', i:'鲫鱼 1 条、嫩豆腐 1 盒、姜 3 片', s:'鲫鱼擦干，煎至两面金黄。\n冲入开水，大火滚 10 分钟直到汤色奶白。\n下豆腐再煮 10 分钟。\n盐、白胡椒调味。', tip:'煎透 + 开水，汤一定白。' },
+  { n:'菌菇鸡汤', c:'汤羹', d:2, mt:70, ty:'清淡', i:'鸡腿 1 个、杂菌菇 1 盘、姜 3 片', s:'鸡腿焯水。\n菌菇洗净撕小朵。\n和姜片一起小火炖 60 分钟。\n盐调味。' },
+  { n:'海带豆腐汤', c:'汤羹', d:1, mt:15, ty:'清淡', i:'海带结 100g、豆腐 1 块、虾皮少许', s:'水烧开下海带结，煮 10 分钟。\n豆腐切块再煮 5 分钟。\n盐、白胡椒、香油调味，撒虾皮。' },
+  { n:'酸辣汤', c:'汤羹', d:2, mt:20, ty:'辣', i:'豆腐、木耳、胡萝卜、金针菇、鸡蛋 1 个\n香醋 2 勺、白胡椒、水淀粉、香菜', s:'木耳、豆腐、胡萝卜切细丝。\n水开下全部丝料煮 3 分钟。\n盐、生抽、香醋、白胡椒调味。\n水淀粉勾芡，蛋液画圈淋入，撒香菜。', tip:'白胡椒是辣的主味，醋起锅前别减。' },
+  { n:'冬瓜丸子汤', c:'汤羹', d:2, mt:30, ty:'清淡', i:'冬瓜 300g、猪肉末 200g\n蛋清 1 个、姜 3 片', s:'肉末加盐、蛋清、淀粉，顺一个方向搅打上劲。\n水微开转小火，挤入丸子煮至浮起。\n下冬瓜片煮 8 分钟。\n盐、香油调味。', tip:'手虎口挤丸子，形状圆且紧。' },
+  { n:'三鲜汤', c:'汤羹', d:1, mt:15, ty:'清淡', i:'豆腐半块、鸡蛋 2 个、虾皮、青菜', s:'鸡蛋摊成蛋饼切条。\n水开下豆腐条、蛋条、虾皮。\n下青菜煮 1 分钟。\n盐、白胡椒、香油。' },
+  { n:'蛋炒饭', c:'主食', d:1, mt:10, ty:'清淡', i:'隔夜米饭 1 碗、鸡蛋 2 个、葱花', s:'鸡蛋打散，热油下锅划散成碎块。\n米饭下锅压散翻炒，让蛋液裹住米粒。\n加盐调味，撒葱花出锅。', tip:'隔夜饭粒粒分明；热饭先摊凉。' },
+  { n:'扬州炒饭', c:'主食', d:2, mt:15, ty:'清淡', i:'米饭 1 碗、鸡蛋 2 个、虾仁 50g、火腿丁、玉米豌豆', s:'虾仁、火腿丁、玉米豌豆焯水 10 秒。\n蛋液炒散，米饭下锅压散炒透。\n配料回锅翻匀。\n盐调味，撒葱花。' },
+  { n:'葱油拌面', c:'主食', d:1, mt:10, ty:'清淡', i:'面条 200g、小葱 4 根\n生抽 2 勺、老抽半勺、糖 1 勺', s:'小葱切段，小火慢炸到焦黄盛出，葱油留锅。\n生抽、老抽、糖、水 2 勺入锅熬开，成葱油酱。\n面条煮熟过凉水沥干。\n拌上酱汁，放上炸葱。' },
+  { n:'番茄鸡蛋面', c:'主食', d:1, mt:15, ty:'清淡', i:'挂面 1 把、西红柿 1 个、鸡蛋 1 个、青菜', s:'西红柿炒出沙，加热水烧开。\n下面条煮到八成熟。\n画圈淋蛋液，下青菜。\n盐、香油调味。' },
+  { n:'排骨焖饭', c:'主食', d:2, mt:50, ty:'清淡', i:'排骨 300g、大米 2 杯\n香菇 3 朵、土豆半个', s:'排骨焯水；香菇、土豆切丁。\n排骨煎香，加生抽、老抽、糖、蚝油炒上色。\n米淘净铺排骨、香菇、土豆，水比平时略少。\n正常煮饭程序，跳闸后拌匀。' },
+  { n:'煲仔饭', c:'主食', d:2, mt:40, ty:'清淡', i:'大米 1 杯、腊肠 1 根、青菜 2 棵\n鸡蛋 1 个、生抽、香油', s:'大米泡 30 分钟。\n米 + 水 1:1.1，小火盖煮 8 分钟。\n码上腊肠片、青菜，中间磕一个蛋。\n小火再焖 8 分钟，关火焗 5 分钟。\n生抽 + 香油 + 热水调成豉油汁淋面。', tip:'焗的那 5 分钟别开盖，锅巴就是在等这一口气。' },
+  { n:'韭菜猪肉饺子', c:'主食', d:3, mt:60, ty:'清淡', i:'猪肉末 300g、韭菜 1 把、饺子皮\n姜末、生抽 2 勺、香油', s:'肉末加生抽、姜末、水 2 勺，顺一个方向搅打上劲。\n韭菜切末，先用油拌住锁水，再和肉拌。\n包：皮中心放馅，对折捏紧两边推褶。\n水开下饺，点两次凉水，浮起鼓肚即熟。' },
+  { n:'猪肉大葱包子', c:'主食', d:3, mt:90, ty:'清淡', i:'中筋面粉 500g、酵母 5g、温水 260g\n猪肉末 300g、大葱 2 根', s:'温水化开酵母揉面，醒发 1 小时至两倍大。\n肉馅加生抽、蚝油、姜末、少许清水搅上劲。\n面团排气分剂擀皮，大葱切末日拌入肉馅。\n包褶收口，垫纸二次醒发 15 分钟。\n水开上锅大火蒸 15 分钟，关火焖 3 分钟再开盖。', tip:'关火焖 3 分钟，防塌回缩。' },
+  { n:'葱油饼', c:'主食', d:2, mt:30, ty:'清淡', i:'中筋面粉 300g、温水 180g\n小葱 1 把、油酥（面粉 2 勺 + 热油 3 勺）', s:'温水和面，盖湿布醒 20 分钟。\n擀开刷油酥、撒盐和葱花。\n卷成长条盘成团，压扁再擀成薄饼。\n多油小火烙，两面金黄鼓起层次即成。' },
+  { n:'鸡蛋灌饼', c:'主食', d:2, mt:20, ty:'清淡', i:'面粉 300g、鸡蛋 2 个、生菜、甜面酱', s:'温水和面醒 20 分钟，分剂。\n面剂擀薄、刷油、撒盐，卷起盘圆再擀开。\n小火烙到鼓起大泡，把蛋液从泡口灌进去。\n翻面再煎 1 分钟，抹酱卷生菜。', tip:'饼面鼓起大泡就是灌蛋时机。' },
+  { n:'疙瘩汤', c:'主食', d:1, mt:20, ty:'清淡', i:'面粉 1 碗、鸡蛋 2 个、西红柿 1 个、青菜', s:'面粉一点点洒水，搅成小疙瘩。\n西红柿炒出沙，加两碗水烧开。\n疙瘩下锅搅散，煮 2 分钟。\n画圈淋蛋液，下青菜，盐、香油调味。' },
+  { n:'家常炒面', c:'主食', d:1, mt:15, ty:'清淡', i:'面条 200g、鸡蛋 1 个、包菜、胡萝卜', s:'面煮八成熟，过凉水沥干。\n鸡蛋炒散盛出。\n蔬菜丝大火炒到断生。\n面条、鸡蛋回锅，加生抽 1 勺、盐翻匀。' },
+  { n:'皮蛋瘦肉粥', c:'主食', d:2, mt:60, ty:'清淡', i:'大米 1 杯、皮蛋 2 个、猪里脊 100g、姜', s:'大米加几滴香油泡 30 分钟。\n里脊切细丝，用盐、淀粉腌 10 分钟。\n水开下米，大火煮开转小火熬 40 分钟至开花。\n下肉丝搅散，皮蛋切丁放入，再煮 10 分钟。\n盐、白胡椒、葱花。' },
+  { n:'南瓜小米粥', c:'主食', d:1, mt:30, ty:'清淡', i:'小米半杯、南瓜 200g', s:'小米淘净，南瓜去皮切小丁。\n水开下小米，小火煮 20 分钟。\n下南瓜再煮 10 分钟到软糯金黄。', tip:'早晨喝一碗，胃里暖暖的。' },
+  { n:'三鲜馄饨', c:'主食', d:3, mt:50, ty:'清淡', i:'馄饨皮 300g、猪肉末 200g、鸡蛋 1 个\n紫菜、虾皮、葱花、生抽、香油', s:'肉末加蛋清、盐、生抽，搅打上劲。\n包馄饨：馅放在皮中下侧，卷起折捏两角成元宝。\n水开下馄饨，浮起再煮 1 分钟。\n碗底放紫菜、虾皮，生抽、香油，冲入滚烫汤水，捞馄饨入碗。' }
+];
+let foodFavs = store.get('food.favs', []);
+if (!Array.isArray(foodFavs)) foodFavs = [];
+let foodSpins = store.get('food.spins', null);
+if (!foodSpins || typeof foodSpins !== 'object') foodSpins = {};
+let foodCat = '';
+let foodTag = '';
+let foodCur = 0;
+function foodFilterIdx(){
+  let idx = DISHES.map((s, i) => i);
+  if (foodCat) idx = idx.filter(i => DISHES[i].c === foodCat);
+  if (foodTag === 'fav') idx = idx.filter(i => foodFavs.includes(i));
+  else if (foodTag === 'k15') idx = idx.filter(i => DISHES[i].mt <= 15);
+  else if (foodTag) idx = idx.filter(i => DISHES[i].ty === foodTag);
+  return idx;
+}
+function foodDIcon(d){ return d >= 3 ? '🔥🔥🔥' : (d === 2 ? '🔥🔥' : '🔥'); }
+function foodTyTxt(d){ return d === '辣' ? '🌶️ 爱辣' : (d === '清淡' ? '清淡' : '平常口味'); }
+function foodOpen(i){
+  if (i < 0 || i >= DISHES.length) return;
+  foodCur = i;
+  const s = DISHES[i];
+  $('#foodLobby').classList.add('hidden');
+  $('#foodView').classList.remove('hidden');
+  $('#foodTitle').textContent = s.n;
+  const spins = foodSpins[i] || 0;
+  $('#foodFavToggle').textContent = foodFavs.includes(i) ? '★ 已收藏' : '☆ 收藏';
+  $('#foodBody').innerHTML = ''
+    + '<div class="food-meta-row">'
+    + '<span class="rc-cat">' + s.c + '</span>'
+    + '<span class="rc-cat c-joke">' + foodDIcon(s.d) + ' 难度 ' + s.d + '</span>'
+    + '<span class="rc-cat" style="background:#8ee08e">⏱️ ' + s.mt + ' 分钟</span>'
+    + '<span class="rc-cat" style="background:#c9b3ff">' + foodTyTxt(s.ty) + '</span>'
+    + (spins ? '<span class="rc-cat" style="background:#ffc53d">🏷️ 被翻牌 ' + spins + ' 次</span>' : '')
+    + '</div>'
+    + '<div class="food-sec"><h3>🛒 食材</h3><div class="poem-text">' + escHtml(s.i).replace(/\n/g, '<br>') + '</div></div>'
+    + '<div class="food-sec"><h3>👩‍🍳 步骤</h3><ol class="food-step">' + s.s.split('\n').map(x => '<li>' + escHtml(x) + '</li>').join('') + '</ol></div>'
+    + (s.tip ? '<div class="food-sec"><h3>💡 小贴士</h3><div class="poem-text">' + escHtml(s.tip) + '</div></div>' : '')
+    + '<p class="view-tip" style="margin-top:12px">今天把它端上桌，就是好日子。</p>';
+}
+function renderFoodList(){
+  const idx = foodFilterIdx();
+  const grid = $('#foodGrid');
+  grid.innerHTML = idx.length ? idx.map(i => {
+    const s = DISHES[i];
+    const star = foodFavs.includes(i) ? '<span class="speak-star">★</span>' : '';
+    return '<button class="game-card speak-card" data-fi="' + i + '" type="button">'
+      + '<span class="card-icon" aria-hidden="true"><svg width="40" height="40" viewBox="0 0 32 32">'
+      + '<rect x="5" y="14" width="22" height="12" rx="2" fill="#ff8ac2"/>'
+      + '<rect x="5" y="14" width="22" height="4" fill="#e05a92"/>'
+      + '<rect x="7" y="12" width="18" height="2" fill="#ffc53d"/>'
+      + '<rect x="11" y="9" width="3" height="3" fill="#9aa0d8"/>'
+      + '<rect x="17" y="8" width="3" height="4" fill="#9aa0d8"/>'
+      + '<rect x="23" y="17" width="3" height="9" fill="#0b0c18"/>'
+      + '</svg></span>'
+      + '<span class="card-name">' + escHtml(s.n) + '</span>'
+      + '<span class="card-desc">' + s.c + ' · ' + s.mt + ' 分钟' + (s.ty ? ' · 🌶️' : '') + '</span>'
+      + star + '</button>';
+  }).join('') : '';
+  $('#foodEmptyTip').style.display = idx.length ? 'none' : 'block';
+  $('#foodCount').textContent = DISHES.length;
+  $('#foodChipFav').textContent = '⭐ 想吃清单(' + foodFavs.length + ')';
+  $$('#foodGrid .speak-card').forEach(c => c.addEventListener('click', () => { foodOpen(+c.dataset.fi); $('#foodView').scrollIntoView({ behavior: 'smooth' }); sfx.click(); }));
+  initPager('#foodPager', '#foodGrid .speak-card', 16);
+}
+function foodRandomIdx(){
+  const idx = foodFilterIdx();
+  const pool = idx.length ? idx : DISHES.map((s, i) => i);
+  if (pool.length === 1) return pool[0];
+  let i;
+  do { i = pool[Math.floor(Math.random() * pool.length)]; } while (i === foodCur && pool.length > 1);
+  return i;
+}
+let foodSpinning = false;
+function foodSpin(){
+  if (foodSpinning) return;
+  foodSpinning = true;
+  const btn = $('#foodSpinBtn');
+  btn.disabled = true;
+  $('#foodSpinLabel').textContent = '抽签中……';
+  $('#foodTakeIt').style.display = 'none';
+  $('#foodRespin').style.display = 'none';
+  const steps = 14 + Math.floor(Math.random() * 4);
+  const disp = $('#foodSpinDisplay');
+  let k = 0;
+  (function next(){
+    disp.textContent = DISHES[foodRandomIdx()].n + ' 🍳';
+    sfx.click();
+    k++;
+    if (k >= steps){
+      const pick = foodRandomIdx();
+      disp.textContent = '🍕 就吃这道：' + DISHES[pick].n;
+      $('#foodSpinLabel').textContent = '命中啦——';
+      $('#foodTakeIt').style.display = '';
+      $('#foodRespin').style.display = '';
+      $('#foodTakeIt').onclick = () => {
+        foodSpins[pick] = (foodSpins[pick] || 0) + 1;
+        store.set('food.spins', foodSpins);
+        foodOpen(pick);
+        $('#foodView').scrollIntoView({ behavior: 'smooth' });
+        sfx.point();
+      };
+      $('#foodRespin').onclick = () => { sfx.bonk(); foodSpin(); };
+      btn.disabled = false;
+      foodSpinning = false;
+      return;
+    }
+    const speed = 60 + k * 22;
+    setTimeout(next, speed);
+  })();
+  sfx.pop();
+}
+$('#foodSpinBtn').addEventListener('click', foodSpin);
+$('#foodBack').addEventListener('click', () => {
+  $('#foodView').classList.add('hidden');
+  $('#foodLobby').classList.remove('hidden');
+  renderFoodList(); sfx.click();
+});
+$('#foodFavToggle').addEventListener('click', () => {
+  const k = foodFavs.indexOf(foodCur);
+  if (k >= 0){ foodFavs.splice(k, 1); sfx.bonk(); } else { foodFavs.push(foodCur); sfx.point(); }
+  store.set('food.favs', foodFavs);
+  $('#foodFavToggle').textContent = foodFavs.includes(foodCur) ? '★ 已收藏' : '☆ 收藏';
+  renderFoodList();
+});
+$('#foodPrevB').addEventListener('click', () => { foodOpen(foodCur - 1); sfx.click(); });
+$('#foodNextB').addEventListener('click', () => { foodOpen(foodCur + 1); sfx.click(); });
+$('#foodSpinSmall').addEventListener('click', () => { foodOpen(foodRandomIdx()); sfx.pop(); });
+$$('#foodCatRow .chip').forEach(ch => ch.addEventListener('click', () => {
+  foodCat = ch.dataset.fc;
+  $$('#foodCatRow .chip').forEach(c => c.classList.toggle('active', c === ch));
+  renderFoodList(); sfx.click();
+}));
+$$('#foodTagRow .chip').forEach(ch => ch.addEventListener('click', () => {
+  foodTag = ch.dataset.ft;
+  $$('#foodTagRow .chip').forEach(c => c.classList.toggle('active', c === ch));
+  renderFoodList(); sfx.click();
+}));
+(function foodInit(){
+  const d = new Date();
+  const seed = d.getFullYear() * 372 + (d.getMonth() + 1) * 31 + d.getDate();
+  const today = DISHES[seed % DISHES.length];
+  $('#foodTodayName').textContent = today.n + '（' + today.c + ' · ' + today.mt + ' 分钟）';
+  $('#foodTodayGo').addEventListener('click', () => {
+    foodOpen(DISHES.indexOf(today));
+    $('#foodView').scrollIntoView({ behavior: 'smooth' });
+    sfx.click();
+  });
+  foodCur = seed % DISHES.length;
+  renderFoodList();
 })();
 
 /* ---------- 启动 ---------- */
