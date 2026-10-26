@@ -437,7 +437,7 @@ body.no-crt .scanlines{display:none}
       </svg>
       <div>
         <h1>像素快乐星球</h1>
-        <div class="tagline">BOREDOM KILLER v2.9</div>
+        <div class="tagline">BOREDOM KILLER v2.9.1</div>
       </div>
     </div>
     <div class="hdr-actions">
@@ -2886,8 +2886,8 @@ GAMES.gomoku = {
     cv.addEventListener('click', e=>{
       if(G.over||G.turn!=='b') return;
       const r=cv.getBoundingClientRect();
-      const x=Math.round((e.clientX-r.left)/r.width*G.N);
-      const y=Math.round((e.clientY-r.top)/r.height*G.N);
+      const x=Math.min(G.N-1, Math.max(0, Math.floor((e.clientX-r.left)/r.width*G.N)));
+      const y=Math.min(G.N-1, Math.max(0, Math.floor((e.clientY-r.top)/r.height*G.N)));
       if(x<0||y<0||x>=G.N||y>=G.N||G.board[y][x]) return;
       placeGomoku(G,x,y,'b');
     });
