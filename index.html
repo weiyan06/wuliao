@@ -397,10 +397,12 @@ body.no-crt .scanlines{display:none}
 .wheel-seg{position:absolute;left:50%;top:50%;font-family:'Press Start 2P',monospace;font-size:11px;color:var(--line);text-shadow:0 0 2px rgba(255,255,255,.4)}
 .wheel-pointer{position:absolute;left:50%;top:-8px;transform:translateX(-50%);width:0;height:0;border-left:10px solid transparent;border-right:10px solid transparent;border-top:16px solid var(--red);z-index:2;filter:drop-shadow(2px 2px 0 rgba(0,0,0,.5))}
 .wheel-result{text-align:center;margin:10px 0;font-size:16px;color:var(--yellow);min-height:24px}
-.dice-box{display:flex;gap:20px;justify-content:center;margin:16px 0}
-.dice{width:92px;height:92px;background:var(--ink);border:4px solid var(--line);box-shadow:4px 4px 0 rgba(0,0,0,.5);display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);padding:12px;gap:6px}
+.dice-box{display:flex;flex-wrap:wrap;justify-content:center;gap:20px;max-width:316px;margin:16px auto}
+.dice{width:92px;height:92px;background:#f4f1e8;border:4px solid #16172a;box-shadow:4px 4px 0 rgba(0,0,0,.5);display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);padding:12px;gap:6px}
 .dice-dot{background:transparent}
-.dice-dot.on{background:var(--line)}
+.dice-dot.on{background:#1b1c2e}
+.dice-dot.on.red{background:#d4312a}
+.dice-dot.big{width:34px;height:34px;place-self:center}
 .dice-total{text-align:center;font-family:'Press Start 2P',monospace;font-size:13px;color:var(--green);margin-bottom:14px}
 .reflex-pad{height:220px;background:var(--panel2);border:4px solid var(--line);box-shadow:6px 6px 0 rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:17px;color:var(--muted);text-align:center;user-select:none}
 .reflex-pad.wait{background:#2c2d5c}
@@ -450,7 +452,7 @@ body.no-crt .scanlines{display:none}
       </svg>
       <div>
         <h1>像素快乐星球</h1>
-        <div class="tagline">BOREDOM KILLER v3.0.1</div>
+        <div class="tagline">BOREDOM KILLER v3.0.2</div>
       </div>
     </div>
     <div class="hdr-actions">
@@ -3382,7 +3384,7 @@ GAMES.dice = {
 function renderDice(el,val){
   const dots={1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]};
   el.innerHTML='';
-  for(let i=0;i<9;i++){ const c=document.createElement('div'); c.className='dice-dot'+(dots[val].includes(i)?' on':''); el.appendChild(c); }
+  for(let i=0;i<9;i++){ const c=document.createElement('div'); c.className='dice-dot'+(dots[val].includes(i)?' on':'')+((val===1||val===4)?' red':'')+(val===1?' big':''); el.appendChild(c); }
 }
 
 /* 幸运转盘 */
