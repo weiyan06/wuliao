@@ -402,7 +402,7 @@ body.no-crt .scanlines{display:none}
 .dice-dot{background:transparent}
 .dice-dot.on{background:#1b1c2e}
 .dice-dot.on.red{background:#d4312a}
-.dice-dot.big{width:34px;height:34px;place-self:center}
+.dice-dot.big{box-shadow:0 0 0 9px #d4312a}
 .dice-total{text-align:center;font-family:'Press Start 2P',monospace;font-size:13px;color:var(--green);margin-bottom:14px}
 .reflex-pad{height:220px;background:var(--panel2);border:4px solid var(--line);box-shadow:6px 6px 0 rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:17px;color:var(--muted);text-align:center;user-select:none}
 .reflex-pad.wait{background:#2c2d5c}
@@ -452,7 +452,7 @@ body.no-crt .scanlines{display:none}
       </svg>
       <div>
         <h1>像素快乐星球</h1>
-        <div class="tagline">BOREDOM KILLER v3.0.2</div>
+        <div class="tagline">BOREDOM KILLER v3.0.3</div>
       </div>
     </div>
     <div class="hdr-actions">
@@ -3384,7 +3384,7 @@ GAMES.dice = {
 function renderDice(el,val){
   const dots={1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]};
   el.innerHTML='';
-  for(let i=0;i<9;i++){ const c=document.createElement('div'); c.className='dice-dot'+(dots[val].includes(i)?' on':'')+((val===1||val===4)?' red':'')+(val===1?' big':''); el.appendChild(c); }
+  for(let i=0;i<9;i++){ const c=document.createElement('div'); c.className='dice-dot'+(dots[val].includes(i)?' on':'')+((val===1||val===4)?' red':'')+(val===1&&dots[val].includes(i)?' big':''); el.appendChild(c); }
 }
 
 /* 幸运转盘 */
