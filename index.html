@@ -450,7 +450,7 @@ body.no-crt .scanlines{display:none}
       </svg>
       <div>
         <h1>像素快乐星球</h1>
-        <div class="tagline">BOREDOM KILLER v3.0</div>
+        <div class="tagline">BOREDOM KILLER v3.0.1</div>
       </div>
     </div>
     <div class="hdr-actions">
@@ -3321,27 +3321,63 @@ let dice = null;
 GAMES.dice = {
   title:'掷骰子',
   mount(mountEl, statsEl){
-    const D = dice = { rolls:0, sum:0, six:0 };
-    statsEl.innerHTML = '<div class="stat">次数<b id="diN">0</b></div><div class="stat">累计<b id="diSum">0</b></div><div class="stat">出 6<b id="diSix">0</b></div>';
+    const D = dice = { rolls:0, sum:0, six:0, maxSum:0 };
+    statsEl.innerHTML = '<div class="stat">次数<b id="diN">0</b></div><div class="stat">累计<b id="diSum">0</b></div><div class="stat">最大<b id="diMax">0</b></div><div class="stat">出 6<b id="diSix">0</b></div>';
     const box=document.createElement('div'); box.className='dice-box';
-    const d1=document.createElement('div'); d1.className='dice';
-    const d2=document.createElement('div'); d2.className='dice';
-    box.appendChild(d1); box.appendChild(d2);
+    this.diceEls = [];
+    for(let i=0;i<5;i++){
+      const d = document.createElement('div');
+      d.className='dice';
+      this.diceEls.push(d);
+      box.appendChild(d);
+    }
     mountEl.appendChild(box);
     const total=document.createElement('div'); total.className='dice-total'; total.textContent='总和：0';
     mountEl.appendChild(total);
     const btn=document.createElement('button'); btn.className='px-btn big green'; btn.textContent='掷骰子';
     mountEl.appendChild(btn);
+    let rollInterval = null;
+    let diceValues = [];
     btn.addEventListener('click', ()=>{
-      const a=1+Math.floor(Math.random()*6), b=1+Math.floor(Math.random()*6);
-      D.rolls++; D.sum+=a+b; if(a===6||b===6)D.six++;
-      renderDice(d1,a); renderDice(d2,b);
-      $('#diN').textContent=D.rolls; $('#diSum').textContent=D.sum; $('#diSix').textContent=D.six;
-      total.textContent='总和：'+(a+b);
-      sfx.pop();
+      if(rollInterval) clearInterval(rollInterval);
+      D.rolls++;
+      // 快速闪烁动画：每50ms变换一次骰子面值
+      let frame = 0;
+      rollInterval = D.iv = setInterval(()=>{
+        diceValues = [];
+        for(let i=0;i<5;i++){
+          diceValues[i] = 1 + Math.floor(Math.random()*6);
+          renderDice(this.diceEls[i], diceValues[i]);
+        }
+        frame++;
+        // 闪烁16帧（约800ms）后停止
+        if(frame >= 16) {
+          clearInterval(rollInterval);
+          rollInterval = null; D.iv = null;
+          // 停止后设定最终值
+          const finalValues = [];
+          let roundSum = 0;
+          let sixCount = 0;
+          for(let i=0;i<5;i++){
+            finalValues[i] = 1 + Math.floor(Math.random()*6);
+            renderDice(this.diceEls[i], finalValues[i]);
+            roundSum += finalValues[i];
+            if(finalValues[i] === 6) sixCount++;
+          }
+          D.sum += roundSum;
+          if(roundSum > D.maxSum) D.maxSum = roundSum;
+          D.six += sixCount;
+          $('#diN').textContent = D.rolls;
+          $('#diSum').textContent = D.sum;
+          $('#diMax').textContent = D.maxSum;
+          $('#diSix').textContent = D.six;
+          total.textContent = '总和：' + roundSum;
+          sfx.pop();
+        }
+      }, 50);
     });
   },
-  destroy(){ dice=null; }
+  destroy(){ if(dice && dice.iv){ clearInterval(dice.iv); dice.iv = null; } dice=null; }
 };
 function renderDice(el,val){
   const dots={1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]};

@@ -14,12 +14,12 @@
 
 ## 文件布局
 
-| 文件 | 体量 | 内容 | 加载方式 |
-|---|---|---|---|
-| `index.html` | ~353KB | 全部 HTML + CSS + 逻辑（巨型 `<script>` 在 `<body>` 末尾） | 首屏 |
-| `data/site.js` | 117KB | CONTENT（随机内容）/ SPEAKS(100) / DISHES(60) / STORIES(40) / VOCAB(220) | 首屏同步前载 |
-| `data/movies.js` | 30KB | MOVIES(95部) 片库 | 首屏同步前载 |
-| `data/tang.js` | 1.7MB | TANG300(320首) + TANG_S2T/TANG_T2S 繁简映射 + TANG_FOLD | **懒加载**，首次进诗词 tab 时 `ensureTang(cb)` 注入 |
+| 文件               | 体量     | 内容                                                                 | 加载方式                                    |
+| ---------------- | ------ | ------------------------------------------------------------------ | --------------------------------------- |
+| `index.html`     | ~353KB | 全部 HTML + CSS + 逻辑（巨型 `<script>` 在 `<body>` 末尾）                    | 首屏                                      |
+| `data/site.js`   | 117KB  | CONTENT（随机内容）/ SPEAKS(100) / DISHES(60) / STORIES(40) / VOCAB(220) | 首屏同步前载                                  |
+| `data/movies.js` | 30KB   | MOVIES(95部) 片库                                                     | 首屏同步前载                                  |
+| `data/tang.js`   | 1.7MB  | TANG300(320首) + TANG_S2T/TANG_T2S 繁简映射 + TANG_FOLD                 | **懒加载**，首次进诗词 tab 时 `ensureTang(cb)` 注入 |
 
 巨型 script 的内部分区用 `/* ---------- 标题 ---------- */` 注释分隔，顺序大致是：
 工具函数 → sfx/VIEWS/setTab → 游戏（GAMES.xxx = {…}）→ 各内容 tab 逻辑（poems/speak/food/story/vocab/movies）→ `/* ---------- 启动 ---------- */` 收尾。
@@ -33,7 +33,6 @@
 3. `<main>` 里加 `<section id="view-NAME" class="view">…`（内部结构惯例：`#xxxLobby` 大厅 + 可选 `#xxxView` 详情页 `.game-view.hidden`）
 4. 新数据放 `data/*.js` 并在巨型 `<script>` **之前**用 `<script src="data/xxx.js"></script>` 引入（大数据走懒加载模式，参考 `ensureTang`）
 5. 巨型 `<script>` 里加逻辑段 `/* ---------- 标题 ---------- */`；详情页模式参考 `openPoem/openMovie`（大厅加 `.hidden`、详情去 `.hidden`、`$('#xxBack')` 返回时重渲染）
-
 - 切换入口：`setTab(name)`；`#NAME` hash 可直达；默认 tab = games
 - 大厅卡片点开详情 / chips 筛选 / 分页，全部是上面 tab 的成熟模式，照抄改名即可
 
