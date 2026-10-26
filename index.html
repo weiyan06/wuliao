@@ -141,6 +141,19 @@ body.no-crt .scanlines{display:none}
 .story-moon{font-size:22px}
 .story-clock-label{font-size:12.5px; color:var(--muted,#9aa0d8)}
 #storyClock{font-family:'Press Start 2P','DotGothic16',monospace; font-size:11px; color:#ffc53d}
+.vocab-hero{max-width:720px; margin:0 auto 20px; background:var(--panel,#151733); border:3px solid var(--line,#0b0c18); box-shadow:5px 5px 0 0 rgba(0,0,0,.5); padding:18px 20px}
+.vword{padding:12px 0; border-bottom:2px dashed var(--line,#0b0c18)}
+.vword:last-child{border-bottom:none}
+.vhead{display:flex; gap:10px; align-items:baseline; flex-wrap:wrap}
+.vw{font-family:Georgia,'Times New Roman',serif; font-size:21px; color:#eef0ff}
+.vipa{font-family:Consolas,'Courier New',monospace; font-size:14px; color:#8ee08e}
+.vcn{margin:6px 0 3px; font-size:14.5px}
+.vex{font-family:Georgia,'Times New Roman',serif; font-style:italic; font-size:14.5px; color:#eef0ff; margin:4px 0 2px}
+.vtr{font-size:12.5px; color:#9aa0d8}
+.vuse{font-size:12.5px; color:#ffc53d; margin-top:4px}
+.vflip{cursor:pointer}
+.vword.blurred .vcn,.vword.blurred .vex,.vword.blurred .vtr,.vword.blurred .vuse{filter:blur(6px); user-select:none}
+.vword.dimmed{opacity:.8}
 @media (max-width:640px){
   .poem-body p{font-size:15.5px}
   .poem-body.long-poem p{font-size:13px}
@@ -424,7 +437,7 @@ body.no-crt .scanlines{display:none}
       </svg>
       <div>
         <h1>像素快乐星球</h1>
-        <div class="tagline">BOREDOM KILLER v2.7</div>
+        <div class="tagline">BOREDOM KILLER v2.8</div>
       </div>
     </div>
     <div class="hdr-actions">
@@ -441,6 +454,7 @@ body.no-crt .scanlines{display:none}
     <button class="tab-btn" data-tab="speak" type="button">每日练嘴</button>
     <button class="tab-btn" data-tab="food" type="button">每日菜谱</button>
     <button class="tab-btn" data-tab="story" type="button">睡前故事</button>
+    <button class="tab-btn" data-tab="vocab" type="button">每日背单词</button>
     <button class="tab-btn" data-tab="toys" type="button">互动玩具</button>
   </nav>
 
@@ -1013,6 +1027,44 @@ body.no-crt .scanlines{display:none}
       </div>
     </section>
 
+    <!-- ===== 视图：每日背单词 ===== -->
+    <section id="view-vocab" class="view">
+      <div id="vocabLobby" class="lobby">
+        <p class="view-tip">每日背单词 · 每天 5 个 · 音标词典来，例句用法手写 · 连背打卡 🔥</p>
+        <div class="vocab-hero">
+          <div class="story-top">
+            <span id="vocabDayTag" class="speak-lv">📗 Day 1</span>
+            <h2>今日新词</h2>
+            <span id="vocabStreak" class="story-moon">🔥 0</span>
+          </div>
+          <p class="story-night" id="vocabDate">📅 …</p>
+          <div id="vocabToday"></div>
+          <div class="story-tools">
+            <span id="vocabProgress" class="story-clock-label">今日 0/5</span>
+            <button id="vocabGn" class="px-btn yellow" type="button">🎒 今日打卡</button>
+          </div>
+          <p class="view-tip" id="vocabCount">本星球已背下 <b id="vocabCountN">0</b> 个新词</p>
+        </div>
+        <div class="vocab-hero">
+          <div class="story-top">
+            <span class="speak-lv">🔁 昨日复习</span>
+            <h2 id="vocabRevTitle">…</h2>
+            <button id="vocabRevDone" class="px-btn ghost" type="button">✔ 昨日已复习</button>
+          </div>
+          <p class="view-tip">点一下卡片揭示答案——先回忆，再看释义，记得更牢。</p>
+          <div id="vocabRevList"></div>
+        </div>
+        <div class="vocab-hero">
+          <div class="story-top">
+            <span class="speak-lv">🔮 明日预告</span>
+            <h2 id="vocabNextTitle">…</h2>
+          </div>
+          <p class="view-tip">提前混个眼熟，明天它们就是新词。</p>
+          <div id="vocabNextList"></div>
+        </div>
+      </div>
+    </section>
+
     <!-- ===== 视图：互动玩具 ===== -->
     <section id="view-toys" class="view">
       <div id="toyLobby" class="lobby">
@@ -1431,7 +1483,7 @@ $('#crtBtn').addEventListener('click', ()=>{ crtOn=!crtOn; syncHeader(); sfx.cli
 $('#muteBtn').addEventListener('click', ()=>{ muted=!muted; store.set('muted', muted); syncHeader(); if(!muted) sfx.click(); });
 
 /* ---------- 标签页切换（支持 hash） ---------- */
-const VIEWS = { games:'view-games', random:'view-random', poems:'view-poems', speak:'view-speak', food:'view-food', story:'view-story', toys:'view-toys' };
+const VIEWS = { games:'view-games', random:'view-random', poems:'view-poems', speak:'view-speak', food:'view-food', story:'view-story', vocab:'view-vocab', toys:'view-toys' };
 const state = { tab:'games', game:null, toy:null };
 
 function stopActive(){
@@ -7867,7 +7919,341 @@ function renderStoryList(){
   renderStoryList();
 })();
 
+/* ---------- 每日背单词 ---------- */
+const VOCAB = [
+{w:'queen',p:'/kwiːn/',c:'n. 王后；女王',e:'The queen waved to the crowd.',t:'女王向人群挥手。',u:'queen bee 是蜂后；国际象棋里也有她'},
+{w:'grey',p:'/ɡreɪ/',c:'a. 灰色的；n. 灰色',e:'His hair is going grey.',t:'他的头发渐渐白了。',u:'英式拼写，美式多写作 gray'},
+{w:'harbour',p:'/ˈhɑːbə/',c:'n. 港口；v. 藏匿（想法等）',e:'Fishing boats returned to the harbour before the storm.',t:'暴风雨来临前，渔船都回到了港口。',u:'比喻用法：harbour doubts 抱有疑虑'},
+{w:'bush',p:'/bʊʃ/',c:'n. 矮树丛，灌木',e:'A bird flew out of the bush.',t:'一只鸟从灌木丛里飞了出来。',u:'习语 beat around the bush 拐弯抹角'},
+{w:'honour',p:'/ˈɒnə/',c:'n. 荣誉；v. 尊敬，履行',e:'It is a great honour to meet you.',t:'见到您非常荣幸。',u:'英式拼写（美 honor）；have the honour of 荣幸地…'},
+{w:'cheque',p:'/tʃek/',c:'n. 支票',e:'She paid the rent by cheque.',t:'她用支票付了房租。',u:'美式写作 check，别和“检查”的 check 混'},
+{w:'lord',p:'/lɔːd/',c:'n. 勋爵；上主',e:'The Lord Mayor welcomed the visitors.',t:'市长阁下欢迎了来宾。',u:'大写 the Lord 常指上帝'},
+{w:'licence',p:'/ˈlaɪsns/',c:'n. 执照，许可证',e:'He lost his driving licence last month.',t:'他上个月把驾照弄丢了。',u:'英式：名词 licence，动词 license'},
+{w:'favour',p:'/ˈfeɪvə/',c:'n. 恩惠；赞同；v. 偏爱',e:'Could you do me a favour?',t:'能帮我个忙吗？',u:'do sb a favour 帮个忙；in favour of 支持'},
+{w:'worse',p:'/wɜːs/',c:'a./adv. 更坏的（地）',e:'The weather is worse than yesterday.',t:'天气比昨天更糟。',u:'bad 的比较级；go from bad to worse 越来越糟'},
+{w:'neighbourhood',p:'/ˈneɪbəhʊd/',c:'n. 街区，邻近地区',e:'This neighbourhood is quiet at night.',t:'这个街区晚上很安静。',u:'美式拼 neighborhood；in the neighbourhood of 大约'},
+{w:'lorry',p:'/ˈlɒri/',c:'n. 卡车',e:'A lorry loaded with fruit drove past.',t:'一辆装满水果的卡车开了过去。',u:'英式说法，美式讲 truck'},
+{w:'practise',p:'/ˈpræktɪs/',c:'v. 练习，实践',e:'She practises the violin every evening.',t:'她每天傍晚练小提琴。',u:'英式动词拼 practise，名词拼 practice'},
+{w:'bay',p:'/beɪ/',c:'n. 海湾',e:'The ship anchored in the bay.',t:'船在海湾里抛锚停泊。',u:'bay area 海湾地区；bay window 飘窗'},
+{w:'petrol',p:'/ˈpetrəl/',c:'n. 汽油',e:'The car ran out of petrol.',t:'汽车的汽油用完了。',u:'英式；美式口语说 gas'},
+{w:'defence',p:'/dɪˈfens/',c:'n. 防御；辩护',e:'The castle walls were built for defence.',t:'修城堡的墙是为了防御。',u:'美式拼 defense；in defence of 为……辩护'},
+{w:'whilst',p:'/waɪlst/',c:'conj. 当……时；然而',e:'He read whilst the others talked.',t:'别人聊天时，他在看书。',u:'书面语味重，口语更常用 while'},
+{w:'unkind',p:'/ʌnˈkaɪnd/',c:'a. 不仁慈的，刻薄的',e:'It was unkind to laugh at him.',t:'笑话他是不厚道的。',u:'kind 加否定前缀 un- 构成反义词'},
+{w:'labour',p:'/ˈleɪbə/',c:'n. 劳动；劳工',e:'Manual labour is hard work.',t:'体力劳动很辛苦。',u:'英式（美 labor）；Labour Party 英国工党'},
+{w:'surname',p:'/ˈsɜːneɪm/',c:'n. 姓',e:'In China, the surname comes first.',t:'在中国，姓放在前面。',u:'= family name；名是 given name'},
+{w:'pronunciation',p:'/prəˌnʌnsiˈeɪʃn/',c:'n. 发音，读法',e:'Pay attention to your pronunciation.',t:'注意你的发音。',u:'动词是 pronounce，名词结尾变化别拼错'},
+{w:'rubbish',p:'/ˈrʌbɪʃ/',c:'n. 垃圾；胡说',e:'Throw the rubbish into the bin.',t:'把垃圾扔进桶里。',u:'英式（美 trash）；感叹 Rubbish! 胡说！'},
+{w:'judgement',p:'/ˈdʒʌdʒmənt/',c:'n. 判断；判决',e:'He made a fair judgement.',t:'他作出了公正的判断。',u:'美式多拼 judgment；动词是 judge'},
+{w:'unlucky',p:'/ʌnˈlʌki/',c:'a. 不幸的，倒霉的',e:'Some people think thirteen is unlucky.',t:'有人觉得 13 不吉利。',u:'反义 lucky；unlucky day 倒霉的日子'},
+{w:'analyse',p:'/ˈænəlaɪz/',c:'v. 分析',e:'Scientists analyse the water samples.',t:'科学家们分析水样。',u:'美式拼 analyze；名词是 analysis'},
+{w:'approximate',p:'/əˈprɒksɪmət/',c:'a. 大约的，近似的',e:'Give me an approximate number.',t:'给我一个大概的数字。',u:'副词 approximately 用得更多'},
+{w:'depress',p:'/dɪˈpres/',c:'v. 使沮丧；使萧条',e:'Rainy days depress me.',t:'雨天让我情绪低落。',u:'及物动词；形容人用 be depressed'},
+{w:'further',p:'/ˈfɜːðə/',c:'a./adv. 进一步的（地）',e:'For further information, call us.',t:'想了解更多，请致电我们。',u:'指抽象的更进一步用 further，具体距离也可用 farther'},
+{w:'upwards',p:'/ˈʌpwədz/',c:'adv. 向上',e:'The plane climbed upwards.',t:'飞机向上爬升。',u:'from ten pounds upwards 十镑以上；对应 downwards'},
+{w:'disapprove',p:'/ˌdɪsəˈpruːv/',c:'v. 不赞成',e:'Her parents disapprove of the plan.',t:'她父母不赞成这个计划。',u:'接宾语要加 of：disapprove of sth'},
+{w:'yawn',p:'/jɔːn/',c:'n./v. 哈欠；打哈欠',e:'He yawned and went to bed.',t:'他打了个哈欠就去睡了。',u:'睡前专用词，本星球最中意它'},
+{w:'poisonous',p:'/ˈpɔɪzənəs/',c:'a. 有毒的',e:'Some mushrooms are poisonous.',t:'有些蘑菇有毒。',u:'名词是 poison；可引申指恶毒的话'},
+{w:'careless',p:'/ˈkeələs/',c:'a. 粗心的',e:'A careless driver is a danger.',t:'粗心的司机很危险。',u:'对应 careful；carelessness 粗心'},
+{w:'vice',p:'/vaɪs/',c:'n. 恶习；缺点',e:'Smoking is his only vice.',t:'抽烟是他唯一的坏习惯。',u:'vice president 里 vice 作前缀表“副”'},
+{w:'humorous',p:'/ˈhjuːmərəs/',c:'a. 幽默的',e:'She told a humorous story.',t:'她讲了个幽默的故事。',u:'humor 加 -ous，拼写时去 e'},
+{w:'tidy',p:'/ˈtaɪdi/',c:'a. 整洁的；v. 收拾',e:'Keep your room tidy.',t:'保持房间整洁。',u:'tidy up 收拾整齐；对应 untidy'},
+{w:'amuse',p:'/əˈmjuːz/',c:'v. 逗乐，使消遣',e:'The clown amused the children.',t:'小丑把孩子们逗乐了。',u:'be amused by 觉得……好笑'},
+{w:'cupboard',p:'/ˈkʌbəd/',c:'n. 碗柜，橱柜',e:'The cups are in the cupboard.',t:'杯子在橱柜里。',u:'p 不发音，读作“卡伯德”'},
+{w:'fridge',p:'/frɪdʒ/',c:'n. 冰箱',e:'The milk is in the fridge.',t:'牛奶在冰箱里。',u:'= refrigerator 的口语缩写'},
+{w:'alphabet',p:'/ˈælfəbet/',c:'n. 字母表',e:'The child learned the alphabet.',t:'孩子学会了字母表。',u:'the alphabet 指整套字母，也指入门知识'},
+{w:'chemist',p:'/ˈkemɪst/',c:'n. 药剂师；化学家',e:'The chemist prepared the medicine.',t:'药剂师配好了药。',u:'英式的药房也常说 chemist'},
+{w:'midday',p:'/ˌmɪdˈdeɪ/',c:'n. 正午',e:'We eat lunch at midday.',t:'我们中午吃午饭。',u:'at midday 中午；对应 midnight'},
+{w:'interruption',p:'/ˌɪntəˈrʌpʃn/',c:'n. 打断，中断',e:'The interruption annoyed him.',t:'被打断让他很恼火。',u:'动词是 interrupt；without interruption 不间断地'},
+{w:'scissors',p:'/ˈsɪzəz/',c:'n.（恒复数）剪刀',e:'I need a pair of scissors.',t:'我需要一把剪刀。',u:'量词用 a pair of scissors'},
+{w:'timetable',p:'/ˈtaɪmteɪbl/',c:'n. 时间表，课程表',e:'Check the train timetable first.',t:'先查一下火车时刻表。',u:'time+table 复合词；美式爱用 schedule'},
+{w:'amaze',p:'/əˈmeɪz/',c:'v. 使惊奇',e:'The view amazed us.',t:'景色让我们惊叹。',u:'比 surprise 强得多；be amazed at'},
+{w:'thickness',p:'/ˈθɪknəs/',c:'n. 厚度，浓度',e:'Measure the thickness of the ice.',t:'量一下冰的厚度。',u:'形容词 thick + -ness 构成名词'},
+{w:'granddaughter',p:'/ˈɡrændɔːtə/',c:'n. 孙女，外孙女',e:'Her granddaughter visits every weekend.',t:'她的孙女每周周末来看她。',u:'grand+daughter 复合， grandson 对应孙子'},
+{w:'bitterly',p:'/ˈbɪtəli/',c:'adv. 惨痛地；刺骨地',e:'It was bitterly cold that night.',t:'那天晚上冷极了。',u:'bitterly cold 寒风刺骨，固定搭配'},
+{w:'noticeable',p:'/ˈnəʊtɪsəbl/',c:'a. 显而易见的',e:'The scar is hardly noticeable.',t:'这道疤几乎看不出来。',u:'notice + -able；hardly noticeable 几乎看不见'},
+{w:'knit',p:'/nɪt/',c:'v. 编织；（使）结合',e:'She knits a scarf each winter.',t:'每年冬天她都织一条围巾。',u:'过去式同形；knit your brows 皱眉'},
+{w:'cricket',p:'/ˈkrɪkɪt/',c:'n. 板球；蟋蟀',e:'They play cricket after school.',t:'他们放学后打板球。',u:'双义：板球运动、蟋蟀，语境分'},
+{w:'grammar',p:'/ˈɡræmə/',c:'n. 语法',e:'Good grammar makes writing clear.',t:'好的语法让写作清晰。',u:'不可数常用；grammar school 文法学校'},
+{w:'awfully',p:'/ˈɔːfəli/',c:'adv. 非常，极其',e:'The soup is awfully salty.',t:'这汤咸得要命。',u:'口语里当 very 用，没那么可怕'},
+{w:'downward',p:'/ˈdaʊnwəd/',c:'a./adv. 向下的（地）',e:'Sales show a downward trend.',t:'销量呈下降趋势。',u:'也常写作 downwards；对应 upward'},
+{w:'disappoint',p:'/ˌdɪsəˈpɔɪnt/',c:'v. 使失望',e:'The film disappointed me.',t:'这部电影让我失望。',u:'人作宾语；人作主语用 be disappointed'},
+{w:'inch',p:'/ɪntʃ/',c:'n. 英寸',e:'The screen is ten inches wide.',t:'屏幕有十英寸宽。',u:'inch forward 慢慢挪动，一举两得'},
+{w:'indoors',p:'/ˌɪnˈdɔːz/',c:'adv. 在室内',e:'Stay indoors when it rains.',t:'下雨时待在室内。',u:'副词；形容词是 indoor；对应 outdoors'},
+{w:'sting',p:'/stɪŋ/',c:'n./v. 刺，叮；刺痛',e:'A bee stung my arm.',t:'一只蜜蜂蜇了我的手臂。',u:'过去式 stung；也可形容带刺的话'},
+{w:'biscuit',p:'/ˈbɪskɪt/',c:'n. 饼干',e:'She dipped the biscuit into her tea.',t:'她把饼干蘸到茶里。',u:'英式；美式说 cookie'},
+{w:'bill',p:'/bɪl/',c:'n. 账单；法案；纸币（美）',e:'The waiter brought the bill.',t:'服务员把账单送来了。',u:'三义：账单、法案、美式纸币'},
+{w:'bound',p:'/baʊnd/',c:'a. 开往……的；必然的',e:'She is bound for Shanghai.',t:'她正动身去上海。',u:'be bound to do 必定会；be bound for 前往'},
+{w:'institute',p:'/ˈɪnstɪtjuːt/',c:'n. 学院，研究所',e:'She studies at an art institute.',t:'她在一所艺术学院学习。',u:'首字母大写常为机构名'},
+{w:'specially',p:'/ˈspeʃəli/',c:'adv. 专门地，特别地',e:'I made this specially for you.',t:'这个是我特意为你做的。',u:'别与 especially（尤其）混用'},
+{w:'decay',p:'/dɪˈkeɪ/',c:'v./n. 腐烂；衰退',e:'The fruit began to decay.',t:'水果开始腐烂了。',u:'常见搭配 tooth decay 蛀牙'},
+{w:'fasten',p:'/ˈfɑːsn/',c:'v. 系紧，扣住',e:'Fasten your seat belt, please.',t:'请系好安全带。',u:'t 不发音；也指 fasten on 抓牢'},
+{w:'spelling',p:'/ˈspelɪŋ/',c:'n. 拼写，拼法',e:'The spelling of this word is tricky.',t:'这个词的拼写有点难。',u:'动词是 spell；spelling test 拼写测验'},
+{w:'seventy',p:'/ˈsevnti/',c:'num. 七十',e:'My grandpa is seventy now.',t:'我爷爷现在七十岁了。',u:'拼写是 seven 变形 + -ty'},
+{w:'tablet',p:'/ˈtæblət/',c:'n. 药片；平板（电脑）',e:'Take two tablets a day.',t:'一天服两片药。',u:'双义：药片、平板电脑'},
+{w:'nineteen',p:'/ˌnaɪnˈtiːn/',c:'num. 十九',e:'Numbers from thirteen to nineteen all end in -teen.',t:'从 13 到 19 的数词都以 -teen 结尾。',u:'第十九是 nineteenth；-teen 结尾要重读 teen'},
+{w:'kindness',p:'/ˈkaɪndnəs/',c:'n. 仁慈，好意',e:'Thank you for your kindness.',t:'谢谢你的好意。',u:'kind + -ness；many kindnesses 也通'},
+{w:'fashionable',p:'/ˈfæʃnəbl/',c:'a. 时髦的，流行的',e:'That color is fashionable this year.',t:'那个颜色今年很流行。',u:'fashion + -able；keep up with fashion 赶时髦'},
+{w:'premier',p:'/ˈpremjə/',c:'n. 总理，首相',e:'The premier spoke on TV last night.',t:'总理昨晚在电视上讲话。',u:'首字母常大写指具体首脑；premiere 首映是另一词'},
+{w:'outdoors',p:'/ˌaʊtˈdɔːz/',c:'adv. 在户外',e:'The children played outdoors all afternoon.',t:'孩子们在户外玩了一下午。',u:'副词；形容词 outdoor；对应 indoors'},
+{w:'reel',p:'/riːl/',c:'n. 卷轴；v. 卷绕，踉跄',e:'He reeled back from the strong smell.',t:'强烈的气味熏得他向后踉跄。',u:'双义：胶片卷轴、摇晃踉跄'},
+{w:'liberate',p:'/ˈlɪbəreɪt/',c:'v. 解放，释放',e:'The city was liberated in 1945.',t:'这座城市于 1945 年解放。',u:'名词 liberation；常用被动态'},
+{w:'eighty',p:'/ˈeɪti/',c:'num. 八十',e:'The temple is eighty years old.',t:'这座庙有八十年历史了。',u:'拼写八十不是 eight；eighteen 十八别混'},
+{w:'accidental',p:'/ˌæksɪˈdentl/',c:'a. 偶然的',e:'Meeting her here was accidental.',t:'在这儿碰到她纯属偶然。',u:'名词 accident；副词 accidentally'},
+{w:'niece',p:'/niːs/',c:'n. 侄女，外甥女',e:'My niece loves picture books.',t:'我外甥女喜欢绘本。',u:'侄子是 nephew；两个词拼写相近注意分'},
+{w:'disgust',p:'/dɪsˈɡʌst/',c:'n./v. 厌恶',e:'The smell filled her with disgust.',t:'那气味让她满是厌恶。',u:'disgusted 形容人，disgusting 形容物'},
+{w:'impatient',p:'/ɪmˈpeɪʃnt/',c:'a. 不耐烦的，急切的',e:'He grew impatient waiting for the bus.',t:'等公交等得他不耐烦了。',u:'be impatient with sb；反义 patient'},
+{w:'hollow',p:'/ˈhɒləʊ/',c:'a. 空心的；n. 洞',e:'The tree trunk is hollow inside.',t:'树干里面是空心的。',u:'hollow words 空话；hollow eyes 深陷的眼'},
+{w:'sideways',p:'/ˈsaɪdweɪz/',c:'adv./a. 向侧面（的）',e:'The crab moved sideways.',t:'螃蟹横着爬。',u:'无 -s 变化；look sideways 斜眼看'},
+{w:'luggage',p:'/ˈlʌɡɪdʒ/',c:'n. 行李（不可数）',e:'Her luggage was left on the plane.',t:'她的行李被落在了飞机上。',u:'一件行李 = a piece of luggage'},
+{w:'diagram',p:'/ˈdaɪəɡræm/',c:'n. 图表，图解',e:'Draw a diagram of the circuit.',t:'画一张电路图解。',u:'draw a diagram 画示意图很常用'},
+{w:'cheerful',p:'/ˈtʃɪəfʊl/',c:'a. 快乐的，劲头足的',e:'She gave me a cheerful smile.',t:'她冲我朗朗一笑。',u:'cheer + -ful；cheer up 振作起来'},
+{w:'baggage',p:'/ˈbæɡɪdʒ/',c:'n. 行李（不可数）',e:'The airline lost my baggage.',t:'航空公司把我的行李弄丢了。',u:'美式常用，英式多说 luggage'},
+{w:'glue',p:'/ɡluː/',c:'n. 胶水；v. 粘合',e:'Glue the pieces together.',t:'把这些碎片粘起来。',u:'不可数；be glued to the screen 目不转睛'},
+{w:'unload',p:'/ˌʌnˈləʊd/',c:'v. 卸（货）',e:'They unloaded the boxes at noon.',t:'他们中午把箱子卸了。',u:'un- + load；unload the truck 卸车'},
+{w:'embarrass',p:'/ɪmˈbærəs/',c:'v. 使尴尬',e:'His question embarrassed her.',t:'他的问题让她很尴尬。',u:'双 r 双 s；人作主语说 embarrassed'},
+{w:'trousers',p:'/ˈtraʊzəz/',c:'n.（恒复数）长裤',e:'These trousers are too long.',t:'这条裤子太长了。',u:'一条裤子 = a pair of trousers'},
+{w:'fry',p:'/fraɪ/',c:'v. 油煎，油炸',e:'Fry the onions until golden.',t:'把洋葱煎到金黄。',u:'fried rice 蛋炒饭；frying pan 平底锅'},
+{w:'sincere',p:'/sɪnˈsɪə/',c:'a. 真诚的',e:'Please accept my sincere apologies.',t:'请接受我诚挚的歉意。',u:'名词 sincerity；常配 apologies、thanks'},
+{w:'dislike',p:'/dɪsˈlaɪk/',c:'v./n. 不喜欢',e:'I dislike getting up early.',t:'我不喜欢早起。',u:'后接动名词；语气比 hate 温和'},
+{w:'gradual',p:'/ˈɡrædʒuəl/',c:'a. 逐渐的',e:'There was a gradual change in his mood.',t:'他的情绪在慢慢转变。',u:'副词 gradually；常配 change、improvement'},
+{w:'definite',p:'/ˈdefɪnɪt/',c:'a. 明确的，确定的',e:'Give me a definite answer.',t:'给我个确切答复。',u:'名词 definition；口语 definite = definitely'},
+{w:'probable',p:'/ˈprɒbəbl/',c:'a. 很可能的',e:'Rain is probable tonight.',t:'今晚很可能下雨。',u:'更常用 more likely；名词 probability'},
+{w:'deaf',p:'/def/',c:'a. 聋的',e:'He went deaf in his eighties.',t:'他八十多岁失聪了。',u:'the deaf 泛指聋人；turn a deaf ear 装没听见'},
+{w:'width',p:'/wɪdθ/',c:'n. 宽度',e:'The road is six metres in width.',t:'这条路宽六米。',u:'形容词 wide；别拼成 with'},
+{w:'fetch',p:'/fetʃ/',c:'v. 去取来，去接来',e:'Fetch me a glass of water.',t:'去给我拿杯水来。',u:'强调“去＋回来”；区别于 bring、carry'},
+{w:'clap',p:'/klæp/',c:'v./n. 拍手，鼓掌',e:'Everyone clapped at the end of the song.',t:'歌声结束时大家都鼓了掌。',u:'clap your hands 鼓掌；掌声连续拍打声'},
+{w:'rude',p:'/ruːd/',c:'a. 粗鲁的，无礼的',e:'It is rude to point at people.',t:'用手指人是不礼貌的。',u:'be rude to sb；反义 polite'},
+{w:'grandson',p:'/ˈɡrænsʌn/',c:'n. 孙子，外孙',e:'Her grandson calls her every week.',t:'她孙子每周都给她打电话。',u:'grand+son；孙女是 granddaughter'},
+{w:'undo',p:'/ʌnˈduː/',c:'v. 解开；撤销',e:'Click here to undo the last step.',t:'点这里撤销上一步。',u:'电脑撤销键功能就叫 undo；undo the laces 解鞋带'},
+{w:'colonel',p:'/ˈkɜːnl/',c:'n. 陆军上校',e:'The colonel inspected the troops.',t:'上校检阅了部队。',u:'拼写和读音差很远，读“科诺”'},
+{w:'insult',p:'/ɪnˈsʌlt/',c:'v. 侮辱；n. 侮辱',e:'His words were an insult to us.',t:'他的话是对我们的侮辱。',u:'动词重音在后，名词重音在前，动嘴前先听准'},
+{w:'noisy',p:'/ˈnɔɪzi/',c:'a. 嘈杂的',e:'The street is noisy at night.',t:'这条街晚上很吵。',u:'名词 noise；反义 quiet'},
+{w:'imaginary',p:'/ɪˈmædʒɪnəri/',c:'a. 想象中的，虚构的',e:'The hero fights an imaginary dragon.',t:'主角和想象中的龙作战。',u:'区别 imaginative（有想象力的）'},
+{w:'keen',p:'/kiːn/',c:'a. 热衷的；敏锐的',e:'She is keen on photography.',t:'她热衷于摄影。',u:'be keen on doing；a keen mind 敏锐的头脑'},
+{w:'sticky',p:'/ˈstɪki/',c:'a. 粘的；（天气）闷热的',e:'Do not touch the sticky table.',t:'别碰那张粘糊糊的桌子。',u:'天气 sticky = 又湿又闷，夏天专用'},
+{w:'sew',p:'/səʊ/',c:'v. 缝纫，缝',e:'She sewed a button on the coat.',t:'她把扣子缝到了大衣上。',u:'过去式 sewed；读音同 so，动手前留意'},
+{w:'unpleasant',p:'/ʌnˈpleznt/',c:'a. 令人不快的',e:'The smell was very unpleasant.',t:'那气味让人很不舒服。',u:'pleasant 的反义词，加 un- 即成'},
+{w:'whistle',p:'/ˈwɪsl/',c:'n. 口哨，汽笛；v. 吹哨',e:'The referee blew his whistle.',t:'裁判吹响了哨子。',u:'blow a whistle 吹哨；也能 whistle a tune'},
+{w:'spur',p:'/spɜː/',c:'n. 刺激；v. 激励',e:'The loss spurred him to train harder.',t:'那次失败激励他练得更狠。',u:'马刺本义；spur on 鞭策'},
+{w:'indirect',p:'/ˌɪndɪˈrekt/',c:'a. 间接的',e:'He gave an indirect answer.',t:'他给了个拐弯抹角的回答。',u:'in- + direct；反义 direct'},
+{w:'spoil',p:'/spɔɪl/',c:'v. 破坏；宠坏',e:'Do not spoil the surprise.',t:'别把惊喜说漏了。',u:'过去分词 spoiled；a spoiled child 被惯坏的孩子'},
+{w:'nephew',p:'/ˈnefjuː/',c:'n. 侄子，外甥',e:'My nephew is crazy about trains.',t:'我侄子对火车着了迷。',u:'与 niece（侄女）一对，拼写只差中间'},
+{w:'sore',p:'/sɔː/',c:'a. 疼痛的',e:'My throat is sore today.',t:'我今天嗓子疼。',u:'sore throat 嗓子疼，感冒高频搭配'},
+{w:'deliberate',p:'/dɪˈlɪbərət/',c:'a. 故意的；v. 深思熟虑',e:'Was it deliberate or an accident?',t:'这是故意的还是意外？',u:'形容词重音在前，动词在后；deliberately 故意地'},
+{w:'jealous',p:'/ˈdʒeləs/',c:'a. 嫉妒的',e:'He was jealous of her success.',t:'他嫉妒她的成功。',u:'be jealous of；名词 jealousy'},
+{w:'seventeen',p:'/ˌsevnˈtiːn/',c:'num. 十七',e:'She turned seventeen last week.',t:'她上周满十七岁。',u:'-teen 系列重音都在 teen 上'},
+{w:'exaggerate',p:'/ɪɡˈzædʒəreɪt/',c:'v. 夸张，夸大',e:'Do not exaggerate the problem.',t:'别把问题夸大了。',u:'拼写记住中间的双 g'},
+{w:'stripe',p:'/straɪp/',c:'n. 条纹',e:'The shirt has red stripes.',t:'这件衬衫有红条纹。',u:'strip（长条）与 stripe（带花纹条纹）分清'},
+{w:'disadvantage',p:'/ˌdɪsədˈvɑːntɪdʒ/',c:'n. 不利，缺点',e:'The big disadvantage is the price.',t:'最大的缺点是价格。',u:'反义 advantage；at a disadvantage 处于劣势'},
+{w:'unusually',p:'/ʌnˈjuːʒʊəli/',c:'adv. 异常地，非常',e:'It was unusually quiet tonight.',t:'今晚出奇地安静。',u:'副词常修饰形容词表“出奇地”'},
+{w:'surroundings',p:'/səˈraʊndɪŋz/',c:'n. 周围环境（恒多）',e:'The hotel sits in pleasant surroundings.',t:'酒店周围环境宜人。',u:'恒用复数；surrounding 单数时是形容词'},
+{w:'surplus',p:'/ˈsɜːpləs/',c:'n. 过剩，盈余',e:'The shop sold its surplus stock.',t:'店铺清掉了积压库存。',u:'反义 deficit（赤字）；a surplus of 过剩的'},
+{w:'packet',p:'/ˈpækɪt/',c:'n. 小包，小袋',e:'Add a packet of sugar.',t:'加一小包糖。',u:'a packet of 量词搭配；美式小盒常用 pack'},
+{w:'lazy',p:'/ˈleɪzi/',c:'a. 懒惰的',e:'The cat leads a lazy life.',t:'这猫过着懒洋洋的日子。',u:'lazy afternoon 慵懒午后也地道，不全是骂人'},
+{w:'unwilling',p:'/ʌnˈwɪlɪŋ/',c:'a. 不情愿的',e:'She was unwilling to leave.',t:'她不愿意离开。',u:'be unwilling to do；反义 willing'},
+{w:'hammer',p:'/ˈhæmə/',c:'n. 锤子；v. 锤打',e:'Hammer the nail into the wall.',t:'把钉子锤进墙里。',u:'hammer on the door 砸门，比 knock 有力'},
+{w:'smoothly',p:'/ˈsmuːðli/',c:'adv. 顺利地，流畅地',e:'Everything went smoothly.',t:'一切都很顺利。',u:'go smoothly 非常高频；smooth + ly'},
+{w:'cough',p:'/kɒf/',c:'n./v. 咳嗽',e:'She coughed all night long.',t:'她咳嗽了一整夜。',u:'gh 不发音，读音“科夫”；have a cough'},
+{w:'multiply',p:'/ˈmʌltɪplaɪ/',c:'v. 乘；繁殖',e:'Rabbits multiply fast.',t:'兔子繁殖得飞快。',u:'数学义 multiply 3 by 4；也指繁殖增加'},
+{w:'upward',p:'/ˈʌpwəd/',c:'a./adv. 向上的（地）',e:'Prices keep moving upward.',t:'物价持续上扬。',u:'常可加 s：upwards；对应 downward'},
+{w:'lump',p:'/lʌmp/',c:'n. 团，块；肿块',e:'She found a lump on her arm.',t:'她在手臂上摸到一个肿块。',u:'a lump of sugar 一块方糖；lump sum 一次性付清'},
+{w:'sensible',p:'/ˈsensəbl/',c:'a. 明智的',e:'That is a sensible choice.',t:'那是个明智的选择。',u:'别跟 sensitive（敏感的）混；夸人做事靠谱'},
+{w:'indoor',p:'/ˈɪndɔː/',c:'a. 室内的',e:'There is an indoor pool here.',t:'这里有个室内泳池。',u:'形容词；副词是 indoors；反义 outdoor'},
+{w:'accord',p:'/əˈkɔːd/',c:'n. 协议；v. 一致',e:'The two sides signed a peace accord.',t:'双方签署了和平协议。',u:'in accord with 与……一致；accord with 和谐'},
+{w:'princess',p:'/ˌprɪnˈses/',c:'n. 公主',e:'The princess wore a silver crown.',t:'公主戴着银色的王冠。',u:'重音在后；对应 prince'},
+{w:'heating',p:'/ˈhiːtɪŋ/',c:'n. 暖气，供暖',e:'The heating is off at night.',t:'暖气夜里是关的。',u:'不可数；central heating 中央供暖'},
+{w:'horizontal',p:'/ˌhɒrɪˈzɒntl/',c:'a. 水平的',e:'Draw a horizontal line here.',t:'在这里画一条水平线。',u:'反义 vertical（垂直的）'},
+{w:'complicate',p:'/ˈkɒmplɪkeɪt/',c:'v. 使复杂化',e:'Do not complicate matters.',t:'别把事情搞复杂。',u:'形容词 complicated 更常用'},
+{w:'nonsense',p:'/ˈnɒnsns/',c:'n. 胡说，废话',e:'Stop talking nonsense.',t:'别胡说八道了。',u:'感叹词 Nonsense! 胡说！一秒翻脸'},
+{w:'advertisement',p:'/ədˈvɜːtɪsmənt/',c:'n. 广告',e:'I saw the job advertisement online.',t:'我在网上看到了招聘广告。',u:'口语缩写成 ad；求职广告 job ad 高频'},
+{w:'navy',p:'/ˈneɪvi/',c:'n. 海军',e:'He served in the navy for ten years.',t:'他在海军服役了十年。',u:'双义延伸：navy blue 海军蓝（深蓝）'},
+{w:'sufficiently',p:'/səˈfɪʃntli/',c:'adv. 足够地',e:'The hall is not sufficiently warm.',t:'大厅不够暖和。',u:'形容词 sufficient；比 enough 书面'},
+{w:'refusal',p:'/rɪˈfjuːzl/',c:'n. 拒绝',e:'Her refusal surprised everyone.',t:'她的拒绝让大家很意外。',u:'动词是 refuse，注意词尾变化'},
+{w:'forecast',p:'/ˈfɔːkɑːst/',c:'n./v. 预报，预测',e:'The weather forecast says rain tomorrow.',t:'天气预报说明天有雨。',u:'过去式同形 forecast；weather forecast 最常见'},
+{w:'transparent',p:'/trænsˈpærənt/',c:'a. 透明的',e:'The bag is transparent.',t:'这个袋子是透明的。',u:'比喻：transparent lie 一眼看穿的谎言'},
+{w:'thorough',p:'/ˈθʌrə/',c:'a. 彻底的',e:'Give the room a thorough clean.',t:'把房间彻底打扫一下。',u:'读“撒若”，别和 through（穿过）弄混'},
+{w:'fulfil',p:'/fʊlˈfɪl/',c:'v. 履行，实现',e:'The team fulfilled the plan early.',t:'团队提前完成了计划。',u:'英式双 l（美 fulfill）；fulfil a promise 实现承诺'},
+{w:'castle',p:'/ˈkɑːsl/',c:'n. 城堡',e:'The old castle stands on the hill.',t:'古堡矗立在山头上。',u:'t 不发音；castles in the air 空中楼阁'},
+{w:'parallel',p:'/ˈpærəlel/',c:'a. 平行的；n. 相似处',e:'The two roads are parallel.',t:'这两条路是平行的。',u:'in parallel with 与……同时'},
+{w:'revise',p:'/rɪˈvaɪz/',c:'v. 修订；复习（英）',e:'I need to revise the essay.',t:'我得把这篇短文改一改。',u:'英式 revise = 复习；美式复习常说 review'},
+{w:'harmful',p:'/ˈhɑːmfʊl/',c:'a. 有害的',e:'Smoking is harmful to health.',t:'吸烟有害健康。',u:'be harmful to；反义 harmless'},
+{w:'worship',p:'/ˈwɜːʃɪp/',c:'v./n. 崇拜，敬仰',e:'Some teenagers worship pop stars.',t:'有些青少年崇拜流行歌星。',u:'加 ed 双 p：worshipped'},
+{w:'shave',p:'/ʃeɪv/',c:'v. 刮脸，剃须',e:'He shaves before work.',t:'他上班前刮胡子。',u:'shaving cream 剃须膏；shave off 刮掉'},
+{w:'lively',p:'/ˈlaɪvli/',c:'a. 活泼的，热烈的',e:'The discussion was lively.',t:'讨论气氛很热烈。',u:'= full of life；a lively chat 热烈的聊天'},
+{w:'resignation',p:'/ˌrezɪɡˈneɪʃn/',c:'n. 辞职，辞呈',e:'She handed in her resignation.',t:'她递交了辞呈。',u:'动词是 resign；辞呈即 resignation letter'},
+{w:'polish',p:'/ˈpɒlɪʃ/',c:'v. 擦亮；n. 上光剂',e:'Polish the shoes before the interview.',t:'面试前把鞋擦亮。',u:'大写 Polish 是“波兰的”，小写才是擦亮'},
+{w:'excess',p:'/ɪkˈses/',c:'n. 过量；a. 额外的',e:'Cut out excess sugar.',t:'少吃多余的糖。',u:'in excess of 超过；重音在第二音节'},
+{w:'underneath',p:'/ˌʌndəˈniːθ/',c:'adv./prep. 在下面',e:'The cat hid underneath the bed.',t:'猫藏在床底下。',u:'书面版 under；underneath it all 说到底'},
+{w:'sadly',p:'/ˈsædli/',c:'adv. 悲伤地；遗憾的是',e:'Sadly, the shop has closed.',t:'遗憾的是，小店关门了。',u:'放句首表遗憾，很常用的语气词'},
+{w:'breed',p:'/briːd/',c:'v. 繁殖，饲养；n. 品种',e:'Birds breed in spring.',t:'鸟儿在春天繁育。',u:'过去式与分词 bred；a breed of dog 犬种'},
+{w:'delegation',p:'/ˌdelɪˈɡeɪʃn/',c:'n. 代表团',e:'A delegation visited the factory.',t:'一个代表团参观了工厂。',u:'动词是 delegate；head a delegation 带团'},
+{w:'aloud',p:'/əˈlaʊd/',c:'adv. 出声地，大声地',e:'Read the poem aloud.',t:'把诗念出声来。',u:'read aloud 朗读；think aloud 自言自语'},
+{w:'miner',p:'/ˈmaɪnə/',c:'n. 矿工',e:'The miner worked underground.',t:'矿工在井下作业。',u:'与 minor（次要的）同音不同拼，考试爱混'},
+{w:'permanently',p:'/ˈpɜːmənəntli/',c:'adv. 永久地',e:'The bridge is permanently closed.',t:'这座桥永久封闭了。',u:'形容词 permanent；permanent address 常住地址'},
+{w:'obey',p:'/əˈbeɪ/',c:'v. 服从，遵守',e:'Children should obey their teachers.',t:'孩子应当听老师的话。',u:'名词 obedience；obey the rules 守规矩'},
+{w:'unconscious',p:'/ʌnˈkɒnʃəs/',c:'a. 无知觉的；未察觉的',e:'He was unconscious for two days.',t:'他昏迷了两天。',u:'反义 conscious；be unconscious of 没意识到'},
+{w:'flu',p:'/fluː/',c:'n. 流感',e:'I am down with the flu.',t:'我得流感倒了。',u:'= influenza 缩写；get the flu 得流感'},
+{w:'useless',p:'/ˈjuːsləs/',c:'a. 无用的',e:'This key is useless now.',t:'这把钥匙现在没用了。',u:'反义 useful；并记 useless thing 没用的东西'},
+{w:'ashamed',p:'/əˈʃeɪmd/',c:'a. 惭愧的，羞耻的',e:'She felt ashamed of her mistake.',t:'她为自己的错误感到羞愧。',u:'be ashamed of；ashamed 形容人，shameful 形容事'},
+{w:'sixty',p:'/ˈsɪksti/',c:'num. 六十',e:'The tower is sixty metres high.',t:'这座塔高六十米。',u:'six + ty；第 60 是 sixtieth'},
+{w:'substitute',p:'/ˈsʌbstɪtjuːt/',c:'n. 代用品；v. 代替',e:'Use honey as a sugar substitute.',t:'用蜂蜜来代替糖。',u:'substitute A for B 用 A 替换 B'},
+{w:'triangle',p:'/ˈtraɪæŋɡl/',c:'n. 三角形',e:'A triangle has three sides.',t:'三角形有三条边。',u:'tri- 前缀 = 三；love triangle 三角恋'},
+{w:'socialist',p:'/ˈsəʊʃəlɪst/',c:'n. 社会主义者',e:'He joined the socialist party.',t:'他加入了社会党。',u:'别混 social（社交的）；socialism 社会主义'},
+{w:'wallet',p:'/ˈwɒlɪt/',c:'n. 皮夹，钱包',e:'My wallet is missing.',t:'我的钱包不见了。',u:'男用 wallet，英式女用 purse'},
+{w:'plug',p:'/plʌɡ/',c:'n. 插头；v. 插上',e:'Plug in the kettle, please.',t:'请把水壶插上电。',u:'plug in 插电；plug the gap 填补缺口'},
+{w:'luxury',p:'/ˈlʌkʃəri/',c:'n. 奢侈（品）',e:'A hot bath is a small luxury.',t:'泡个热水澡算小小的奢侈。',u:'形容词 luxurious；a life of luxury 奢华生活'},
+{w:'wool',p:'/wʊl/',c:'n. 羊毛，毛线',e:'The sweater is made of wool.',t:'这件毛衣是纯羊毛的。',u:'双 o 读短音；woollen 羊毛的（英式）'},
+{w:'vocabulary',p:'/vəˈkæbjʊləri/',c:'n. 词汇（量）',e:'Reading builds vocabulary.',t:'阅读能攒词汇量。',u:'口语缩 vocab；wide vocabulary 词汇面广'},
+{w:'damp',p:'/dæmp/',c:'a. 潮湿的；n. 潮气',e:'The towels are still damp.',t:'毛巾还潮着。',u:'dampen 使潮湿；空气 damp 让人不舒服'},
+{w:'spider',p:'/ˈspaɪdə/',c:'n. 蜘蛛',e:'A spider built a web in the corner.',t:'蜘蛛在墙角织了一张网。',u:'spider web 蜘蛛网；网络爬虫也叫 spider'},
+{w:'ruler',p:'/ˈruːlə/',c:'n. 尺子；统治者',e:'Draw the line with a ruler.',t:'用尺子画这条线。',u:'rule + er 两义并收：尺子、统治者'},
+{w:'communist',p:'/ˈkɒmjʊnɪst/',c:'n. 共产主义者',e:'He joined the party in 1930.',t:'他 1930 年加入了党组织。',u:'大写专指：the Communist Party 共产党'},
+{w:'poison',p:'/ˈpɔɪzn/',c:'n. 毒（物）；v. 毒死',e:'Keep poison away from children.',t:'把毒物放到孩子够不到的地方。',u:'poison ivy 毒藤；形容词 poisonous 有毒的'},
+{w:'keyboard',p:'/ˈkiːbɔːd/',c:'n. 键盘',e:'Wipe the keyboard clean.',t:'把键盘擦干净。',u:'key + board 复合；钢琴的键盘也叫 keyboard'},
+{w:'frighten',p:'/ˈfrɪtn/',c:'v. 使惊恐',e:'The noise frightened the birds.',t:'响动把鸟惊飞了。',u:'frightened（人）/frightening（物）分工'},
+{w:'renew',p:'/rɪˈnjuː/',c:'v. 续借；更新',e:'I renewed the books for two weeks.',t:'我把书续借了两周。',u:'renew books 续借；re- 前缀 = 重新'},
+{w:'absent',p:'/ˈæbsənt/',c:'a. 缺席的',e:'Two students were absent today.',t:'今天有两名学生缺席。',u:'absent from 缺席；反义 present'},
+{w:'enthusiastic',p:'/ɪnˌθjuːziˈæstɪk/',c:'a. 热情的，热心的',e:'The crowd was enthusiastic.',t:'人群热情高涨。',u:'名词 enthusiasm；be enthusiastic about'},
+{w:'sadness',p:'/ˈsædnɪs/',c:'n. 悲伤',e:'His eyes showed real sadness.',t:'他的眼里有真切的悲伤。',u:'sad + -ness；比 sorrow 语气轻'},
+{w:'ambulance',p:'/ˈæmbjʊləns/',c:'n. 救护车',e:'Call an ambulance quickly!',t:'快叫救护车！',u:'call an ambulance 打急救电话，救命句'},
+{w:'eighteen',p:'/ˌeɪˈtiːn/',c:'num. 十八',e:'She left home at eighteen.',t:'她十八岁离家。',u:'别与 eighty（80）听混，重音位置是关键'},
+{w:'jam',p:'/dʒæm/',c:'n. 果酱；堵塞',e:'Traffic jam again this morning.',t:'今天早高峰又堵车了。',u:'traffic jam 堵车高频；strawberry jam 草莓酱'},
+{w:'downstairs',p:'/ˌdaʊnˈsteəz/',c:'adv. 在楼下',e:'He is waiting downstairs.',t:'他在楼下等着。',u:'一个词不带 -s 变化；对应 upstairs'},
+{w:'separately',p:'/ˈsepərətli/',c:'adv. 分开地，各自地',e:'We paid separately.',t:'我们各付各的。',u:'同源形容词 separate'},
+{w:'waiter',p:'/ˈweɪtə/',c:'n. 服务员（男）',e:'The waiter took our order.',t:'服务员记下了我们的单。',u:'女服务员是 waitress'},
+{w:'tin',p:'/tɪn/',c:'n. 锡；罐头盒',e:'The roof is made of tin.',t:'屋顶是马口铁的。',u:'a tin of beans 罐头量词；美式说 can'},
+{w:'unnecessary',p:'/ʌnˈnesəsəri/',c:'a. 不必要的',e:'Do not add unnecessary steps.',t:'别加不必要的步骤。',u:'反义 necessary；unnecessarily 副词多余地'},
+{w:'accommodation',p:'/əˌkɒməˈdeɪʃn/',c:'n. 住处（不可数）',e:'We found cheap accommodation near campus.',t:'我们在校园附近找到便宜住处。',u:'英式恒不可数；美式常说 housing'},
+{w:'convenient',p:'/kənˈviːniənt/',c:'a. 方便的',e:'Is Friday convenient for you?',t:'周五你方便吗？',u:'说人方便用 it is convenient for sb；名词 convenience'},
+{w:'confine',p:'/kənˈfaɪn/',c:'v. 限制，使不外出',e:'Do not confine yourself to one idea.',t:'别把自己框死在一个想法里。',u:'be confined to 局限于；confines 范围界限'},
+{w:'pronounce',p:'/prəˈnaʊns/',c:'v. 发音；宣布',e:'How do you pronounce this word?',t:'这个词怎么读？',u:'名词变 pronunciation，结尾大改，见 Day 1 第 21 词'},
+{w:'urgent',p:'/ˈɜːdʒənt/',c:'a. 紧急的',e:'Send the fax, it is urgent.',t:'把传真发出去，很急。',u:'名词 urgency；urgent message 急件'},
+{w:'excite',p:'/ɪkˈsaɪt/',c:'v. 使兴奋',e:'The news excited the fans.',t:'消息让歌迷兴奋。',u:'excited（人）/exciting（物）；名词 excitement'},
+{w:'alert',p:'/əˈlɜːt/',c:'a. 警觉的；n. 警报',e:'Stay alert on night duty.',t:'值夜班要保持警觉。',u:'be alert to；on high alert 高度戒备'},
+{w:'remains',p:'/rɪˈmeɪnz/',c:'n. 剩余物，遗迹',e:'They studied the ancient remains.',t:'他们研究古代遗迹。',u:'动词 remain 的复数特殊义'},
+{w:'sour',p:'/ˈsaʊə/',c:'a. 酸的；馊的',e:'The milk tastes sour.',t:'牛奶发酸了。',u:'sweet and sour 糖醋；变馊也是 sour'},
+{w:'torture',p:'/ˈtɔːtʃə/',c:'n./v. 折磨',e:'Waiting is pure torture.',t:'等待纯粹是折磨。',u:'夸张比喻常用：排队就是 torture'},
+{w:'halt',p:'/hɔːlt/',c:'v./n. 停止',e:'The train came to a halt.',t:'火车停了下来。',u:'come to a halt 停下；call a halt to 叫停'},
+{w:'hatred',p:'/ˈheɪtrɪd/',c:'n. 憎恨',e:'Such words stir up hatred.',t:'这样的话会煽动仇恨。',u:'动词 hate 的大名词；hatred of/for'},
+{w:'certificate',p:'/səˈtɪfɪkət/',c:'n. 证书',e:'She got a teaching certificate.',t:'她拿到了教师资格证。',u:'名词重音在第二音节；动词是 certify'},
+{w:'cautious',p:'/ˈkɔːʃəs/',c:'a. 谨慎的',e:'Be cautious with online deals.',t:'网上交易要谨慎。',u:'名词 caution；近义 careful，反义 reckless'},
+{w:'delegate',p:'/ˈdelɪɡeɪt/',c:'n. 代表；v. 委派',e:'Each class sent two delegates.',t:'每个班派了两名代表。',u:'名词重音在前，动词在后；delegation 代表团'},
+{w:'sympathetic',p:'/ˌsɪmpəˈθetɪk/',c:'a. 有同情心的',e:'She gave him a sympathetic look.',t:'她投来一个体谅的眼神。',u:'名词 sympathy；be sympathetic to 体谅'},
+{w:'offend',p:'/əˈfend/',c:'v. 冒犯，得罪',e:'Do not offend the host.',t:'别冒犯了主人。',u:'形容词 offensive 冒犯的'},
+{w:'backward',p:'/ˈbækwəd/',c:'a./adv. 向后的（地）',e:'He took a step backward.',t:'他向后退了一步。',u:'backward 与 backwards 都通；反义 forward'}
+];
+
+const V_PER = 5, V_LESS = VOCAB.length / V_PER;
+const V_EPOCH = new Date(2026, 9, 24);
+function vDayIdx(){ const d = new Date(); d.setHours(0,0,0,0); return Math.floor((d - V_EPOCH) / 86400000); }
+function vLi(){ const n = vDayIdx(); return ((n % V_LESS) + V_LESS) % V_LESS; }
+function vSlice(li){ const a = li * V_PER; return VOCAB.slice(a, a + V_PER); }
+let vStreak = store.get('vocab.streak', null);
+if (!vStreak || typeof vStreak !== 'object') vStreak = { last:'', cur:0, best:0 };
+let vMarks = store.get('vocab.marks', null);
+if (!vMarks || typeof vMarks !== 'object') vMarks = {};
+let vRev = store.get('vocab.rev', null);
+if (!vRev || typeof vRev !== 'object') vRev = {};
+let vCount = parseInt(store.get('vocab.count', '0'), 10) || 0;
+function vCard(x){
+  return '<div class="vhead"><b class="vw">' + escHtml(x.w) + '</b><span class="vipa">' + x.p + '</span></div>'
+    + '<div class="vcn">' + x.c + '</div>'
+    + '<div class="vex">' + x.e + '</div>'
+    + '<div class="vtr">' + x.t + '</div>'
+    + '<div class="vuse">💡 ' + x.u + '</div>';
+}
+function vocabStreakShow(){
+  $('#vocabStreak').textContent = '🔥 ' + (vStreak.cur || 0);
+  $('#vocabCountN').textContent = vCount;
+}
+function vocabProgress(){
+  const today = spanToday();
+  const marks = vMarks[today] || [];
+  $('#vocabProgress').textContent = '今日 ' + marks.length + '/5';
+  const btn = $('#vocabGn');
+  if (marks.length >= 5 && vStreak.last !== today){ btn.textContent = '🎒 全齐了，打卡！'; btn.className = 'px-btn yellow'; }
+  else if (vStreak.last === today){ btn.textContent = '✅ 今日打卡完成 🔥' + vStreak.cur; btn.className = 'px-btn ghost'; }
+  else { btn.textContent = '🎒 打卡（' + marks.length + '/5）'; btn.className = 'px-btn ghost'; }
+}
+function vocabRenderToday(){
+  const li = vLi(), today = spanToday();
+  $('#vocabDayTag').textContent = '📗 Day ' + (li + 1) + ' / ' + V_LESS;
+  $('#vocabDate').textContent = '📅 ' + today;
+  const marks = vMarks[today] || [];
+  $('#vocabToday').innerHTML = vSlice(li).map((x, i) => {
+    const on = marks.indexOf(x.w) >= 0;
+    return '<div class="vword">'
+      + '<span class="story-clock-label" style="opacity:.65">第 ' + (li * V_PER + i + 1) + ' 词</span>'
+      + vCard(x)
+      + '<button class="vmark px-btn ' + (on ? 'yellow' : 'ghost') + '" data-vw="' + escHtml(x.w) + '" type="button">' + (on ? '✓ 已记住' : '○ 我记住了') + '</button></div>';
+  }).join('');
+  vocabProgress();
+}
+function vocabRenderRev(){
+  const li = (vLi() - 1 + V_LESS) % V_LESS;
+  $('#vocabRevTitle').textContent = 'Day ' + (li + 1) + ' 的 5 个词';
+  $('#vocabRevList').innerHTML = vSlice(li).map(x =>
+    '<div class="vword blurred">' + vCard(x) + '<button class="chip vflip" type="button">👁 揭晓</button></div>'
+  ).join('');
+  const done = !!vRev[spanToday()];
+  const rb = $('#vocabRevDone');
+  rb.textContent = done ? '✔ 已圆满' : '✔ 昨日复习完成';
+  rb.className = 'px-btn ' + (done ? 'ghost' : 'yellow');
+  $$('#vocabRevList .vflip').forEach(f => f.addEventListener('click', () => {
+    f.closest('.vword').classList.toggle('blurred');
+    sfx.click();
+  }));
+}
+function vocabRenderNext(){
+  const li = (vLi() + 1) % V_LESS;
+  $('#vocabNextTitle').textContent = 'Day ' + (li + 1) + ' 的 5 个词';
+  $('#vocabNextList').innerHTML = vSlice(li).map(x =>
+    '<div class="vword dimmed"><div class="vhead"><b class="vw">' + escHtml(x.w) + '</b><span class="vipa">' + x.p + '</span></div><div class="vcn">' + x.c + '</div></div>'
+  ).join('');
+}
+$('#vocabToday').addEventListener('click', e => {
+  const b = e.target.closest('.vmark'); if (!b) return;
+  const today = spanToday();
+  const marks = vMarks[today] || (vMarks[today] = []);
+  const w = b.dataset.vw;
+  if (marks.indexOf(w) >= 0){ marks.splice(marks.indexOf(w), 1); b.textContent = '○ 我记住了'; b.classList.remove('yellow'); b.classList.add('ghost'); sfx.bonk(); }
+  else { marks.push(w); b.textContent = '✓ 已记住'; b.classList.remove('ghost'); b.classList.add('yellow'); sfx.click(); }
+  store.set('vocab.marks', vMarks);
+  vocabProgress();
+});
+$('#vocabGn').addEventListener('click', () => {
+  const today = spanToday();
+  const marks = vMarks[today] || [];
+  if (vStreak.last === today || marks.length < 5){ sfx.bonk(); return; }
+  vStreak.cur = (vStreak.last === spanYesterday()) ? vStreak.cur + 1 : 1;
+  vStreak.best = Math.max(vStreak.best, vStreak.cur);
+  vStreak.last = today;
+  vCount += V_PER;
+  store.set('vocab.streak', vStreak);
+  store.set('vocab.count', String(vCount));
+  vocabStreakShow(); vocabProgress();
+  sfx.point();
+});
+$('#vocabRevDone').addEventListener('click', () => {
+  const t = spanToday();
+  if (vRev[t]){ sfx.bonk(); return; }
+  vRev[t] = true;
+  store.set('vocab.rev', vRev);
+  const rb = $('#vocabRevDone');
+  rb.textContent = '✔ 已圆满';
+  rb.className = 'px-btn ghost';
+  sfx.point();
+});
+(function vocabInit(){
+  vocabRenderToday();
+  vocabRenderRev();
+  vocabRenderNext();
+  vocabStreakShow();
+})();
+
 /* ---------- 启动 ---------- */
+
+
 window.__audioReady = false;
 document.addEventListener('pointerdown', () => { window.__audioReady = true; }, { once:true });
 $$('#gameLobby .game-card').forEach(c => c.addEventListener('click', () => mountGame(c.dataset.game)));
