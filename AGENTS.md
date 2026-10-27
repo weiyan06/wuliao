@@ -102,4 +102,5 @@
 - v3.2.3 掷骰子「摇一摇」：`devicemotion` 重力传感器触发（阈值 delta≥20+1.2s 冷却防连掷）；iOS 走 `requestPermission()`（需 https+手势授权，拒绝给设置指引），安卓 Chrome 默认已授权；开关仅触摸设备显示，状态记内存不落库
 - v3.2.4 掷骰子手机振动：掷出 `[30,60,30]` 短节奏 + 落定 `15ms` 轻震，走全局 `vib(p)`（iOS/电脑无 `navigator.vibrate` 自动静默）；与音效开关独立
 - v3.2.5 骰子滚动全程震感（`RATTLE_VIB` 25ms/70ms 磙动节奏 ≈2.4s，settle 掐断 + 15ms 轻震收尾）；掷骰子卡片挪到小游戏第一位
-- v3.2.6 掷骰子沉浸模式：进入时隐藏顶栏+tab 导航、`html.dice-lock` 锁滚动；返回/切 tab 自动恢复；其他游戏不受影响 ← 当前
+- v3.2.6 掷骰子沉浸模式：进入时隐藏顶栏+tab 导航、`html.dice-lock` 锁滚动；返回/切 tab 自动恢复；其他游戏不受影响
+- v3.2.7 沉浸模式推广到全部 32 个小游戏（`body.game-full` + `html.game-lock`，mountGame 挂/backToLobby·setTab 摘）；互动玩具未启用 ← 当前
