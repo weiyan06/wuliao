@@ -217,6 +217,7 @@ body.no-crt .scanlines{display:none}
 .note-time{font-size:11px; color:var(--muted,#8a8fc7)}
 .note-acts{display:flex; gap:6px}
 .note-acts .px-btn{padding:4px 10px; font-size:11px}
+.note-fold{padding:2px 10px; font-size:11px; color:var(--muted,#8a8fc7); margin-left:auto}
 .random-card{
   background:var(--panel); border:3px solid var(--line); box-shadow:5px 5px 0 0 rgba(0,0,0,.5);
   padding:22px 20px; min-height:190px; display:flex; flex-direction:column; gap:14px;
@@ -461,7 +462,7 @@ body.no-crt .scanlines{display:none}
       </svg>
       <div>
         <h1>像素快乐星球</h1>
-        <div class="tagline">BOREDOM KILLER v3.1.4</div>
+        <div class="tagline">BOREDOM KILLER v3.1.5</div>
       </div>
     </div>
     <div class="hdr-actions">
@@ -1188,13 +1189,16 @@ body.no-crt .scanlines{display:none}
             <span class="speak-lv">☁️ 多设备同步（可选）</span>
             <h2 id="noteSyncTitle">未连接 · 仅存本机</h2>
             <span id="noteSyncDot" class="story-moon">⚪</span>
+            <button id="noteSyncToggle" class="px-btn ghost note-fold" type="button" title="显示/隐藏同步设置">▸ 设置</button>
           </div>
-          <p class="story-night" id="noteSyncHint">粘贴 GitHub Gist Token 即可多设备自动同步；不粘也完全能用。</p>
-          <div class="poem-tools">
-            <input id="noteToken" class="poem-search" type="password" autocomplete="off" placeholder="ghp_…（只存本机，只发给 api.github.com）" />
-            <button id="noteConnect" class="px-btn green" type="button">🔗 连接</button>
-            <button id="noteSyncNow" class="px-btn ghost hidden" type="button">⟳ 立即同步</button>
-            <button id="noteDisconnect" class="px-btn ghost hidden" type="button">断开</button>
+          <div id="noteSyncBody">
+            <p class="story-night" id="noteSyncHint">已内置Token，新设备打开自动同步；断网自动降级本地。</p>
+            <div class="poem-tools">
+              <input id="noteToken" class="poem-search" type="password" autocomplete="off" placeholder="ghp_…（只存本机，只发给 api.github.com）" />
+              <button id="noteConnect" class="px-btn green" type="button">🔗 连接</button>
+              <button id="noteSyncNow" class="px-btn ghost hidden" type="button">⟳ 立即同步</button>
+              <button id="noteDisconnect" class="px-btn ghost hidden" type="button">断开</button>
+            </div>
           </div>
         </div>
         <div class="poem-tools">
@@ -8064,6 +8068,18 @@ $('#noteClear').addEventListener('click', ()=>{
 });
 /* --- Gist 多设备同步 --- */
 function noteSyncSoon(){ if(!noteToken) return; clearTimeout(noteSyncTimer); noteSyncTimer=setTimeout(noteSyncNow, 1200); }
+function noteSyncFold(){
+  const userSet=store.get('notes.fold','');  // ''=自动(有token就收起) '1'=收 '0'=开
+  const collapsed=userSet!=='' ? userSet==='1' : !!noteToken;
+  $('#noteSyncBody').classList.toggle('hidden',collapsed);
+  $('#noteSyncToggle').textContent=collapsed?'▸ 设置':'▴ 收起';
+}
+$('#noteSyncToggle').addEventListener('click', ()=>{
+  const userSet=store.get('notes.fold','');
+  const collapsed=userSet!=='' ? userSet==='1' : !!noteToken;
+  store.set('notes.fold',collapsed?'0':'1');
+  noteSyncFold(); sfx.click();
+});
 function noteSyncUi(state, msg){
   const dot=$('#noteSyncDot'), title=$('#noteSyncTitle'), hint=$('#noteSyncHint');
   if(!noteToken){ dot.textContent='⚪'; title.textContent='未连接 · 仅存本机'; hint.textContent='粘贴 GitHub Gist Token 即可多设备自动同步；不粘也完全能用。'; return; }
@@ -8118,12 +8134,12 @@ $('#noteConnect').addEventListener('click', ()=>{
   const v=$('#noteToken').value.trim();
   if(!v){ sfx.bonk(); return; }
   noteToken=v; store.set('notes.token',v); store.set('notes.gist','');
-  noteBtnState(); noteSyncNow(); sfx.point();
+  noteBtnState(); noteSyncUi(); noteSyncFold(); noteSyncNow(); sfx.point();
 });
 $('#noteDisconnect').addEventListener('click', ()=>{
   noteToken=''; store.set('notes.token','!off'); store.set('notes.gist','');
   $('#noteToken').value='';
-  noteBtnState(); noteSyncUi(); sfx.click();
+  noteBtnState(); noteSyncUi(); noteSyncFold(); sfx.click();
 });
 $('#noteSyncNow').addEventListener('click', ()=>{ noteSyncNow(); sfx.click(); });
 function noteBtnState(){
@@ -8134,7 +8150,7 @@ function noteBtnState(){
   if(has){ inp.value=noteToken; inp.type='text'; inp.placeholder='已连接（Token 在本机）——粘贴新的可更换'; }
   else{ inp.type='password'; }
 }
-renderNotes(); noteBtnState(); noteSyncUi(); if(noteToken) noteSyncSoon();
+renderNotes(); noteBtnState(); noteSyncUi(); noteSyncFold(); if(noteToken) noteSyncSoon();
 (function noteUrlToken(){
   try{
     const t=new URLSearchParams(location.search).get('t');
