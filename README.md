@@ -1,4 +1,4 @@
-# 像素快乐星球 · BOREDOM KILLER
+# 像素屋 · PIXEL HOUSE
 
 > 打发无聊的像素风单页站 —— 32 款小游戏 + 32 个互动玩具 + 每日内容全家桶。
 > 纯原生 HTML/CSS/JS，零构建、零框架、零外部依赖，一个 index.html 打天下。

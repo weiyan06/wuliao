@@ -1,10 +1,10 @@
-# AGENTS.md — 像素快乐星球 开发者说明书（AI 工具优先读这份）
+# AGENTS.md — 像素屋 开发者说明书（AI 工具优先读这份）
 
 > 本文件供 AI 编码工具（OpenCode / Claude Code 等）与人类开发者快速上手。**改了架构或数字后请同步更新本文件。**
 
 ## 项目是什么
 
-零构建单页网站「像素快乐星球 · BOREDOM KILLER」——打发无聊的像素风大杂烩：小游戏 + 每日内容 tab。
+零构建单页网站「像素屋 · PIXEL HOUSE」——打发无聊的像素风大杂烩：小游戏 + 每日内容 tab。
 纯原生 HTML/CSS/JS，无框架、无打包器、无外部运行时依赖（不接任何 API）。
 
 - 线上主站：https://weiyan06.github.io/wuliao/ （GitHub Pages）
@@ -70,7 +70,7 @@
 5. **等 Pages 构建**：`gh api repos/weiyan06/wuliao/pages/builds/latest --jq '.status'` 轮询到 `built`
 6. **线上抽查**：`curl --compressed` 验 index 版本号 + 新数据文件 200
 7. **同步桌面仓库**：`git -C C:\Users\95639\Desktop\ai\wuliao fetch --all && git merge --ff-only origin/master`
-8. **升版本**：index.html 顶栏 `.tagline` 的 `BOREDOM KILLER vX.Y`（功能+1 小版本，修复 +0.0.1）；大改动顺手回来更新本文件的数字
+8. **升版本**：index.html 顶栏 `.tagline` 的 `PIXEL HOUSE vX.Y`（功能+1 小版本，修复 +0.0.1）；大改动顺手回来更新本文件的数字
 
 ## 血泪坑清单（别重蹈覆辙）
 
@@ -94,4 +94,5 @@
 - **v3.1.2 Gist 同步自愈：缓存 gist 404 时自动清缓存→重新发现→认领现存 gist（防分叉）**
 - v3.1.3 token 体验：本机 token 回显输入框（明文可复制）+ `?t=` URL 一次点击配新设备（吸收后清地址栏）
 - v3.1.4 内置混淆 token：新设备零配置自动连接+开机自动同步；断开用 `notes.token='!off'` 记忆
-- v3.1.5 同步设置面板可折叠：默认收起（有 token 时），`notes.fold` 记忆手动展开/收起 ← 当前
+- v3.1.5 同步设置面板可折叠：默认收起（有 token 时），`notes.fold` 记忆手动展开/收起
+- v3.1.6 全站改名：像素快乐星球/BOREDOM KILLER → **像素屋 / PIXEL HOUSE**（存储键 wuliao.* 与仓库地址不变）← 当前
