@@ -461,7 +461,7 @@ body.no-crt .scanlines{display:none}
       </svg>
       <div>
         <h1>像素快乐星球</h1>
-        <div class="tagline">BOREDOM KILLER v3.1</div>
+        <div class="tagline">BOREDOM KILLER v3.1.1</div>
       </div>
     </div>
     <div class="hdr-actions">
@@ -8074,7 +8074,8 @@ function noteSyncUi(state, msg){
 function noteGh(path, method, body){
   return fetch('https://api.github.com'+path, {
     method: method||'GET',
-    headers: { 'Authorization': 'token '+noteToken, 'Accept': 'application/vnd.github+json' }
+    headers: { 'Authorization': 'token '+noteToken, 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json' },
+    body: body ? JSON.stringify(body) : undefined
   }).then(r=>{
     if(r.status===401) throw new Error('Token 无效或已被撤销');
     if(r.status===403) throw new Error('GitHub 拒绝访问（可能触发限流）');
