@@ -208,6 +208,15 @@ body.no-crt .scanlines{display:none}
 .mov-line{margin:2px 0; font-size:12px; color:var(--dim,#9aa0d8)}
 .mov-syn{margin:12px 0 6px; line-height:1.8; font-size:13px}
 .mov-kudo{margin:0; font-size:12px; color:#ffd76e; line-height:1.8}
+.note-ta{width:100%; box-sizing:border-box; background:var(--panel2,#1f2140); border:2px solid var(--line,#0b0c18); color:var(--ink,#eef0ff); font-family:inherit; font-size:14px; line-height:1.8; padding:10px 12px; margin:8px 0 4px; resize:vertical; outline:none}
+.note-ta:focus{border-color:var(--yellow,#ffc53d)}
+.note-card{border:2px solid var(--line,#0b0c18); background:var(--panel2,#1f2140); box-shadow:4px 4px 0 rgba(0,0,0,.4); padding:12px; margin-bottom:12px}
+.note-card.note-editing{border-color:var(--yellow,#ffc53d)}
+.note-text{margin:0 0 8px; line-height:1.8; font-size:13px; white-space:pre-wrap; word-break:break-word}
+.note-meta{display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap}
+.note-time{font-size:11px; color:var(--muted,#8a8fc7)}
+.note-acts{display:flex; gap:6px}
+.note-acts .px-btn{padding:4px 10px; font-size:11px}
 .random-card{
   background:var(--panel); border:3px solid var(--line); box-shadow:5px 5px 0 0 rgba(0,0,0,.5);
   padding:22px 20px; min-height:190px; display:flex; flex-direction:column; gap:14px;
@@ -452,7 +461,7 @@ body.no-crt .scanlines{display:none}
       </svg>
       <div>
         <h1>像素快乐星球</h1>
-        <div class="tagline">BOREDOM KILLER v3.0.3</div>
+        <div class="tagline">BOREDOM KILLER v3.1</div>
       </div>
     </div>
     <div class="hdr-actions">
@@ -471,6 +480,7 @@ body.no-crt .scanlines{display:none}
     <button class="tab-btn" data-tab="story" type="button">睡前故事</button>
     <button class="tab-btn" data-tab="vocab" type="button">每日背单词</button>
     <button class="tab-btn" data-tab="movies" type="button">电影推荐</button>
+    <button class="tab-btn" data-tab="notes" type="button">随手记</button>
     <button class="tab-btn" data-tab="toys" type="button">互动玩具</button>
   </nav>
 
@@ -1157,6 +1167,51 @@ body.no-crt .scanlines{display:none}
       </div>
     </section>
 
+    <!-- ===== 视图：随手记 ===== -->
+    <section id="view-notes" class="view">
+      <div id="noteLobby" class="lobby">
+        <p class="view-tip">随手记 · 想到什么写什么 · 默认只存本机，配 Gist 后多设备自动同步</p>
+        <div class="vocab-hero">
+          <div class="story-top">
+            <span class="speak-lv">✏️ 记一条</span>
+            <h2 id="noteTitle">新建便签</h2>
+            <span id="noteCountTag" class="story-moon">🗒 0</span>
+          </div>
+          <textarea id="noteInput" class="note-ta" rows="4" placeholder="想到什么写什么…（Ctrl/⌘ + Enter 保存）"></textarea>
+          <div class="story-tools">
+            <button id="noteSave" class="px-btn yellow" type="button">💾 保存</button>
+            <button id="noteCancel" class="px-btn ghost hidden" type="button">取消编辑</button>
+          </div>
+        </div>
+        <div class="vocab-hero">
+          <div class="story-top">
+            <span class="speak-lv">☁️ 多设备同步（可选）</span>
+            <h2 id="noteSyncTitle">未连接 · 仅存本机</h2>
+            <span id="noteSyncDot" class="story-moon">⚪</span>
+          </div>
+          <p class="story-night" id="noteSyncHint">粘贴 GitHub Gist Token 即可多设备自动同步；不粘也完全能用。</p>
+          <div class="poem-tools">
+            <input id="noteToken" class="poem-search" type="password" autocomplete="off" placeholder="ghp_…（只存本机，只发给 api.github.com）" />
+            <button id="noteConnect" class="px-btn green" type="button">🔗 连接</button>
+            <button id="noteSyncNow" class="px-btn ghost hidden" type="button">⟳ 立即同步</button>
+            <button id="noteDisconnect" class="px-btn ghost hidden" type="button">断开</button>
+          </div>
+        </div>
+        <div class="poem-tools">
+          <input id="noteSearch" class="poem-search" type="text" placeholder="搜笔记内容…" />
+          <button id="noteCopyAll" class="px-btn ghost" type="button">📋 复制全部</button>
+          <button id="noteExport" class="px-btn ghost" type="button">⬇ 导出</button>
+          <button id="noteImport" class="px-btn ghost" type="button">⬆ 导入</button>
+          <button id="noteClear" class="px-btn ghost" type="button">🗑 清空</button>
+          <input id="noteFile" type="file" accept=".json,application/json" style="display:none" />
+        </div>
+        <p class="view-tip" id="noteStat">共 0 条</p>
+        <div id="noteList"></div>
+        <p class="view-tip" id="noteEmpty">还没有笔记——想到什么就写一条吧。</p>
+        <div class="pager" id="notePager" aria-label="笔记分页"></div>
+      </div>
+    </section>
+
     <!-- ===== 视图：互动玩具 ===== -->
     <section id="view-toys" class="view">
       <div id="toyLobby" class="lobby">
@@ -1577,7 +1632,7 @@ $('#crtBtn').addEventListener('click', ()=>{ crtOn=!crtOn; syncHeader(); sfx.cli
 $('#muteBtn').addEventListener('click', ()=>{ muted=!muted; store.set('muted', muted); syncHeader(); if(!muted) sfx.click(); });
 
 /* ---------- 标签页切换（支持 hash） ---------- */
-const VIEWS = { games:'view-games', random:'view-random', poems:'view-poems', speak:'view-speak', food:'view-food', story:'view-story', vocab:'view-vocab', movies:'view-movies', toys:'view-toys' };
+const VIEWS = { games:'view-games', random:'view-random', poems:'view-poems', speak:'view-speak', food:'view-food', story:'view-story', vocab:'view-vocab', movies:'view-movies', notes:'view-notes', toys:'view-toys' };
 const state = { tab:'games', game:null, toy:null };
 
 function stopActive(){
@@ -1595,6 +1650,7 @@ function setTab(name){
   if(name==='toys'){ $('#toyView').classList.add('hidden'); $('#toyLobby').classList.remove('hidden'); }
   if(name==='poems'){ $('#poemView').classList.add('hidden'); $('#poemLobby').classList.remove('hidden'); ensureTang(() => { syncPoemFavBtn(); renderPoems(); }); }
   if(name==='food'){ $('#foodView').classList.add('hidden'); $('#foodLobby').classList.remove('hidden'); }
+  if(name==='notes'){ noteSyncSoon(); }
   try{ if(location.hash !== '#'+name) history.replaceState(null, '', '#'+name); }catch(e){}
   sfx.click();
 }
@@ -7860,6 +7916,216 @@ $$('#movLen .chip').forEach(c => c.addEventListener('click', () => {
 }));
 $('#movCount').textContent = MOVIES.length;
 renderMovGrid(); syncMovStats();
+
+/* ---------- 随手记 ---------- */
+const GIST_MARK='wuliao-notes', GIST_FILE='notes.json';
+let notes = store.get('notes.list', []);
+if(!Array.isArray(notes)) notes=[];
+let noteToken = store.get('notes.token', '');
+let noteEditing=null;
+let noteDelArmed=null, noteDelTimer=null;
+let noteClearArmed=false, noteClearTimer=null;
+let noteSyncTimer=null, noteSyncBusy=false, noteSyncQueued=false;
+function noteSaveLocal(){ store.set('notes.list', notes); }
+function fmtNoteTs(ms){
+  const d=new Date(ms), n=new Date(), p=x=>String(x).padStart(2,'0');
+  const hm=p(d.getHours())+':'+p(d.getMinutes());
+  const same=(a,b)=>a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate();
+  if(same(d,n)) return '今天 '+hm;
+  if(same(d,new Date(n.getTime()-864e5))) return '昨天 '+hm;
+  return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+' '+hm;
+}
+function noteMergeArr(remote, local){
+  const map={};
+  local.forEach(n=>{ if(n&&n.id) map[n.id]=n; });
+  remote.forEach(n=>{ if(!n||!n.id) return; const o=map[n.id]; if(!o||(n.up||n.ts||0)>(o.up||o.ts||0)) map[n.id]=n; });
+  return Object.keys(map).map(k=>map[k]);
+}
+function renderNotes(){
+  const q=$('#noteSearch').value.trim().toLowerCase();
+  const live=notes.filter(n=>!n.del);
+  const idx=notes.map((n,i)=>i).filter(i=>!notes[i].del&&(!q||notes[i].text.toLowerCase().indexOf(q)>=0)).sort((a,b)=>((notes[b].up||0)-(notes[a].up||0))||(b-a));
+  $('#noteCountTag').textContent='🗒 '+live.length;
+  $('#noteStat').textContent=q?('筛出 '+idx.length+' / 共 '+live.length+' 条'):('共 '+live.length+' 条');
+  let emptyShow='none', emptyTxt='还没有笔记——想到什么就写一条吧。';
+  if(!live.length){ emptyShow=''; }
+  else if(!idx.length){ emptyShow=''; emptyTxt='没有内容含「'+q+'」的笔记。'; }
+  $('#noteEmpty').style.display=emptyShow;
+  $('#noteEmpty').textContent=emptyTxt;
+  $('#noteList').innerHTML=idx.map(i=>{
+    const n=notes[i];
+    return '<div class="note-card'+(noteEditing===n.id?' note-editing':'')+'" data-nid="'+n.id+'">'
+      +'<p class="note-text">'+escHtml(n.text)+'</p>'
+      +'<div class="note-meta"><span class="note-time">🕐 '+fmtNoteTs(n.up||n.ts)+'</span><span class="note-acts">'
+      +'<button class="px-btn ghost" data-na="copy" type="button">📋</button>'
+      +'<button class="px-btn ghost" data-na="edit" type="button">✏️</button>'
+      +'<button class="px-btn ghost" data-na="del" type="button">🗑</button>'
+      +'</span></div></div>';
+  }).join('');
+  initPager('#notePager', '#noteList .note-card', 10);
+}
+function noteDoSave(){
+  const ta=$('#noteInput'), text=ta.value.trim();
+  if(!text){ sfx.bonk(); ta.focus(); return; }
+  const now=Date.now();
+  if(noteEditing){
+    const n=notes.find(x=>x.id===noteEditing);
+    if(n){ n.text=text; n.up=now; }
+    noteEditing=null;
+    $('#noteTitle').textContent='新建便签'; $('#noteSave').textContent='💾 保存'; $('#noteCancel').classList.add('hidden');
+  } else {
+    notes.push({ id:'n'+now+'_'+Math.floor(Math.random()*1e4), text:text, ts:now, up:now, del:0 });
+  }
+  ta.value=''; noteSaveLocal(); renderNotes(); sfx.point(); noteSyncSoon();
+}
+function noteEdit(id){
+  const n=notes.find(x=>x.id===id); if(!n) return;
+  noteEditing=id; $('#noteInput').value=n.text;
+  $('#noteTitle').textContent='编辑便签'; $('#noteSave').textContent='✔ 更新'; $('#noteCancel').classList.remove('hidden');
+  renderNotes(); $('#noteInput').scrollIntoView({behavior:'smooth',block:'center'}); sfx.click();
+}
+function noteCancelEdit(silent){
+  noteEditing=null; $('#noteInput').value='';
+  $('#noteTitle').textContent='新建便签'; $('#noteSave').textContent='💾 保存'; $('#noteCancel').classList.add('hidden');
+  renderNotes(); if(!silent) sfx.click();
+}
+function noteDel(id, btn){
+  if(btn.dataset.arm!=='1'){
+    if(noteDelArmed){ noteDelArmed.dataset.arm=''; noteDelArmed.textContent='🗑'; }
+    btn.dataset.arm='1'; btn.textContent='确定?'; noteDelArmed=btn;
+    clearTimeout(noteDelTimer);
+    noteDelTimer=setTimeout(()=>{ btn.dataset.arm=''; btn.textContent='🗑'; noteDelArmed=null; },3000);
+    sfx.click(); return;
+  }
+  const n=notes.find(x=>x.id===id);
+  if(n){ n.del=1; n.up=Date.now(); }
+  if(noteEditing===id) noteCancelEdit(true);
+  noteDelArmed=null; noteSaveLocal(); renderNotes(); sfx.bonk(); noteSyncSoon();
+}
+$('#noteList').addEventListener('click', e=>{
+  const b=e.target.closest('[data-na]'); if(!b) return;
+  const card=b.closest('.note-card'); if(!card) return;
+  const n=notes.find(x=>x.id===card.dataset.nid); if(!n) return;
+  if(b.dataset.na==='copy'){
+    const done=()=>sfx.point();
+    if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(n.text).then(done).catch(()=>copyFallback(n.text,done)); }
+    else copyFallback(n.text,done);
+  } else if(b.dataset.na==='edit') noteEdit(n.id);
+  else if(b.dataset.na==='del') noteDel(n.id, b);
+});
+$('#noteSave').addEventListener('click', noteDoSave);
+$('#noteCancel').addEventListener('click', ()=>noteCancelEdit());
+$('#noteInput').addEventListener('keydown', e=>{ if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){ e.preventDefault(); noteDoSave(); } });
+$('#noteSearch').addEventListener('input', renderNotes);
+$('#noteCopyAll').addEventListener('click', ()=>{
+  const live=notes.filter(n=>!n.del).sort((a,b)=>(b.up||0)-(a.up||0));
+  if(!live.length){ sfx.bonk(); return; }
+  const text=live.map((n,i)=>(i+1)+'. '+n.text+'（'+fmtNoteTs(n.up||n.ts)+'）').join('\n');
+  const done=()=>sfx.point();
+  if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(text).then(done).catch(()=>copyFallback(text,done)); }
+  else copyFallback(text,done);
+});
+$('#noteExport').addEventListener('click', ()=>{
+  if(!notes.length){ sfx.bonk(); return; }
+  const d=new Date(), p=x=>String(x).padStart(2,'0');
+  const blob=new Blob([JSON.stringify(notes,null,1)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='wuliao-notes-'+d.getFullYear()+p(d.getMonth()+1)+p(d.getDate())+'.json';
+  a.click(); URL.revokeObjectURL(a.href); sfx.point();
+});
+$('#noteImport').addEventListener('click', ()=>$('#noteFile').click());
+$('#noteFile').addEventListener('change', e=>{
+  const f=e.target.files&&e.target.files[0]; e.target.value='';
+  if(!f) return;
+  const rd=new FileReader();
+  rd.onload=()=>{
+    try{
+      const arr=JSON.parse(rd.result);
+      if(!Array.isArray(arr)) throw new Error('不是有效的备份文件');
+      notes=noteMergeArr(arr.filter(x=>x&&x.id&&typeof x.text==='string'), notes);
+      noteSaveLocal(); renderNotes(); noteSyncSoon(); sfx.win();
+    }catch(err){ sfx.bonk(); alert('导入失败：'+err.message); }
+  };
+  rd.readAsText(f);
+});
+$('#noteClear').addEventListener('click', ()=>{
+  if(!notes.filter(n=>!n.del).length){ sfx.bonk(); return; }
+  if(!noteClearArmed){
+    noteClearArmed=true; $('#noteClear').textContent='⚠ 再点清空';
+    noteClearTimer=setTimeout(()=>{ noteClearArmed=false; $('#noteClear').textContent='🗑 清空'; },3000);
+    sfx.click(); return;
+  }
+  clearTimeout(noteClearTimer); noteClearArmed=false; $('#noteClear').textContent='🗑 清空';
+  const now=Date.now();
+  notes.forEach(n=>{ n.del=1; n.up=now; });
+  noteSaveLocal(); renderNotes(); noteSyncSoon(); sfx.lose();
+});
+/* --- Gist 多设备同步 --- */
+function noteSyncSoon(){ if(!noteToken) return; clearTimeout(noteSyncTimer); noteSyncTimer=setTimeout(noteSyncNow, 1200); }
+function noteSyncUi(state, msg){
+  const dot=$('#noteSyncDot'), title=$('#noteSyncTitle'), hint=$('#noteSyncHint');
+  if(!noteToken){ dot.textContent='⚪'; title.textContent='未连接 · 仅存本机'; hint.textContent='粘贴 GitHub Gist Token 即可多设备自动同步；不粘也完全能用。'; return; }
+  if(state==='busy'){ dot.textContent='⟳'; title.textContent='同步中…'; return; }
+  if(state==='ok'){ dot.textContent='✔'; title.textContent='已连接 · 已同步 '+fmtNoteTs(Date.now()); hint.textContent='改动会自动推送；换设备粘同一个 Token 打开即合并。'; return; }
+  dot.textContent='⚠'; title.textContent='同步出错 · 本地照常用';
+  hint.textContent=msg||'稍后会自动重试，或点「立即同步」';
+}
+function noteGh(path, method, body){
+  return fetch('https://api.github.com'+path, {
+    method: method||'GET',
+    headers: { 'Authorization': 'token '+noteToken, 'Accept': 'application/vnd.github+json' }
+  }).then(r=>{
+    if(r.status===401) throw new Error('Token 无效或已被撤销');
+    if(r.status===403) throw new Error('GitHub 拒绝访问（可能触发限流）');
+    if(!r.ok) throw new Error('GitHub 返回 HTTP '+r.status);
+    return r.status===204 ? null : r.json();
+  });
+}
+function noteSyncNow(){
+  if(!noteToken){ noteSyncUi(); return Promise.resolve(); }
+  if(noteSyncBusy){ noteSyncQueued=true; return Promise.resolve(); }
+  noteSyncBusy=true; noteSyncUi('busy');
+  let gid=store.get('notes.gist','');
+  const ensure=gid?Promise.resolve({id:gid}):noteGh('/gists?per_page=100','GET').then(list=>{
+    const hit=(list||[]).find(g=>((g.description||'').indexOf(GIST_MARK)>=0)||(g.files&&g.files[GIST_FILE]));
+    if(hit) return hit;
+    return noteGh('/gists','POST',{ description:'像素快乐星球 · 随手记 ('+GIST_MARK+')', public:false, files:(function(){ const o={}; o[GIST_FILE]={content:'[]'}; return o; })() });
+  });
+  return ensure.then(g=>{ gid=g.id; store.set('notes.gist',gid); return noteGh('/gists/'+gid,'GET'); })
+    .then(g=>{
+      let remote=[];
+      try{ remote=JSON.parse(((g.files||{})[GIST_FILE]||{}).content||'[]'); }catch(e){ remote=[]; }
+      if(!Array.isArray(remote)) remote=[];
+      const merged=noteMergeArr(remote, notes);
+      const content=JSON.stringify(merged);
+      notes=merged; noteSaveLocal(); renderNotes();
+      const files=(function(){ const o={}; o[GIST_FILE]={content:content}; return o; })();
+      return noteGh('/gists/'+gid,'PATCH',{files:files});
+    })
+    .then(()=>{ noteSyncUi('ok'); })
+    .catch(e=>{ noteSyncUi('err', e.message); })
+    .then(()=>{ noteSyncBusy=false; if(noteSyncQueued){ noteSyncQueued=false; noteSyncNow(); } });
+}
+$('#noteConnect').addEventListener('click', ()=>{
+  const v=$('#noteToken').value.trim();
+  if(!v){ sfx.bonk(); return; }
+  noteToken=v; store.set('notes.token',v); store.set('notes.gist','');
+  noteBtnState(); noteSyncNow(); sfx.point();
+});
+$('#noteDisconnect').addEventListener('click', ()=>{
+  noteToken=''; store.set('notes.token',''); store.set('notes.gist','');
+  $('#noteToken').value='';
+  noteBtnState(); noteSyncUi(); sfx.click();
+});
+$('#noteSyncNow').addEventListener('click', ()=>{ noteSyncNow(); sfx.click(); });
+function noteBtnState(){
+  const has=!!noteToken;
+  $('#noteSyncNow').classList.toggle('hidden',!has);
+  $('#noteDisconnect').classList.toggle('hidden',!has);
+  if(has) $('#noteToken').placeholder='已连接（Token 在本机）——粘贴新的可更换';
+}
+renderNotes(); noteBtnState(); noteSyncUi();
 
 /* ---------- 启动 ---------- */
 

@@ -26,7 +26,7 @@
 
 ## tab 架构（新增 tab 的五步）
 
-9 个 tab：小游戏(32款) / 随机内容 / 唐诗三百首(320) / 每日练嘴(100) / 每日菜谱(60) / 睡前故事(40) / 每日背单词(220词=44天×5) / 电影推荐(95) / 互动玩具(32个)。
+10 个 tab：小游戏(32款) / 随机内容 / 唐诗三百首(320) / 每日练嘴(100) / 每日菜谱(60) / 睡前故事(40) / 每日背单词(220词=44天×5) / 电影推荐(95) / 随手记(便签+Gist同步) / 互动玩具(32个)。
 
 1. `<nav class="tabs">` 加 `<button class="tab-btn" data-tab="NAME" type="button">标题</button>`
 2. `const VIEWS = { …, NAME:'view-NAME' }` 加一项
@@ -47,16 +47,16 @@
 - `makeCanvas(w, h)`：像素画布工厂（返回 `{cv, ctx}`，自动加 `.pix-canvas`）
 - 每日内容 seed 公式：`new Date()` → `seed = y*372 + (m+1)*31 + day`（poems daily、vocab Day 制同源；词汇 epoch `V_EPOCH = 2026-10-24`）
 
-## localStorage 键位表（**禁止改名，会丢用户数据**；共 49 个）
+## localStorage 键位表（**禁止改名，会丢用户数据**；共 52 个）
 
-- 每日内容：`vocab.count/vocab.marks/vocab.streak/vocab.rev`、`story.stamp/story.count/story.favs/story.fsz`、`food.favs/food.spins`、`speak.favs/speak.streak`、`poem.favs`、`movie.favs/movie.rolls`
+- 每日内容：`vocab.count/vocab.marks/vocab.streak/vocab.rev`、`story.stamp/story.count/story.favs/story.fsz`、`food.favs/food.spins`、`speak.favs/speak.streak`、`poem.favs`、`movie.favs/movie.rolls`、`notes.list/notes.token/notes.gist`
 - 游戏最佳分：`snake.best`、`g2048.best`、`mine.best`、`tetris.best`、`simon.best`、`breakout.best`、`pong.best`、`flap.best`、`reflex.best`、`guess.best`、`maze.best`、`memory.best`、`rps.best`、`slide.best`、`mole.best`、`jumper.best`、`fishy.best`、`spider…`（`*.best` 后缀为惯例）
 - 玩具/设置：`muted`、`lamp.on/lamp.hue/lamp.bright/lamp.spread`、`beat.bpm`、`rhythm.best`
 
 ## 硬性约束
 
 1. **零构建**：不引入打包器、框架、CDN；字体/图标全内联（DotGothic16 + 系统等宽 + inline SVG）
-2. **零外部运行时依赖**：不接 API（决策记录：TMDB key 无法藏 + 大陆网络不稳 + 双端一致，数据一律内置 `data/*.js`）
+2. **零外部运行时依赖**：不接 API（决策记录：TMDB key 无法藏 + 大陆网络不稳 + 双端一致，数据一律内置 `data/*.js`）。**例外**（2026-10 决策）：随手记的 Gist 同步走 `api.github.com`——用户自有 token + 私有 gist，数据自控、可撤销，断网自动降级本地模式
 3. **单文件时代风格**：新代码复用既有模式（原生 JS、`$/$$`、`store`、`sfx`、`initPager`），不搞新范式
 4. `index.html` 是 **CRLF 行尾**；多行文本锚点匹配必须用 `\r\n`
 5. 文件全 UTF-8；PowerShell 脚本写盘用 `UTF8Encoding($false)`（无 BOM），含中文的 ps1 用 `-File` 执行时字符串会花——用 `[IO.File]::ReadAllText` + IndexOf 重写法处理
@@ -87,4 +87,7 @@
 - v2.7 睡前故事 / v2.8 每日背单词（ECDICT 词库）/ v2.9 数据拆分优化（2.14MB→首屏 102KB）
 - v2.9.1 五子棋落子修复（round→floor）
 - v3.0 电影推荐 tab（95 部片库 + 掷骰荐片机）
-- **v3.0.1 掷骰子改 5 颗 + 闪烁动画 + 「最大」总和统计；destroy 清定时器修复** ← 当前
+- v3.0.1 掷骰子改 5 颗 + 闪烁动画 + 「最大」总和统计；destroy 清定时器修复
+- v3.0.2 骰子 3+2 两排 + 真实骰子配色（1/4 红点）
+- v3.0.3 修 1 点大红点偏位（box-shadow 外扩不碰布局）
+- **v3.1 随手记 tab（本地便签 + Gist 多设备同步 + 导入导出）** ← 当前
