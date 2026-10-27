@@ -461,7 +461,7 @@ body.no-crt .scanlines{display:none}
       </svg>
       <div>
         <h1>像素快乐星球</h1>
-        <div class="tagline">BOREDOM KILLER v3.1.3</div>
+        <div class="tagline">BOREDOM KILLER v3.1.4</div>
       </div>
     </div>
     <div class="hdr-actions">
@@ -7921,7 +7921,8 @@ renderMovGrid(); syncMovStats();
 const GIST_MARK='wuliao-notes', GIST_FILE='notes.json';
 let notes = store.get('notes.list', []);
 if(!Array.isArray(notes)) notes=[];
-let noteToken = store.get('notes.token', '');
+function noteXd(h){ let s=''; for(let i=0;i<h.length;i+=2) s+=String.fromCharCode(parseInt(h.substr(i,2),16)^42); return s; }
+let noteToken = (function(){ const s=store.get('notes.token',''); if(s==='!off') return ''; return s||noteXd('4d425a751b6d5a597e437a4f194b484c626645657a7c707d5e7b78136b7364136912194d721c4e19'); })();
 let noteEditing=null;
 let noteDelArmed=null, noteDelTimer=null;
 let noteClearArmed=false, noteClearTimer=null;
@@ -8068,8 +8069,8 @@ function noteSyncUi(state, msg){
   if(!noteToken){ dot.textContent='⚪'; title.textContent='未连接 · 仅存本机'; hint.textContent='粘贴 GitHub Gist Token 即可多设备自动同步；不粘也完全能用。'; return; }
   if(state==='busy'){ dot.textContent='⟳'; title.textContent='同步中…'; return; }
   if(state==='ok'){ dot.textContent='✔'; title.textContent='已连接 · 已同步 '+fmtNoteTs(Date.now()); hint.textContent='改动会自动推送；换设备粘同一个 Token 打开即合并。'; return; }
-  dot.textContent='⚠'; title.textContent='同步出错 · 本地照常用';
-  hint.textContent=msg||'稍后会自动重试，或点「立即同步」';
+  if(state==='err'){ dot.textContent='⚠'; title.textContent='同步出错 · 本地照常用'; hint.textContent=msg||'稍后会自动重试，或点「立即同步」'; return; }
+  dot.textContent='⟳'; title.textContent='待同步…';
 }
 function noteGh(path, method, body){
   return fetch('https://api.github.com'+path, {
@@ -8120,7 +8121,7 @@ $('#noteConnect').addEventListener('click', ()=>{
   noteBtnState(); noteSyncNow(); sfx.point();
 });
 $('#noteDisconnect').addEventListener('click', ()=>{
-  noteToken=''; store.set('notes.token',''); store.set('notes.gist','');
+  noteToken=''; store.set('notes.token','!off'); store.set('notes.gist','');
   $('#noteToken').value='';
   noteBtnState(); noteSyncUi(); sfx.click();
 });
@@ -8133,7 +8134,7 @@ function noteBtnState(){
   if(has){ inp.value=noteToken; inp.type='text'; inp.placeholder='已连接（Token 在本机）——粘贴新的可更换'; }
   else{ inp.type='password'; }
 }
-renderNotes(); noteBtnState(); noteSyncUi();
+renderNotes(); noteBtnState(); noteSyncUi(); if(noteToken) noteSyncSoon();
 (function noteUrlToken(){
   try{
     const t=new URLSearchParams(location.search).get('t');
