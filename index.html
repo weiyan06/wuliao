@@ -307,6 +307,7 @@ body.no-crt .scanlines{display:none}
 .doodle-wrap{max-width:560px; margin:0 auto}
 .doodle-canvas-wrap{background:var(--bg2); border:3px solid var(--line); box-shadow:5px 5px 0 0 rgba(0,0,0,.5); padding:8px; touch-action:none}
 .doodle-tools{display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:12px}
+.doodle-name{text-align:center; font-size:12px; color:var(--muted); margin-top:10px; min-height:1.2em}
 .palette{display:flex; gap:6px; flex-wrap:wrap; flex:1 1 auto}
 .pal-swatch{width:26px; height:26px; border:2px solid var(--line); cursor:pointer; box-shadow:2px 2px 0 0 rgba(0,0,0,.5)}
 .pal-swatch.sel{outline:3px solid var(--yellow); outline-offset:1px; transform:translate(-1px,-1px)}
@@ -474,7 +475,7 @@ html.game-lock{overflow:hidden !important}
       </svg>
       <div>
         <h1>像素屋</h1>
-        <div class="tagline">PIXEL HOUSE v3.4.0</div>
+        <div class="tagline">PIXEL HOUSE v3.4.1</div>
       </div>
     </div>
     <div class="hdr-actions">
@@ -5106,6 +5107,512 @@ function resetBubble(B){
 }
 
 /* ---------------- 像素涂鸦 ---------------- */
+/* 50 款随机随缘图：16×16 字符画，居中画进 24×24 画布（个位数颜色映射 DL_COL，. 为留白） */
+const DL_COL = {k:'#0b0c18', w:'#eef0ff', r:'#ff3d5a', y:'#ffc53d', g:'#3ddc84', b:'#4da6ff', p:'#b18cff', m:'#ff8ac2', n:'#8a5a33', s:'#9aa0d8'};
+const DOODLE_ART = [
+ {n:'爱心', r:[
+  '................',
+  '..rrrr....rrrr..',
+  '.rrwwrrrrrrrrrr.',
+  '.rrrrrrrrrrrrrr.',
+  '.rrrrrrrrrrrrrr.',
+  '..rrrrrrrrrrrr..',
+  '...rrrrrrrrrr...',
+  '....rrrrrrrr....',
+  '.....rrrrrr.....',
+  '......rrrr......',
+  '.......rr.......']},
+ {n:'星星', r:[
+  '.......yy.......',
+  '.......yy.......',
+  '......yyyy......',
+  '......yyyy......',
+  'yyyyyyyyyyyyyyyy',
+  '.yyyyyyyyyyyyyy.',
+  '..yyyyyyyyyyyy..',
+  '...yyyyyyyyyy...',
+  '...yyyyyyyyyy...',
+  '..yyyyy..yyyyy..',
+  '..yyyy....yyyy..',
+  '.yyyy......yyyy.',
+  '.yy..........yy.']},
+ {n:'月亮', r:[
+  '....yyyyy.......',
+  '..yyyyyyyy......',
+  '.yyyyyyyyy......',
+  '.yyyyyy.........',
+  'yyyyyy..........',
+  'yyyyy...........',
+  'yyyyy...........',
+  'yyyyyy..........',
+  '.yyyyyy.........',
+  '.yyyyyyyy......',
+  '..yyyyyyyy......',
+  '....yyyyyy......',
+  '.....yyyy.......']},
+ {n:'太阳', r:[
+  '.......yy.......',
+  '.......yy.......',
+  '.y...yyyyyy...y.',
+  '..y..yyyyyy..y..',
+  '...y.ywwwwy.y...',
+  '....yyyyyyyy....',
+  '....yyyyyyyy....',
+  '....yyyyyyyy....',
+  '...y.yyyyyy.y...',
+  '..y..yyyyyy..y..',
+  '.y...yyyyyy...y.',
+  '.......yy.......',
+  '.......yy.......']},
+ {n:'云朵', r:[
+  '......wwww......',
+  '....wwwwwwww....',
+  '..wwwwwwwwwwww..',
+  '.wwwwwwwwwwwwww.',
+  '.wwwwwwwwwwwwww.',
+  '..sswwwwwwwwss..',
+  '...ssssssssss...']},
+ {n:'彩虹', r:[
+  '....rrrrrrrr....',
+  '...rr......rr...',
+  '..yy........yy..',
+  '..gg........gg..',
+  '..bb........bb..',
+  '...bb......bb...',
+  '.wwww......wwww.',
+  '.wwwwwwwwwwwwww.',
+  '..wwwwwwwwwwww..']},
+ {n:'闪电', r:[
+  '........yyyy....',
+  '.......yyyy.....',
+  '......yyyy......',
+  '.....yyyyyy.....',
+  '.....yyyy.......',
+  '....yyyy........',
+  '.....yyyyyy.....',
+  '.......yyyy.....',
+  '........yy......',
+  '.........yy.....']},
+ {n:'雪花', r:[
+  '.......ww.......',
+  '.w.....ww.....w.',
+  '..w....ww....w..',
+  '...w..wwww..w...',
+  '....wwwwwwww....',
+  'wwwwwwwwwwwwwwww',
+  '....wwwwwwww....',
+  '...w..wwww..w...',
+  '..w....ww....w..',
+  '.w.....ww.....w.',
+  '.......ww.......']},
+ {n:'小雨伞', r:[
+  '......yy........',
+  '...rrrrrrrrrr...',
+  '..rrrrrrrrrrrr..',
+  '..rrrrrrrrrrrr..',
+  '..rr..rr..rr..rr',
+  '.......ww.......',
+  '.......ww.......',
+  '.......ww.......',
+  '......wwww......']},
+ {n:'圣诞树', r:[
+  '.......y........',
+  '......ggg.......',
+  '.....ggggg......',
+  '....ggggggg.....',
+  '......ggg.......',
+  '.....ggggg......',
+  '....ggrrggg.....',
+  '...ggggggggg....',
+  '......nnn.......',
+  '......nnn.......']},
+ {n:'圣诞帽', r:[
+  '.........www....',
+  '..........rr....',
+  '........rrrr....',
+  '......rrrrr.....',
+  '.....rrrrr......',
+  '....rrrrr.......',
+  '..rrrrr.........',
+  '........ww......',
+  'wwwwwwwwwwwwwwww']},
+ {n:'小灯泡', r:[
+  '......wwww......',
+  '.....wwwwww.....',
+  '....wwwwwwww....',
+  '....wwyyyyww....',
+  '....wyyyyyyw....',
+  '....wwyyyyww....',
+  '.....wwwwww.....',
+  '......ssss......',
+  '......ssss......',
+  '.......ss.......']},
+ {n:'钥匙', r:[
+  '..........yyyy..',
+  '.........yy..yy.',
+  '.........yy..yy.',
+  '..........yyyy..',
+  '.......yyyy.....',
+  '......yyyy......',
+  '.....yyyy.......',
+  '....yyyy........',
+  '..yyyyyy........',
+  '..yyyy..........',
+  '..yyyyyy........']},
+ {n:'皇冠', r:[
+  '..yy...yy...yy..',
+  '..yy...yy...yy..',
+  '..yyyyyyyyyyyy..',
+  '..rryyyyyyyyrr..',
+  '..yyyyyyyyyyyy..',
+  '..nnnnnnnnnnnn..',
+  '..nnnnnnnnnnnn..']},
+ {n:'礼物盒', r:[
+  '.......ww.......',
+  '.....ww..ww.....',
+  '......ryyr......',
+  '..rrrrryyrrrrr..',
+  '..rrrrryyrrrrr..',
+  '..rrrrryyrrrrr..',
+  '..rrrrryyrrrrr..',
+  '..rrrrryyrrrrr..',
+  '..rrrrryyrrrrr..',
+  '..rrrrryyrrrrr..',
+  '..rrrrrrrrrrrr..']},
+ {n:'眼镜', r:[
+  '..kkk......kkk..',
+  '..kbbk....kbbk..',
+  '..kbbk....kbbk..',
+  '..kkkkkkkkkkkk..']},
+ {n:'机器人', r:[
+  '.......yy.......',
+  '.....ssssss.....',
+  '.....ssssss.....',
+  '.....wbwwbw.....',
+  '.....ssssss.....',
+  '......ssss......',
+  '....ssssssss....',
+  '....ssbbbbss....',
+  '....ssbbbbss....',
+  '....ssssssss....',
+  '......s..s......',
+  '......s..s......']},
+ {n:'小火箭', r:[
+  '........rr......',
+  '.......rrrr.....',
+  '.......wwww.....',
+  '......wwwwww....',
+  '......wwbbww....',
+  '......wwbbww....',
+  '......wwwwww....',
+  '...rr.wwww.rr...',
+  '...rrr.ww.rrr...',
+  '.......yy.......',
+  '.......yy.......']},
+ {n:'小幽灵', r:[
+  '......wwww......',
+  '.....wwwwww.....',
+  '....wwwwwwww....',
+  '....wwkwwkww....',
+  '....wwwwwwww....',
+  '....wwwwwwww....',
+  '....wwwwwwww....',
+  '....wwwwwwww....',
+  '....w.wwww.w....',
+  '....w..w..w.....']},
+ {n:'飞碟', r:[
+  '.......pp.......',
+  '......pppp......',
+  '...ssssssssss...',
+  '.ssssssssssssss.',
+  'ssyssssssssssyss',
+  '.......yy.......',
+  '......yyyyyy....',
+  '.....yyyyyyyy...']},
+ {n:'外星人', r:[
+  '.....gggggg.....',
+  '....gggggggg....',
+  '...gggggggggg...',
+  '...gkkggggkkg...',
+  '...gkkggggkkg...',
+  '...gggggggggg...',
+  '....gggggggg....',
+  '.....gggggg.....',
+  '......gggg......']},
+ {n:'猫脸', r:[
+  '.yy........yy...',
+  '.yyyy......yyyy.',
+  '.yyyyyyyyyyyyyy.',
+  'yyyywwwwwwwwyyyy',
+  'yyyywwkwwkwwyyyy',
+  'yyyywwwwwwwwyyyy',
+  'yyyywwwmmwwwyyyy',
+  '.yyyywwwwwwyyyy.',
+  '.yyyyyyyyyyyyyy.']},
+ {n:'小狗', r:[
+  '..nn......nn....',
+  '..nnn....nnn....',
+  '..nnnnnnnnnn....',
+  '..nnnwnnwnnn....',
+  '..nnnnnnnnnn....',
+  '..nnnnknnnnn....',
+  '..nnnnnnnnnn....',
+  '..nwwwwwwwwn....',
+  '..nwwwwwwwwn....']},
+ {n:'小熊', r:[
+  '..nn......nn....',
+  '..nnn....nnn....',
+  '...nnnnnnnn.....',
+  '...nnwnnwnn.....',
+  '...nnnnnnnn.....',
+  '...nnnkknnn.....',
+  '..nnnnnnnnnn....',
+  '...nnnnnnnn.....']},
+ {n:'兔子', r:[
+  '...mm......mm...',
+  '...mm......mm...',
+  '...wwwwwwww.....',
+  '...wwwwwwww.....',
+  '...wkwwwwkw.....',
+  '...wwwkkwww.....',
+  '...wwwwwwww.....',
+  '....wwwwww......']},
+ {n:'小老鼠', r:[
+  '..ss......ss....',
+  '..ss......ss....',
+  '...ssssssss.....',
+  '...ssssssss.....',
+  '...skssssks.....',
+  '...ssssssss.....',
+  '...ssssnnss.....',
+  '.....ssss.......',
+  '........nn......']},
+ {n:'熊猫', r:[
+  '..kk......kk....',
+  '..kk......kk....',
+  '..kwwwwwwwwk....',
+  '..kwkkwwkkwk....',
+  '..kwwwwwwwwk....',
+  '...wwwkkwww.....',
+  '....wwwwww......']},
+ {n:'青蛙', r:[
+  '...ww......ww...',
+  '...wkw....wkw...',
+  '..gggggggggggg..',
+  '..ggkkggggkkgg..',
+  '..gggggggggggg..',
+  '...gggggggg.....',
+  '..gg.gg.gg.gg...']},
+ {n:'小鸡', r:[
+  '.....yyyyy......',
+  '....yyyyyyy.....',
+  '....ykyyyky.....',
+  '....yyyymyy.....',
+  '....yyyyyyyy....',
+  '....yyyyyyyy....',
+  '.....yyyyyy.....',
+  '......yyyy......',
+  '.......mm.......']},
+ {n:'蝴蝶', r:[
+  '......y..y......',
+  '..pppp.kk.pppp..',
+  '.pppppkkppppp...',
+  '.pppppkkppppp...',
+  '.ppwwpkkpwwpp...',
+  '..ppp.kk.ppp....',
+  '...pp.kk.pp.....']},
+ {n:'蜜蜂', r:[
+  '...ww.....ww....',
+  '....wwwwwwyy....',
+  '....yykkyyyy....',
+  '....yyyykkyy....',
+  '.....yyykkyy....',
+  '......yyyy......',
+  '.......yy.......']},
+ {n:'瓢虫', r:[
+  '........kk......',
+  '.....rrrkkk.....',
+  '....rrrrkkrr....',
+  '...rrkrrrrkrr...',
+  '...rrrrkkrrrr...',
+  '...rrkrrrrkrr...',
+  '....rrrrkkrr....',
+  '.....rrrkkk.....']},
+ {n:'金鱼', r:[
+  '..bb.bbbbbbb....',
+  '...bbbbbbbbbb...',
+  '...bbbbbbbbww...',
+  '....bbbbbbbb....',
+  '..bb..bbbb......']},
+ {n:'章鱼', r:[
+  '.....mmmmm......',
+  '....mmmmmmm.....',
+  '....mmkmmkm.....',
+  '....mmmmmmm.....',
+  '....mmmmmmm.....',
+  '..mm.mm.mm.mm...',
+  '..mm.mm.mm.mm...']},
+ {n:'螃蟹', r:[
+  '..rr........rr..',
+  '...r........r...',
+  '.....rrrrrr.....',
+  '...rrrrrrrrrr...',
+  '...rrwrrwrrrr...',
+  '...rrrrrrrrrr...',
+  '.....rrrrrr.....',
+  '...rr.rr.rr.....']},
+ {n:'乌龟', r:[
+  '...gggggggg.....',
+  '..gggkgggkgg....',
+  '..gggggggggg....',
+  '...gggggggg.....',
+  '.sssssssssss....',
+  '.ss........ss...']},
+ {n:'小花', r:[
+  '....mm..mm......',
+  '.mm.mmmm.mm.....',
+  '..mmyyyymm......',
+  '..mmyyyymm......',
+  '.mm.mmmm.mm.....',
+  '....mmmmmm......',
+  '......gg........',
+  '......gg........',
+  '......gg........',
+  '...gggggggg.....',
+  '......gg........']},
+ {n:'蘑菇', r:[
+  '.....rrrrrr.....',
+  '...rrwwrrrrr....',
+  '..rrrrwwwwrrr...',
+  '..rrrrrrrrrr....',
+  '...wwwwwwww.....',
+  '....nnnnnn......',
+  '....nnnnnn......']},
+ {n:'仙人掌', r:[
+  '.......mm.......',
+  '......gggg......',
+  '..gg..gggg..gg..',
+  '..gg..gggg..gg..',
+  '..gg..gggg..gg..',
+  '......gggg......',
+  '....nnnnnnnn....',
+  '....nnnnnnnn....']},
+ {n:'西瓜', r:[
+  '...gggggggggg...',
+  '..gwwwwwwwwwwg..',
+  '..gwrrrrrrrrwg..',
+  '..gwrkrkrrkrwg..',
+  '..gwrrrrrrrrwg..',
+  '..gwwwwwwwwwwg..',
+  '...gggggggggg...']},
+ {n:'草莓', r:[
+  '.....gg.gg......',
+  '......ggg.......',
+  '.....rrrrr......',
+  '....rwrrwrrr....',
+  '....rrwrrrrr....',
+  '....rrrrrwrr....',
+  '.....rrrrrr.....',
+  '......rrrr......',
+  '.......rr.......']},
+ {n:'冰淇淋', r:[
+  '.....mmmmmm.....',
+  '....mmmmmyy.....',
+  '....mmmyyyyy....',
+  '.....yyyyyy.....',
+  '.....nnnnnn.....',
+  '......nnnn......',
+  '.......nn.......']},
+ {n:'小蛋糕', r:[
+  '.......rr.......',
+  '....wwwwwwww....',
+  '....yyyyyyyy....',
+  '....yyyyyyyy....',
+  '....yyyyyyyy....',
+  '...pppppppppp...']},
+ {n:'披萨', r:[
+  'nnnnnnnnnnnnnnnn',
+  '.nyyyyyyyyyyyyn.',
+  '.nyyryyyyyyryyn.',
+  '..nyyyyyyyyyyn..',
+  '..nyyyryyyyyyn..',
+  '...nyyyyyyyyn...',
+  '....nyyyyyyn....',
+  '.....nyyyyn.....',
+  '......nyyn......']},
+ {n:'饭团', r:[
+  '.....wwwwww.....',
+  '....wwwwwwww....',
+  '...wwwwwwwwww...',
+  '...wwwwwwwwww...',
+  '...wwwnnnnww....',
+  '...wwwwwwwwww...',
+  '...wwwwwwwwww...']},
+ {n:'热气球', r:[
+  '.....rrrrrr.....',
+  '....rryyrryy....',
+  '....rryyrryy....',
+  '....rryyrryy....',
+  '.....ryyryy.....',
+  '......rrrr......',
+  '.......nn.......',
+  '......nnnn......',
+  '......nnnn......']},
+ {n:'帆船', r:[
+  '.......r........',
+  '.....w..........',
+  '..wwww..........',
+  '..wwww....wwww..',
+  '..wwwww...wwww..',
+  '...wwww...wwww..',
+  '....ww....ww....',
+  '....ssssssss....',
+  'bbbbbbbbbbbbbbbb']},
+ {n:'小汽车', r:[
+  '...rrwwwwrrrr...',
+  '..rrrrrrrrrrrr..',
+  '..rrrrrrrrrrrr..',
+  '.....kk..kk.....',
+  '.....kk..kk.....']},
+ {n:'小房子', r:[
+  '........rr......',
+  '......rrrrrr....',
+  '....rrrrrrrrrr..',
+  '...rrrrrrrrrrrr.',
+  '..nnnnnnnnnnnn..',
+  '..nnwwnnbbnnnn..',
+  '..nnnnnnbbnnnn..',
+  '..nnnnnnbbnnnn..']},
+ {n:'风筝', r:[
+  '.......pp.......',
+  '......pppp......',
+  '.....pppppp.....',
+  '....pppppppp....',
+  '.....pppppp.....',
+  '......pppp......',
+  '.......pp.......',
+  '........y.......',
+  '.........y......',
+  '........y.......',
+  '.........y......']}
+];
+function randDoodle(D){
+  const pool = DOODLE_ART.filter(a => a.n !== D.lastArt);
+  const art = pool[Math.floor(Math.random()*pool.length)];
+  D.lastArt = art.n;
+  D.pixels = D.pixels.map(row => row.map(() => null));
+  const H = art.r.length, W = Math.max.apply(null, art.r.map(x => x.length));
+  const ox = Math.floor((D.size - W)/2), oy = Math.floor((D.size - H)/2);
+  art.r.forEach((row, y) => {
+    for(let x=0;x<row.length;x++){
+      const c = DL_COL[row.charAt(x)];
+      if(c) D.pixels[oy+y][ox+x] = c;
+    }
+  });
+  if(D.nameEl) D.nameEl.textContent = '🎨 这张是「' + art.n + '」，觉得手感来了就接着画';
+  renderDoodle(D);
+  gsfx('sweep', 150); vibK('tick');
+}
 let doodle = null;
 TOYS.doodle = {
   title: '像素涂鸦',
@@ -5116,6 +5623,7 @@ TOYS.doodle = {
       cv:null, ctx:null, pixels:null, mm:null, mu:null
     };
     statsEl.innerHTML =
+      '<button class="px-btn purple" id="dlRnd" type="button">随机画一张</button>' +
       '<button class="px-btn red" id="dlClear" type="button">清除</button>' +
       '<button class="px-btn green" id="dlSave" type="button">保存 PNG</button>';
     const wrap = document.createElement('div');
@@ -5159,6 +5667,11 @@ TOYS.doodle = {
     tools.appendChild(pal);
     tools.appendChild(eraser);
     wrap.appendChild(tools);
+    const nameEl = document.createElement('div');
+    nameEl.className = 'doodle-name';
+    nameEl.textContent = '自己画，或点上面的「随机画一张」碰运气';
+    wrap.appendChild(nameEl);
+    D.nameEl = nameEl;
     mountEl.appendChild(wrap);
     D.cv = cv; D.ctx = cv.getContext('2d');
     D.pixels = Array.from({length:D.size}, () => Array(D.size).fill(null));
@@ -5186,6 +5699,7 @@ TOYS.doodle = {
     renderDoodle(D);
     $('#dlClear').addEventListener('click', () => clearDoodle(D));
     $('#dlSave').addEventListener('click', () => saveDoodle(D));
+    $('#dlRnd').addEventListener('click', () => randDoodle(D));
   },
   destroy(){
     if(doodle){
