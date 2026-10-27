@@ -469,7 +469,7 @@ body.no-crt .scanlines{display:none}
       </svg>
       <div>
         <h1>像素屋</h1>
-        <div class="tagline">PIXEL HOUSE v3.2.0</div>
+        <div class="tagline">PIXEL HOUSE v3.2.1</div>
       </div>
     </div>
     <div class="hdr-actions">
@@ -1626,6 +1626,7 @@ body.no-crt .scanlines{display:none}
 
 <script src="data/movies.js"></script>
 <script src="data/life.js"></script>
+<script src="data/dsfx.js"></script>
 <script src="data/site.js"></script>
 <script>
 "use strict";
@@ -3424,6 +3425,10 @@ function slideMove(S,i){
 }
 
 /* 掷骰子 */
+function sfxDice(){
+  if(muted||!window.DICE_SFX_B64) return;
+  try{ const a=new Audio('data:audio/mpeg;base64,'+DICE_SFX_B64); a.play().catch(()=>{}); }catch(e){}
+}
 let dice = null;
 GAMES.dice = {
   title:'掷骰子',
@@ -3448,6 +3453,7 @@ GAMES.dice = {
     btn.addEventListener('click', ()=>{
       if(rollInterval) clearInterval(rollInterval);
       D.rolls++;
+      sfxDice();
       // 快速闪烁动画：每50ms变换一次骰子面值
       let frame = 0;
       rollInterval = D.iv = setInterval(()=>{
