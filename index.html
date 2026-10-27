@@ -422,6 +422,10 @@ body.no-crt .scanlines{display:none}
 .dice-dot.big{box-shadow:0 0 0 9px #d4312a}
 .dice-total{text-align:center;font-family:'Press Start 2P',monospace;font-size:13px;color:var(--green);margin-bottom:14px}
 .dice-shake-msg{font-size:11px;color:var(--muted,#8a8fc7);text-align:center;margin:8px 0 0;min-height:1em}
+/* 沉浸模式：掷骰子独占屏幕（隐藏顶栏/tab 导航 + 锁滚动） */
+body.dice-full header.site-header, body.dice-full nav.tabs{display:none}
+body.dice-full{overflow:hidden}
+html.dice-lock{overflow:hidden !important}
 .reflex-pad{height:220px;background:var(--panel2);border:4px solid var(--line);box-shadow:6px 6px 0 rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:17px;color:var(--muted);text-align:center;user-select:none}
 .reflex-pad.wait{background:#2c2d5c}
 .reflex-pad.green{background:var(--green);color:var(--line)}
@@ -470,7 +474,7 @@ body.no-crt .scanlines{display:none}
       </svg>
       <div>
         <h1>像素屋</h1>
-        <div class="tagline">PIXEL HOUSE v3.2.5</div>
+        <div class="tagline">PIXEL HOUSE v3.2.6</div>
       </div>
     </div>
     <div class="hdr-actions">
@@ -1697,6 +1701,7 @@ function setTab(name){
   state.tab = name;
   $$('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
   Object.keys(VIEWS).forEach(k => $('#'+VIEWS[k]).classList.toggle('active', k === name));
+  document.body.classList.remove('dice-full'); document.documentElement.classList.remove('dice-lock');  // 退出沉浸
   if(name==='games'){ $('#gameView').classList.add('hidden'); $('#gameLobby').classList.remove('hidden'); }
   if(name==='toys'){ $('#toyView').classList.add('hidden'); $('#toyLobby').classList.remove('hidden'); }
   if(name==='poems'){ $('#poemView').classList.add('hidden'); $('#poemLobby').classList.remove('hidden'); ensureTang(() => { syncPoemFavBtn(); renderPoems(); }); }
@@ -1717,11 +1722,13 @@ function mountGame(name){
   $('#gameTitle').textContent = g.title;
   $('#gameStats').innerHTML = '';
   $('#gameMount').innerHTML = '';
+  if(name==='dice'){ document.body.classList.add('dice-full'); document.documentElement.classList.add('dice-lock'); }  // 沉浸模式：只剩骰子
   g.mount($('#gameMount'), $('#gameStats'));
   mountDpad($('#gameMount'), name);
 }
 function backToLobby(){
   stopActive();
+  document.body.classList.remove('dice-full'); document.documentElement.classList.remove('dice-lock');
   $('#gameView').classList.add('hidden');
   $('#gameLobby').classList.remove('hidden');
 }
