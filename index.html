@@ -469,7 +469,7 @@ body.no-crt .scanlines{display:none}
       </svg>
       <div>
         <h1>像素屋</h1>
-        <div class="tagline">PIXEL HOUSE v3.2.1</div>
+        <div class="tagline">PIXEL HOUSE v3.2.2</div>
       </div>
     </div>
     <div class="hdr-actions">
@@ -3425,10 +3425,25 @@ function slideMove(S,i){
 }
 
 /* 掷骰子 */
-function sfxDice(){
-  if(muted||!window.DICE_SFX_B64) return;
-  try{ const a=new Audio('data:audio/mpeg;base64,'+DICE_SFX_B64); a.play().catch(()=>{}); }catch(e){}
+let diceAudio=null;
+function sfxDice(onEnd){
+  if(muted||!window.DICE_SFX_B64) return null;
+  try{
+    if(diceAudio){ diceAudio.pause(); diceAudio=null; }
+    const a=new Audio('data:audio/mpeg;base64,'+DICE_SFX_B64);
+    diceAudio=a;
+    let fired=false;
+    const finish=()=>{ if(fired||!a._go) return; fired=true; a.onended=null; sfxDiceStop(); if(onEnd) onEnd(); };
+    a.onended=finish;
+    // 兜底：万一 ended 不触发（比如文件尾部有静音被某些解码吞掉），最多再等600ms
+    a._go=0;
+    a.play().then(()=>{ a._go=1; }, ()=>{ a._go=0; sfxDiceStop(); finish(); });
+    const cap=setInterval(()=>{ if(a._go&&a.duration&&!fired&&a.currentTime>=a.duration-0.05){ clearInterval(cap); finish(); } },100);
+    setTimeout(()=>{ clearInterval(cap); if(!fired){ fired=true; a.onended=null; sfxDiceStop(); if(onEnd) onEnd(); } }, 5000);
+    return a;
+  }catch(e){ return null; }
 }
+function sfxDiceStop(){ if(diceAudio){ diceAudio.onended=null; diceAudio.pause(); diceAudio=null; } }
 let dice = null;
 GAMES.dice = {
   title:'掷骰子',
@@ -3452,45 +3467,48 @@ GAMES.dice = {
     let diceValues = [];
     btn.addEventListener('click', ()=>{
       if(rollInterval) clearInterval(rollInterval);
+      sfxDiceStop();
       D.rolls++;
-      sfxDice();
-      // 快速闪烁动画：每50ms变换一次骰子面值
-      let frame = 0;
-      rollInterval = D.iv = setInterval(()=>{
-        diceValues = [];
+      // 落定收尾：骰子定格 + 结算 + pop
+      let settled=false;
+      const settle=()=>{
+        if(settled) return;
+        settled=true;
+        if(rollInterval){ clearInterval(rollInterval); rollInterval=null; }
+        if(D) D.iv=null;
+        const finalValues=[]; let roundSum=0, sixCount=0;
         for(let i=0;i<5;i++){
-          diceValues[i] = 1 + Math.floor(Math.random()*6);
+          finalValues[i]=1+Math.floor(Math.random()*6);
+          renderDice(this.diceEls[i], finalValues[i]);
+          roundSum+=finalValues[i];
+          if(finalValues[i]===6) sixCount++;
+        }
+        D.sum+=roundSum;
+        if(roundSum>D.maxSum) D.maxSum=roundSum;
+        D.six+=sixCount;
+        $('#diN').textContent=D.rolls;
+        $('#diSum').textContent=D.sum;
+        $('#diMax').textContent=D.maxSum;
+        $('#diSix').textContent=D.six;
+        total.textContent='总和：'+roundSum;
+        sfx.pop();
+      };
+      // 声音有多久动画就有多久：onended（或兜底）触发 settle
+      const a=sfxDice(settle);
+      let frame=0;
+      rollInterval=D.iv=setInterval(()=>{
+        diceValues=[];
+        for(let i=0;i<5;i++){
+          diceValues[i]=1+Math.floor(Math.random()*6);
           renderDice(this.diceEls[i], diceValues[i]);
         }
         frame++;
-        // 闪烁16帧（约800ms）后停止
-        if(frame >= 16) {
-          clearInterval(rollInterval);
-          rollInterval = null; D.iv = null;
-          // 停止后设定最终值
-          const finalValues = [];
-          let roundSum = 0;
-          let sixCount = 0;
-          for(let i=0;i<5;i++){
-            finalValues[i] = 1 + Math.floor(Math.random()*6);
-            renderDice(this.diceEls[i], finalValues[i]);
-            roundSum += finalValues[i];
-            if(finalValues[i] === 6) sixCount++;
-          }
-          D.sum += roundSum;
-          if(roundSum > D.maxSum) D.maxSum = roundSum;
-          D.six += sixCount;
-          $('#diN').textContent = D.rolls;
-          $('#diSum').textContent = D.sum;
-          $('#diMax').textContent = D.maxSum;
-          $('#diSix').textContent = D.six;
-          total.textContent = '总和：' + roundSum;
-          sfx.pop();
-        }
+        // 静音/无声环境下 1.2s 自动落定
+        if(!a && frame>=24) settle();
       }, 50);
     });
   },
-  destroy(){ if(dice && dice.iv){ clearInterval(dice.iv); dice.iv = null; } dice=null; }
+  destroy(){ if(dice && dice.iv){ clearInterval(dice.iv); dice.iv=null; } sfxDiceStop(); dice=null; }
 };
 function renderDice(el,val){
   const dots={1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]};
