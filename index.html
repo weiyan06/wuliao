@@ -474,7 +474,7 @@ html.game-lock{overflow:hidden !important}
       </svg>
       <div>
         <h1>像素屋</h1>
-        <div class="tagline">PIXEL HOUSE v3.3.0</div>
+        <div class="tagline">PIXEL HOUSE v3.3.1</div>
       </div>
     </div>
     <div class="hdr-actions">
@@ -1749,6 +1749,7 @@ function mountGame(name){
   $('#gameStats').innerHTML = '';
   $('#gameMount').innerHTML = '';
   document.body.classList.add('game-full'); document.documentElement.classList.add('game-lock');  // 沉浸模式：所有小游戏独占屏幕
+  window.scrollTo(0, 0);  // 隐藏顶栏/tab后页面内容整体上移，滚回顶部防止「返回按钮被顶出视窗+滚动锁死」
   g.mount($('#gameMount'), $('#gameStats'));
   mountDpad($('#gameMount'), name);
 }
@@ -1757,6 +1758,7 @@ function backToLobby(){
   document.body.classList.remove('game-full'); document.documentElement.classList.remove('game-lock');
   $('#gameView').classList.add('hidden');
   $('#gameLobby').classList.remove('hidden');
+  window.scrollTo(0, 0);
 }
 function mountToy(name){
   stopActive();
