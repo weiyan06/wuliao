@@ -474,7 +474,7 @@ html.game-lock{overflow:hidden !important}
       </svg>
       <div>
         <h1>像素屋</h1>
-        <div class="tagline">PIXEL HOUSE v3.2.8</div>
+        <div class="tagline">PIXEL HOUSE v3.3.0</div>
       </div>
     </div>
     <div class="hdr-actions">
@@ -1631,6 +1631,7 @@ html.game-lock{overflow:hidden !important}
 
 <script src="data/movies.js"></script>
 <script src="data/life.js"></script>
+<script src="data/gsfx.js"></script>
 <script src="data/dsfx.js"></script>
 <script src="data/site.js"></script>
 <script>
@@ -1675,6 +1676,31 @@ const sfx = {
   lose:  () => { tone(320, 0.16, 'sawtooth', 0.05, 180); setTimeout(()=>tone(210, 0.22, 'sawtooth', 0.05, 120), 150); },
   win:   () => [523,659,784,1046].forEach((f,i)=>setTimeout(()=>tone(f,0.11,'square',0.04), i*95)),
 };
+/* ---------- 游戏事件音效 (gsfx) ----------
+   真实样本 data/gsfx.js（Kenney.nl CC0 转 mp3）；样本缺失时退化到 sfx 合成音。
+   gsfx(名, 节流毫秒)：走步/移动类高频事件传 th 防止每帧轰鸣。 */
+const GSFX_FB = { chomp:'eat', boom:'lose', laser:'click', squish:'pop', crash:'bonk', bounce:'pop', brick:'click', ping:'click', whack:'bonk', place:'click', lock:'bonk', step:'click', flag:'click', coin:'point', flap:'point', flip:'point', jump:'pop', power:'win', sweep:'point', slide:'click', tick:'click', ok:'point', no:'lose' };
+const GSFX_TH = {};
+const gsfxPool = [];
+function gsfx(name, th){
+  if(muted) return;
+  if(th > 0){ const t = performance.now(); if(GSFX_TH[name] && t - GSFX_TH[name] < th) return; GSFX_TH[name] = t; }
+  const src = window.GSFX && window.GSFX[name];
+  try{
+    if(src){
+      const a = new Audio(src);
+      a.onended = () => { const i = gsfxPool.indexOf(a); if(i >= 0) gsfxPool.splice(i, 1); };
+      a.play().catch(()=>{});
+      gsfxPool.push(a);
+      if(gsfxPool.length > 8) gsfxPool.splice(0, gsfxPool.length - 8);
+    }else{
+      const f = GSFX_FB[name]; if(f && sfx[f]) sfx[f]();
+    }
+  }catch(e){}
+}
+/* ---------- 震动节奏库（手机 navigator.vibrate；iOS/电脑自动忽略） ---------- */
+const VIBS = { die:[60], boom:[80], win:[30,50,60], hurt:[40], tick:10, small:20 };
+function vibK(k){ vib(VIBS[k] || 20); }
 
 /* ---------- 顶栏开关 ---------- */
 let crtOn = true;
@@ -1953,7 +1979,8 @@ function snakeTick(){
   if(eating){
     S.score += 1;
     S.speed = Math.max(70, 150 - Math.floor(S.score/3)*10);
-    sfx.point();
+    gsfx('chomp');
+    vibK('small');
     placeSnakeFood();
     if(S.score > S.best){ S.best = S.score; store.set('snake.best', S.best); }
   } else {
@@ -1969,7 +1996,7 @@ function snakeGameOver(){
   clearTimeout(S.timer);
   updateSnakeHud();
   drawSnakeFrame();
-  sfx.lose();
+  gsfx('crash'); vibK('die');
   stageOverlay(S.mount, '游戏结束', '得分 ' + S.score + ' · 最高 ' + S.best + '。按回车或点击再来一局。', '再来一局', startSnake);
 }
 function toggleSnakePause(){
@@ -2128,16 +2155,16 @@ function move2048(dir){
   if(G.score > G.best){ G.best = G.score; store.set('g2048.best', G.best); }
   newTile(G);
   render2048();
-  sfx.pop();
+  gsfx(gained > 0 ? 'power' : 'slide', 70);
   if(!G.won){
     for(let y=0;y<4;y++) for(let x=0;x<4;x++){
-      if(G.grid[y][x] === 2048){ G.won = true; G.msg.textContent = '达成 2048！可以继续挑战更高分。'; sfx.win(); break; }
+      if(G.grid[y][x] === 2048){ G.won = true; G.msg.textContent = '达成 2048！可以继续挑战更高分。'; gsfx('ok'); vibK('win'); break; }
     }
   }
   if(!canMove2048(G)){
     G.over = true;
     G.msg.textContent = '没有空位了，游戏结束。点「新一局」再来。';
-    sfx.lose();
+    gsfx('no'); vibK('die');
   }
 }
 function canMove2048(G){
@@ -2207,6 +2234,7 @@ GAMES.mine = {
       if(cc.mine){ mineLose(M, x, y); return; }
       if(!cc.open){
         revealMine(M, x, y);
+        gsfx('ping', 60);
         if(checkMineWin(M)) mineWin(M);
       }
     });
@@ -2224,7 +2252,7 @@ GAMES.mine = {
       }
       M.grid[y][x].flag = !M.grid[y][x].flag;
       renderMine(M);
-      sfx.click();
+      gsfx(c.flag ? 'flag' : 'ping');
     });
     buildMineBoard(M, null);
     $('#mNew').addEventListener('click', () => resetMine(M));
@@ -2323,7 +2351,7 @@ function mineLose(M, badX, badY){
   const bad = M.el.querySelector('[data-x="'+badX+'"][data-y="'+badY+'"]');
   if(bad) bad.classList.add('bad');
   M.status.textContent = '踩雷了！点「新一局」再来一次。';
-  sfx.lose();
+  gsfx('boom'); vibK('boom');
 }
 function checkMineWin(M){
   return M.revealed === M.rows*M.cols - M.mines;
@@ -2345,7 +2373,7 @@ function mineWin(M){
     if(el) el.textContent = M.best;
     M.status.textContent = '新纪录！用时 ' + M.time + ' 秒。';
   }
-  sfx.win();
+  gsfx('ok'); vibK('win');
 }
 function resetMine(M){
   clearInterval(M.timer);
@@ -2445,14 +2473,14 @@ function scheduleMoleSpawn(M){
   }, 700 + Math.random()*300);
 }
 function bonkMole(M, i, h){
-  if(!h.classList.contains('up')) return;
+  if(!h.classList.contains('up')){ gsfx('no', 220); return; }
   h.classList.remove('up');
   h.classList.add('bonk');
   setTimeout(() => h.classList.remove('bonk'), 160);
   M.score++;
   if(M.score > M.best){ M.best = M.score; store.set('mole.best', M.best); }
   updateMoleHud(M);
-  sfx.point();
+  gsfx('whack'); vibK('small');
 }
 function endMole(M){
   M.playing = false;
@@ -2462,7 +2490,7 @@ function endMole(M){
   updateMoleHud(M);
   const startBtn = $('#mlStart');
   if(startBtn) startBtn.textContent = '再来一局';
-  if(M.score >= M.best && M.score > 0){ M.best = M.score; store.set('mole.best', M.best); sfx.win(); }
+  if(M.score >= M.best && M.score > 0){ M.best = M.score; store.set('mole.best', M.best); sfx.win(); vibK('win'); }
   else sfx.lose();
 }
 function updateMoleHud(M){
@@ -2522,6 +2550,7 @@ function flipMemory(M, i, d){
   d.classList.add('open');
   d.textContent = M.cards[i];
   M.moves++;
+  gsfx('flip');
   if(M.opened == null){
     M.opened = { i, d };
   } else {
@@ -2530,16 +2559,16 @@ function flipMemory(M, i, d){
     if(M.cards[a.i] === M.cards[i]){
       a.d.classList.add('done'); d.classList.add('done');
       M.matched++;
-      sfx.point();
+      gsfx('ok');
       if(M.matched === M.pairs){
         const sec = Math.round((performance.now()-M.startT)/1000);
         updateMemoryHud(M);
         if(M.best==null || sec < M.best){ M.best = sec; store.set('memory.best', M.best); $('#memBest').textContent = M.best + '秒'; }
-        sfx.win();
+        sfx.win(); vibK('win');
       }
     } else {
       M.lock = true;
-      sfx.bonk();
+      gsfx('no');
       setTimeout(() => { a.d.classList.remove('open'); d.classList.remove('open'); a.d.textContent=''; d.textContent=''; M.lock=false; }, 650);
     }
   }
@@ -2594,13 +2623,13 @@ function playRps(R, mine, myIcon){
   $('#rpsCpu').textContent = cpuIcon;
   $('#rpsYou').textContent = myIcon;
   let res;
-  if(mine === cpu){ R.t++; R.streak = 0; res = '平局，再来！'; sfx.bonk(); }
+  if(mine === cpu){ R.t++; R.streak = 0; res = '平局，再来！'; gsfx('tick'); }
   else if((mine==='石头'&&cpu==='剪刀')||(mine==='剪刀'&&cpu==='布')||(mine==='布'&&cpu==='石头')){
     R.w++; R.streak++;
     if(R.streak > R.best){ R.best = R.streak; store.set('rps.best', R.best); }
-    res = '你赢了！'; sfx.point();
+    res = '你赢了！'; gsfx('coin'); vibK('small');
   } else {
-    R.l++; R.streak = 0; res = '这局输了。'; sfx.lose();
+    R.l++; R.streak = 0; res = '这局输了。'; gsfx('no');
   }
   $('#rpsW').textContent = R.w; $('#rpsL').textContent = R.l; $('#rpsT').textContent = R.t;
   $('#rpsS').textContent = R.streak; $('#rpsB').textContent = R.best;
@@ -2660,7 +2689,7 @@ function launchBreakoutBall(B){
   B.ball.stuck = false;
   B.ball.vx = off * 3.2;
   B.ball.vy = -3.2;
-  sfx.point();
+  gsfx('slide');
 }
 function stepBreakout(B){
   const { ctx, cv } = B;
@@ -2679,7 +2708,7 @@ function stepBreakout(B){
       b.vy = -Math.abs(b.vy) * 1.02;
       b.vx = hit * 3.4;
       b.y = 348 - b.r - 1;
-      sfx.pop();
+      gsfx('bounce', 60);
     }
     for(const br of B.bricks){
       if(!br.alive) continue;
@@ -2688,7 +2717,7 @@ function stepBreakout(B){
         b.vy = -b.vy;
         B.score += 10;
         updateBreakoutHud(B);
-        sfx.point();
+        gsfx('brick', 50);
         break;
       }
     }
@@ -2697,7 +2726,7 @@ function stepBreakout(B){
       updateBreakoutHud(B);
       if(B.lives <= 0){ endBreakout(B); return; }
       b.stuck = true;
-      sfx.lose();
+      sfx.lose(); vibK('hurt');
     }
   }
   if(B.bricks.every(br => !br.alive)){ endBreakoutWin(B); return; }
@@ -2705,12 +2734,13 @@ function stepBreakout(B){
 }
 function endBreakout(B){
   B.over = true;
-  if(B.score > B.best){ B.best = B.score; store.set('breakout.best', B.best); $('#brkBest').textContent = B.best; sfx.win(); }
+  if(B.score > B.best){ B.best = B.score; store.set('breakout.best', B.best); $('#brkBest').textContent = B.best; sfx.win(); vibK('win'); }
   stageOverlay(B.mount, '游戏结束', '得分 ' + B.score + ' · 最高 ' + B.best, '再来一局', startBreakout);
 }
 function endBreakoutWin(B){
   B.over = true;
   if(B.score > B.best){ B.best = B.score; store.set('breakout.best', B.best); $('#brkBest').textContent = B.best; sfx.win(); }
+  vibK('win');
   stageOverlay(B.mount, '通关！', '全部砖块已打碎 · 得分 ' + B.score, '再来一局', startBreakout);
 }
 function drawBreakout(B){
@@ -2793,12 +2823,12 @@ function stepPong(P){
   P.p2.y = Math.max(0, Math.min(360 - P.p2.h, P.p2.y));
   const b = P.ball;
   b.x += b.vx; b.y += b.vy;
-  if(b.y < b.r){ b.y = b.r; b.vy = Math.abs(b.vy); }
-  if(b.y > 360 - b.r){ b.y = 360 - b.r; b.vy = -Math.abs(b.vy); }
-  if(b.vx < 0 && b.x - b.r <= 14 && b.x - b.r >= 0 && b.y >= P.p1.y - b.r && b.y <= P.p1.y + P.p1.h + b.r){ b.vx = Math.abs(b.vx); sfx.pop(); }
-  if(b.vx > 0 && b.x + b.r >= 520 - 14 && b.x + b.r <= 520 && b.y >= P.p2.y - b.r && b.y <= P.p2.y + P.p2.h + b.r){ b.vx = -Math.abs(b.vx); sfx.pop(); }
-  if(b.x < -10){ P.c++; sfx.lose(); resetPongBall(P, 1); }
-  if(b.x > 530){ P.y++; sfx.point(); resetPongBall(P, -1); }
+  if(b.y < b.r){ b.y = b.r; b.vy = Math.abs(b.vy); gsfx('bounce', 90); }
+  if(b.y > 360 - b.r){ b.y = 360 - b.r; b.vy = -Math.abs(b.vy); gsfx('bounce', 90); }
+  if(b.vx < 0 && b.x - b.r <= 14 && b.x - b.r >= 0 && b.y >= P.p1.y - b.r && b.y <= P.p1.y + P.p1.h + b.r){ b.vx = Math.abs(b.vx); gsfx('bounce', 90); }
+  if(b.vx > 0 && b.x + b.r >= 520 - 14 && b.x + b.r <= 520 && b.y >= P.p2.y - b.r && b.y <= P.p2.y + P.p2.h + b.r){ b.vx = -Math.abs(b.vx); gsfx('bounce', 90); }
+  if(b.x < -10){ P.c++; sfx.lose(); vibK('hurt'); resetPongBall(P, 1); }
+  if(b.x > 530){ P.y++; gsfx('coin'); resetPongBall(P, -1); }
   updatePongHud(P);
   if(P.y >= P.winScore){ endPong(P, true); return; }
   if(P.c >= P.winScore){ endPong(P, false); return; }
@@ -2810,7 +2840,7 @@ function resetPongBall(P, dir){
 function endPong(P, win){
   P.over = true;
   if(P.y > P.best){ P.best = P.y; store.set('pong.best', P.best); $('#pongB').textContent = P.best; }
-  if(win) sfx.win(); else sfx.lose();
+  if(win) { sfx.win(); vibK('win'); } else { gsfx('no'); vibK('die'); }
   stageOverlay(P.mount, win ? '你赢了！' : '对手获胜', '比分 ' + P.y + ' : ' + P.c, '再来一局', startPong);
 }
 function drawPong(P){
@@ -2898,7 +2928,7 @@ function simonPress(S, i, d){
     S.level++;
     if(S.seq.length > S.best){ S.best = S.seq.length; store.set('simon.best', S.best); $('#simBest').textContent = S.best; }
     $('#simLv').textContent = S.level;
-    sfx.point();
+    gsfx('ok'); vibK('small');
     setTimeout(() => simonNext(S), 700);
   }
 }
@@ -2906,7 +2936,7 @@ function simonLose(S){
   S.playing = false; S.input = false;
   if(S.seq.length > S.best){ S.best = S.seq.length; store.set('simon.best', S.best); $('#simBest').textContent = S.best; }
   S.msg.textContent = '记错啦！本轮记住了 ' + S.seq.length + ' 步。点「开始」再来。';
-  sfx.lose();
+  sfx.lose(); vibK('hurt');
 }
 
 /* ---------------- 俄罗斯方块 ---------------- */
@@ -3007,6 +3037,7 @@ function tetSoftDrop(T){
 function tetHardDrop(T){
   if(!T.cur) return;
   while(tetCanPlace(T, T.cur.matrix, T.cur.x, T.cur.y + 1)) T.cur.y++;
+  vibK('small');
   tetLock(T);
 }
 function tetGravityStep(T){
@@ -3034,8 +3065,11 @@ function tetLock(T){
     const pts = [0,100,300,500,800];
     T.score += (pts[cleared] || 800) * T.level;
     T.level = 1 + Math.floor(T.lines / 10);
-    sfx.win();
+    gsfx(cleared >= 4 ? 'power' : 'sweep', 80);
+    vibK('small');
     updateTetrisHud(T);
+  } else {
+    gsfx('lock', 80);
   }
   if(T.score > T.best){ T.best = T.score; store.set('tetris.best', T.best); }
   updateTetrisHud(T);
@@ -3047,7 +3081,7 @@ function tetGameOver(T){
   T.over = true;
   clearInterval(T.gravity);
   updateTetrisHud(T);
-  sfx.lose();
+  sfx.lose(); vibK('die');
   stageOverlay(T.mount, '游戏结束', '得分 ' + T.score + ' · 消除 ' + T.lines + ' 行', '再来一局', startTetris);
 }
 function tetPause(T){
@@ -3111,13 +3145,14 @@ function startGomoku(G){
 function placeGomoku(G,x,y,who){
   G.board[y][x]=who; G.last={x,y};
   drawGomoku(G);
+  gsfx('place', 120);
   if(checkGomoku(G,x,y,who)){
     G.over=true;
-    if(who==='b'){ G.w++; $('#gomW').textContent=G.w; $('#gomS').textContent='你赢了！'; sfx.win(); }
+    if(who==='b'){ G.w++; $('#gomW').textContent=G.w; $('#gomS').textContent='你赢了！'; sfx.win(); vibK('win'); }
     else { G.l++; $('#gomL').textContent=G.l; $('#gomS').textContent='AI 赢了。'; sfx.lose(); }
     return;
   }
-  if(G.board.every(row=>row.every(v=>v))){ G.over=true; $('#gomS').textContent='平局。'; return; }
+  if(G.board.every(row=>row.every(v=>v))){ G.over=true; $('#gomS').textContent='平局。'; sfx.bonk(); return; }
   if(who==='b'){ G.turn='w'; $('#gomS').textContent='AI 思考中…'; setTimeout(()=>gomokuAIMove(G), 300); }
   else { G.turn='b'; $('#gomS').textContent='你的回合'; }
 }
@@ -3237,9 +3272,9 @@ function guessSubmit(G){
     G.over=true;
     res='BINGO！只用了 '+G.tries+' 次。';
     if(G.best==null||G.tries<G.best){ G.best=G.tries; store.set('guess.best',G.best); $('#guB').textContent=G.best; }
-    sfx.win();
-  } else if(v<G.target){ res='小了，再大一点。'; sfx.pop(); }
-  else { res='大了，再小一点。'; sfx.pop(); }
+    sfx.win(); vibK('win');
+  } else if(v<G.target){ res='小了，再大一点。'; gsfx('tick'); }
+  else { res='大了，再小一点。'; gsfx('tick'); }
   G.msg.textContent=res;
   const row=document.createElement('div');
   row.textContent='第 '+G.tries+' 次：'+v+' → '+(v<G.target?'小了':(v>G.target?'大了':'正确'));
@@ -3284,14 +3319,15 @@ function renderTtt(T){
 }
 function tttPlace(T,i,p){
   T.board[i]=p; renderTtt(T);
+  gsfx(p==='X' ? 'place' : 'ping', 120);
   const w=tttWinner(T.board);
   if(w){
     T.over=true;
-    if(w==='X'){ T.w++; $('#ttW').textContent=T.w; $('#ttS').textContent='你赢了！'; sfx.win(); }
+    if(w==='X'){ T.w++; $('#ttW').textContent=T.w; $('#ttS').textContent='你赢了！'; sfx.win(); vibK('win'); }
     else { T.l++; $('#ttL').textContent=T.l; $('#ttS').textContent='AI 赢了。'; sfx.lose(); }
     return;
   }
-  if(T.board.every(v=>v)){ T.over=true; T.d++; $('#ttD').textContent=T.d; $('#ttS').textContent='平局。'; return; }
+  if(T.board.every(v=>v)){ T.over=true; T.d++; $('#ttD').textContent=T.d; $('#ttS').textContent='平局。'; sfx.bonk(); return; }
   if(p==='X'){ $('#ttS').textContent='AI 思考中…'; setTimeout(()=>tttAIMove(T), 300); }
   else $('#ttS').textContent='你的回合';
 }
@@ -3346,16 +3382,16 @@ function stepCatch(C){
     const a=C.items[i];
     a.y+=a.vy;
     if(a.y+a.size>=C.paddle.y&&a.y<=C.paddle.y+12&&a.x>=C.paddle.x-a.size&&a.x<=C.paddle.x+C.paddle.w+a.size){
-      C.score++; C.items.splice(i,1); sfx.point(); updateCatchHud(C); continue;
+      C.score++; C.items.splice(i,1); gsfx('chomp', 100); updateCatchHud(C); continue;
     }
-    if(a.y>360){ C.items.splice(i,1); C.lives--; sfx.bonk(); updateCatchHud(C);
+    if(a.y>360){ C.items.splice(i,1); C.lives--; gsfx('no'); vibK('hurt'); updateCatchHud(C);
       if(C.lives<=0){ endCatch(C); return; } }
   }
   drawCatch(C);
 }
 function endCatch(C){
   C.over=true;
-  if(C.score>C.best){ C.best=C.score; store.set('catchg.best',C.best); $('#caB').textContent=C.best; sfx.win(); }
+  if(C.score>C.best){ C.best=C.score; store.set('catchg.best',C.best); $('#caB').textContent=C.best; sfx.win(); vibK('win'); }
   $$('#gameMount .overlay').forEach(o=>o.remove());
   stageOverlay(C.cv.parentElement,'游戏结束','接住 '+C.score+' 个苹果 · 最高 '+C.best,'再来一局', startCatch);
 }
@@ -3423,12 +3459,12 @@ function slideMove(S,i){
   const ix=i%S.size, iy=Math.floor(i/S.size);
   if(Math.abs(bx-ix)+Math.abs(by-iy)!==1) return;
   [S.board[blank],S.board[i]]=[S.board[i],S.board[blank]];
-  S.moves++; $('#slM').textContent=S.moves; sfx.click();
+  S.moves++; $('#slM').textContent=S.moves; gsfx('slide', 90);
   renderSlide(S);
   if(S.board.every((v,idx)=>v===idx)){
     S.over=true;
     if(S.best==null||S.moves<S.best){ S.best=S.moves; store.set('slide.best',S.best); $('#slB').textContent=S.best; }
-    sfx.win();
+    sfx.win(); vibK('win');
   }
 }
 
@@ -3617,13 +3653,13 @@ GAMES.wheel = {
       const rot = 360*W.spin + Math.floor(Math.random()*360);
       wd.style.transition = 'transform 3.2s cubic-bezier(0.12,0.7,0.2,1)';
       wd.style.transform = 'rotate('+rot+'deg)';
-      W.count++; $('#whC').textContent=W.count; sfx.pop();
+      W.count++; $('#whC').textContent=W.count; gsfx('sweep');
       setTimeout(()=>{
         const deg = ((rot%360)+360)%360;
         const idx = Math.floor((360-deg)/45)%8;
         const res = opts[idx];
         W.result.textContent = '这次是：'+res+'！';
-        if(res==='大吉') sfx.win(); else if(res==='大凶') sfx.lose(); else sfx.point();
+        if(res==='大吉'){ sfx.win(); vibK('win'); } else if(res==='大凶') gsfx('no'); else gsfx('coin');
       }, 3300);
     });
   },
@@ -3649,12 +3685,12 @@ function reflexClick(R){
     R.state='wait';
     R.pad.classList.remove('green','red'); R.pad.classList.add('wait');
     R.pad.textContent='等它变绿…';
-    R.timer=setTimeout(()=>{ R.state='go'; R.startT=performance.now(); R.pad.classList.remove('wait'); R.pad.classList.add('green'); R.pad.textContent='快按！'; sfx.point(); }, 1200+Math.random()*2500);
+    R.timer=setTimeout(()=>{ R.state='go'; R.startT=performance.now(); R.pad.classList.remove('wait'); R.pad.classList.add('green'); R.pad.textContent='快按！'; gsfx('tick'); }, 1200+Math.random()*2500);
   } else if(R.state==='go'){
     clearTimeout(R.timer);
     const ms=Math.round(performance.now()-R.startT);
     R.count++; $('#rfN').textContent=R.count;
-    if(R.best==null||ms<R.best){ R.best=ms; store.set('reflex.best',R.best); $('#rfB').textContent=R.best+'ms'; sfx.win(); }
+    if(R.best==null||ms<R.best){ R.best=ms; store.set('reflex.best',R.best); $('#rfB').textContent=R.best+'ms'; sfx.win(); vibK('small'); }
     R.state='done';
     R.pad.classList.remove('green','wait');
     R.pad.textContent='反应时间 '+ms+' ms — 点击再来';
@@ -3662,7 +3698,7 @@ function reflexClick(R){
     clearTimeout(R.timer); R.state='done';
     R.pad.classList.remove('wait'); R.pad.classList.add('red');
     R.pad.textContent='太早啦！等变绿再按 — 点击重来';
-    sfx.bonk();
+    gsfx('no'); vibK('tick');
   }
 }
 
@@ -3703,10 +3739,10 @@ function digitCheck(D){
     if(D.round-1>D.best){ D.best=D.round-1; store.set('digit.best',D.best); $('#dgB').textContent=D.best; }
     $('#dgR').textContent=D.round;
     D.len=Math.min(9,D.len+1);
-    startDigit(D); sfx.point();
+    startDigit(D); gsfx('ok'); vibK('small');
   } else {
     D.msg.textContent='记错啦！正确是 '+D.target+'。回合 '+D.round+' 结束，点「开始」再来。';
-    D.shown=false; D.num.textContent='·'; sfx.lose();
+    D.shown=false; D.num.textContent='·'; gsfx('no'); vibK('hurt');
   }
 }
 
@@ -3746,8 +3782,8 @@ function stroopNext(S){
   S.word.style.color=STROOP_COLORS[colorName];
 }
 function stroopAnswer(S,chosen){
-  if(chosen===S.current){ S.score++; if(S.score>S.best){ S.best=S.score; store.set('stroop.best',S.best); $('#stB').textContent=S.best; } sfx.point(); }
-  else { S.score=Math.max(0,S.score-1); sfx.bonk(); }
+  if(chosen===S.current){ S.score++; if(S.score>S.best){ S.best=S.score; store.set('stroop.best',S.best); $('#stB').textContent=S.best; } gsfx('ok', 150); }
+  else { S.score=Math.max(0,S.score-1); gsfx('no', 150); }
   $('#stS').textContent=S.score;
   stroopNext(S);
 }
@@ -3782,7 +3818,7 @@ GAMES.flap = {
   },
   destroy(){ if(flapG){ cancelAnimationFrame(flapG.raf); flapG=null; } }
 };
-function flapBird(S){ S.bird.vy=-6.2; sfx.eat(); }
+function flapBird(S){ S.bird.vy=-6.2; gsfx('flap', 90); }
 function startFlap(S){
   if(!S) return;
   S.mount.querySelectorAll('.overlay').forEach(o=>o.remove());
@@ -3792,7 +3828,7 @@ function startFlap(S){
 }
 function flapDie(S){
   if(S.over) return;
-  S.over=true; sfx.lose();
+  S.over=true; gsfx('crash'); vibK('die');
   if(S.score>S.best){ S.best=S.score; store.set('flap.best',S.best); }
   updateFlapHud(S);
   stageOverlay(S.mount,'撞上了！','得分 '+S.score+' · 最高 '+S.best,'再来一局',()=>startFlap(S));
@@ -3808,7 +3844,7 @@ function stepFlap(S){
     for(const p of S.pipes) p.x-=speed;
     S.pipes=S.pipes.filter(p=>p.x>-52);
     for(const p of S.pipes){
-      if(!p.scored && p.x+40<S.bird.x){ p.scored=true; S.score++; updateFlapHud(S); sfx.point(); }
+      if(!p.scored && p.x+40<S.bird.x){ p.scored=true; S.score++; updateFlapHud(S); gsfx('coin', 120); }
       if(S.bird.x+10>p.x && S.bird.x-10<p.x+40 && (S.bird.y-9<p.top || S.bird.y+9>p.top+p.gap)) return flapDie(S);
     }
     if(S.bird.y>330) return flapDie(S);
@@ -3878,8 +3914,8 @@ function startRunner(S){
 }
 function runJump(S){
   const P=S.player;
-  if(P.y>=330){ P.vy=-9.4; P.jumps=1; sfx.eat(); }
-  else if(P.jumps<2){ P.vy=-7.6; P.jumps=2; sfx.eat(); }
+  if(P.y>=330){ P.vy=-9.4; P.jumps=1; gsfx('jump', 120); }
+  else if(P.jumps<2){ P.vy=-7.6; P.jumps=2; gsfx('jump', 120); }
 }
 function stepRunner(S){
   S.frames++;
@@ -3909,7 +3945,7 @@ function stepRunner(S){
   drawRunner(S);
 }
 function runDie(S){
-  S.over=true; sfx.lose();
+  S.over=true; gsfx('crash'); vibK('die');
   stageOverlay(S.mount,'摔倒了！','跑了 '+S.score+' 米 · 最高 '+S.best,'再跑一次',()=>startRunner(S));
 }
 function drawRunner(S){
@@ -3987,7 +4023,7 @@ function stepShooter(S){
     if(S.kR) S.ship.x+=5.5;
     if(S.target!=null) S.ship.x += (S.target-S.ship.x)*0.22;
     S.ship.x=Math.max(16,Math.min(464,S.ship.x));
-    if(S.frames%12===0){ S.bullets.push({x:S.ship.x,y:330}); sfx.click(); }
+    if(S.frames%12===0){ S.bullets.push({x:S.ship.x,y:330}); gsfx('laser', 140); }
     if(S.frames%Math.max(20,46-S.score/40)===0){
       const r=Math.random();
       S.foes.push({x:24+Math.random()*432,y:-16,vy:1+S.score*0.006+Math.random()*0.8,size:12+Math.random()*8,zig:Math.random()*6});
@@ -3999,7 +4035,7 @@ function stepShooter(S){
         const f=S.foes[j];
         if(Math.abs(b.x-f.x)<f.size && Math.abs(b.y-f.y)<10){
           S.foes.splice(j,1); S.bullets.splice(i,1);
-          S.score+=10; updateShooterHud(S); sfx.pop();
+          S.score+=10; updateShooterHud(S); gsfx('boom', 80);
           for(let k=0;k<5;k++) S.sparks.push({x:f.x,y:f.y,vx:(Math.random()-.5)*4,vy:(Math.random()-.5)*4,life:1});
           break;
         }
@@ -4008,15 +4044,15 @@ function stepShooter(S){
     for(let i=S.foes.length-1;i>=0;i--){
       const f=S.foes[i];
       f.y+=f.vy; f.x+=Math.sin(S.frames/22+f.zig)*0.8;
-      if(f.y>352){ S.foes.splice(i,1); S.lives--; updateShooterHud(S); sfx.bonk(); if(S.lives<=0) return shooterDie(S); }
-      else if(f.y>318 && Math.abs(f.x-S.ship.x)<22){ S.foes.splice(i,1); S.lives--; updateShooterHud(S); sfx.lose(); if(S.lives<=0) return shooterDie(S); }
+      if(f.y>352){ S.foes.splice(i,1); S.lives--; updateShooterHud(S); gsfx('no'); vibK('hurt'); if(S.lives<=0) return shooterDie(S); }
+      else if(f.y>318 && Math.abs(f.x-S.ship.x)<22){ S.foes.splice(i,1); S.lives--; updateShooterHud(S); gsfx('crash'); vibK('hurt'); if(S.lives<=0) return shooterDie(S); }
     }
     for(let i=S.sparks.length-1;i>=0;i--){ const p=S.sparks[i]; p.x+=p.vx; p.y+=p.vy; p.life-=0.06; if(p.life<=0) S.sparks.splice(i,1); }
   }
   drawShooter(S);
 }
 function shooterDie(S){
-  S.over=true; sfx.lose();
+  S.over=true; sfx.lose(); vibK('die');
   if(S.score>S.best){ S.best=S.score; store.set('shooter.best',S.best); }
   updateShooterHud(S);
   stageOverlay(S.mount,'防线失守！','击落 '+S.score+' 分 · 最高 '+S.best,'重整旗鼓',()=>startShooter(S));
@@ -4085,8 +4121,8 @@ function stepJumper(S){
   for(const pl of S.plats){
     if(P.vy>0 && P.prevY+11<=pl.y && P.y+11>=pl.y && P.x+10>pl.x && P.x-10<pl.x+pl.w){
       P.y=pl.y-11;
-      if(pl.spring){ P.vy=-13.5; P.squash=10; sfx.win(); }
-      else { P.vy=-9.4; P.squash=7; sfx.bonk(); }
+      if(pl.spring){ P.vy=-13.5; P.squash=10; gsfx('jump'); }
+      else { P.vy=-9.4; P.squash=7; gsfx('bounce', 120); }
     }
   }
   if(P.y<190){
@@ -4100,7 +4136,7 @@ function stepJumper(S){
     }
     S.plats=S.plats.filter(pl=>pl.y<420);
   }
-  if(P.y>380){ S.over=true; sfx.lose(); updateJumperHud(S);
+  if(P.y>380){ S.over=true; sfx.lose(); vibK('die'); updateJumperHud(S);
     stageOverlay(S.mount,'掉下去了！','爬到 '+Math.floor(S.score/10)+' 米 · 最高 '+Math.floor(S.best/10)+' 米','再来一次',()=>{ S.over=false; S.score=0; S.plats=[{x:180,y:300,w:120,spring:false}]; S.player={x:240,y:150,vy:0,vx:0,prevY:150,squash:0}; for(let i=0;i<9;i++) S.plats.push({x:10+Math.random()*(480-100),y:260-i*44,w:70+Math.random()*36,spring:Math.random()<0.16}); S.mount.querySelectorAll('.overlay').forEach(o=>o.remove()); });
   }
   if(P.squash>0) P.squash--;
@@ -4185,18 +4221,18 @@ function sokoLoad(S,lvl,silent){
 function sokoMove(S,dx,dy){
   S.face={x:dx,y:dy};
   const wx=S.worker.x+dx, wy=S.worker.y+dy;
-  if(S.walls[wy]&&S.walls[wy][wx]){ sfx.bonk(); return; }
+  if(S.walls[wy]&&S.walls[wy][wx]){ gsfx('lock', 250); return; }
   const ahead2x=wx+dx, ahead2y=wy+dy;
   if(S.boxes[wy]&&S.boxes[wy][wx]){
-    if(S.walls[ahead2y][ahead2x]||(S.boxes[ahead2y]&&S.boxes[ahead2y][ahead2x])){ sfx.bonk(); return; }
-    S.boxes[wy][wx]=false; S.boxes[ahead2y][ahead2x]=true; sfx.click();
+    if(S.walls[ahead2y][ahead2x]||(S.boxes[ahead2y]&&S.boxes[ahead2y][ahead2x])){ gsfx('lock', 250); return; }
+    S.boxes[wy][wx]=false; S.boxes[ahead2y][ahead2x]=true; gsfx('slide', 150);
   }
   S.worker={x:wx,y:wy};
   S.moves++; $('#sokM').textContent=S.moves;
   let all=true;
   for(let y=0;y<S.h;y++) for(let x=0;x<S.w;x++){ if(S.boxes[y][x]&&!S.goals[y][x]) all=false; }
   if(all){
-    sfx.win();
+    sfx.win(); vibK('win');
     if(S.lvl+1<SOKO_LEVELS.length){
       S.msg.textContent='第 '+(S.lvl+1)+' 关完成！共 '+S.moves+" 步";
       stageOverlay(S.mount,'过关！','用了 '+S.moves+' 步','下一关',()=>sokoLoad(S,S.lvl+1));
@@ -4289,9 +4325,9 @@ function mazeMove(S,dx,dy,bit){
   S.px+=dx; S.py+=dy; S.steps++; $('#mazN').textContent=S.steps;
   const key=S.px+','+S.py;
   if(!S.seenSet.has(key)){ S.seenSet.add(key); if(S.seenSet.size>S.best){ S.best=S.seenSet.size; store.set('maze.best',S.best); $('#mazB').textContent=S.best; } }
-  sfx.pop();
+  gsfx('step', 160);
   if(S.px===S.cols-1&&S.py===S.rows-1){
-    S.level++; sfx.win();
+    S.level++; gsfx('ok'); vibK('small');
     stageOverlay(S.mount,'找到出口！','第 '+(S.level-1)+' 层用 '+S.steps+' 步','继续下潜',()=>{ S.mount.querySelectorAll('.overlay').forEach(o=>o.remove()); mazeLevel(S); });
   }
   mazeDraw(S);
@@ -4384,13 +4420,12 @@ function colClick(S,cx,cy){
     used.add(k); group.push([x,y]);
     stack.push([x+1,y],[x-1,y],[x,y+1],[x,y-1]);
   }
-  if(group.length<2){ sfx.bonk(); S.msg.textContent='至少两个同色块连在一起才行'; return; }
+  if(group.length<2){ gsfx('no', 200); S.msg.textContent='至少两个同色块连在一起才行'; return; }
   const gain=group.length*group.length*5;
   S.score+=gain; updateColHud(S);
   S.msg.textContent='炸掉 '+group.length+' 块 +'+gain+'（连消更快拿更高分）';
   S.flash={cells:group,t:9};
-  sfx.pop(); if(group.length>5) sfx.point();
-}
+  gsfx('squish', 80); if(group.length>5) gsfx('coin');}
 function stepCollapse(S){
   if(S.flash){
     S.flash.t--;
@@ -4404,14 +4439,14 @@ function stepCollapse(S){
       S.flash=null;
       let empty=true, any=null;
       for(let y=0;y<S.n;y++){ if(any) break; for(let x=0;x<S.n;x++) if(S.board[y][x]!=null){ empty=false; any=true; break; } }
-      if(empty){ S.score+=500; updateColHud(S); S.msg.textContent='完美清空！+500'; sfx.win(); colDraw(S); return; }
+      if(empty){ S.score+=500; updateColHud(S); S.msg.textContent='完美清空！+500'; sfx.win(); vibK('win'); colDraw(S); return; }
       let movable=false;
       for(let y=0;y<S.n&&!movable;y++) for(let x=0;x<S.n;x++){
         if(S.board[y][x]==null) continue;
         if(x+1<S.n&&S.board[y][x+1]===S.board[y][x]) movable=true;
         if(y+1<S.n&&S.board[y+1][x]===S.board[y][x]) movable=true;
       }
-      if(!movable){ S.msg.textContent='没有可消除的组合了，点「重洗」继续'; sfx.bonk(); }
+      if(!movable){ S.msg.textContent='没有可消除的组合了，点「重洗」继续'; gsfx('no'); }
       colDraw(S);
     } else colDraw(S);
   }
@@ -4504,7 +4539,7 @@ function stepFishy(S){
       const dist=Math.hypot(f.x-P.x,f.y-P.y), danger=f.size>=S.size*1.02;
       if(dist<S.size*0.7+f.size*0.6){
         if(danger){
-          S.foes.splice(i,1); S.lives--; S.size=Math.max(13,S.size-3); updateFishyHud(S); sfx.lose();
+          S.foes.splice(i,1); S.lives--; S.size=Math.max(13,S.size-3); updateFishyHud(S); gsfx('crash'); vibK('hurt');
           for(let k=0;k<6;k++) S.sparks.push({x:P.x,y:P.y,vx:(Math.random()-.5)*5,vy:(Math.random()-.5)*5,life:1,col:'#ff8ac2'});
           if(S.lives<=0){
             S.over=true;
@@ -4517,7 +4552,7 @@ function stepFishy(S){
           S.foes.splice(i,1);
           const pts=f.gold?Math.ceil(f.size*3):Math.ceil(f.size);
           S.score+=pts; S.size+=f.gold?1.2:0.5;
-          updateFishyHud(S); sfx.eat();
+          updateFishyHud(S); gsfx('chomp', 120);
           for(let k=0;k<4;k++) S.sparks.push({x:f.x,y:f.y,vx:(Math.random()-.5)*4,vy:(Math.random()-.5)*4,life:1,col:f.gold?'#ffe95c':'#3ddc84'});
         }
       }
@@ -4592,9 +4627,9 @@ function rhythmTap(S){
     S.speed=Math.min(9,4+S.combo*0.07);
     S.zone=Math.max(26,S.zone-3);
     S.rings.push({r:S.zone,a:1});
-    tone(500+S.combo*16,0.07,'square',0.05); sfx.point();
+    tone(500+S.combo*16,0.07,'square',0.05); gsfx('ping', 80);
   } else {
-    S.combo=0; S.zone=120; sfx.bonk();
+    S.combo=0; S.zone=120; gsfx('no', 200); vibK('tick');
   }
   updateRhythmHud(S);
 }
@@ -4697,11 +4732,11 @@ function stepLunar(S){
         const gain=Math.round(S.fuel)+S.level*50;
         S.score+=gain;
         if(S.score>S.best){ S.best=S.score; store.set('lunar.best',S.best); }
-        updateLunarHud(S); sfx.win();
+        updateLunarHud(S); sfx.win(); vibK('win');
         for(let k=0;k<10;k++) S.parts.push({x:px,y:py,vx:(Math.random()-.5)*3,vy:-Math.random()*3,life:1,col:'#3ddc84'});
         stageOverlay(S.mount,'着陆成功！','+'+gain+' 分 · 燃料剩 '+Math.round(S.fuel)+'%','下一关（更快挑战）',()=>{ S.level++; updateLunarHud(S); S.mount.querySelectorAll('.overlay').forEach(o=>o.remove()); S.over=false; S.landed=false; S.fuel=100; S.ship={x:200+Math.random()*80,y:34,vx:(Math.random()<0.5?-1:1)*(0.4+S.level*0.08),vy:0}; lunarTerrain(S); sfx.point(); });
       } else {
-        S.over=true; sfx.lose();
+        S.over=true; gsfx('boom'); vibK('boom');
         for(let k=0;k<16;k++) S.parts.push({x:px,y:py,vx:(Math.random()-.5)*6,vy:-Math.random()*5,life:1,col:k%2?'#ff8ac2':'#ffc53d'});
         stageOverlay(S.mount,'坠毁了…',''+(onPad?'速度太快，':'')+'姿势不对。得分 '+S.score+' · 最高 '+S.best,'再来一次',()=>startLunar(S));
       }
@@ -4799,13 +4834,13 @@ function hbrTap(S,x,y){
       S.items.splice(i,1);
       if(it.boom){
         S.money=Math.max(0,S.money-20); S.bombs++;
-        updateHbrHud(S); sfx.lose(); S.shake=12;
+        updateHbrHud(S); gsfx('boom'); vibK('boom'); S.shake=12;
         for(let k=0;k<6;k++) S.sparks.push({x:it.x,y:it.y,vx:(Math.random()-.5)*5,vy:(Math.random()-.5)*5,life:1,col:'#9aa0d8'});
         S.pops.push({x:it.x,y:it.y,t:22,txt:'-20元'});
       } else {
         S.money+=it.value; S.got++;
         updateHbrHud(S);
-        sfx.pop();
+        gsfx('coin', 100);
         if(it.value>=10) setTimeout(()=>tone(1000+it.value*30,0.05,'square',0.05),40);
         for(let k=0;k<(it.value>=10?7:4);k++) S.sparks.push({x:it.x,y:it.y,vx:(Math.random()-.5)*4,vy:(Math.random()-.5)*4-1,life:1,col:'#ffe95c'});
         S.pops.push({x:it.x,y:it.y,t:22,txt:'+'+it.value+'元'});
@@ -4912,7 +4947,7 @@ GAMES.pin = {
 function pinDrop(S,x){
   if(S.balls.length>=3) return;
   S.balls.push({x,y:52,vx:(Math.random()-.5)*1.6,vy:1.5});
-  S.used++; $('#pinN').textContent=S.used; sfx.click();
+  S.used++; $('#pinN').textContent=S.used; gsfx('slide');
 }
 function pinHud(S){ $('#pinS').textContent=S.score; $('#pinB').textContent=S.best; }
 function pinTone(S){
@@ -4956,7 +4991,7 @@ function stepPin(S){
       S.glow.set(slot,30);
       S.texts.push({x:slot*60+30,y:PIN_FLOOR-16,t:30,txt:'+'+gain});
       if(PIN_MULT[slot]>=5){
-        S.shake=10; sfx.win();
+        S.shake=10; sfx.win(); vibK('win');
         S.texts.push({x:210,y:200,t:60,txt:'JACKPOT ×5!'});
         tone(523,0.09,'square',0.06); setTimeout(()=>tone(659,0.09,'square',0.06),90); setTimeout(()=>tone(784,0.16,'square',0.06),180);
       } else tone(300+PIN_MULT[slot]*120,0.08,'square',0.05);

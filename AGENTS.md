@@ -19,6 +19,7 @@
 | `index.html`     | ~353KB | 全部 HTML + CSS + 逻辑（巨型 `<script>` 在 `<body>` 末尾）                    | 首屏                                      |
 | `data/site.js`   | 117KB  | CONTENT（随机内容）/ SPEAKS(100) / DISHES(60) / STORIES(40) / VOCAB(220) | 首屏同步前载                                  |
 | `data/movies.js` | 30KB   | MOVIES(95部) 片库                                                     | 首屏同步前载                                  |
+| `data/gsfx.js`   | 130KB  | GSFX(23个游戏事件音效 mp3 base64，Kenney CC0 来源)                     | 首屏同步前载                                  |
 | `data/tang.js`   | 1.7MB  | TANG300(320首) + TANG_S2T/TANG_T2S 繁简映射 + TANG_FOLD                 | **懒加载**，首次进诗词 tab 时 `ensureTang(cb)` 注入 |
 
 巨型 script 的内部分区用 `/* ---------- 标题 ---------- */` 注释分隔，顺序大致是：
@@ -104,3 +105,4 @@
 - v3.2.5 骰子滚动全程震感（`RATTLE_VIB` 25ms/70ms 磙动节奏 ≈2.4s，settle 掐断 + 15ms 轻震收尾）；掷骰子卡片挪到小游戏第一位
 - v3.2.6 掷骰子沉浸模式：进入时隐藏顶栏+tab 导航、`html.dice-lock` 锁滚动；返回/切 tab 自动恢复；其他游戏不受影响
 - v3.2.7 沉浸模式推广到全部 32 个小游戏（`body.game-full` + `html.game-lock`，mountGame 挂/backToLobby·setTab 摘）；互动玩具未启用 ← 当前
+- **v3.3.0 全部 32 款小游戏接入真实音效 + 手机震动**：`data/gsfx.js`（23 个 Kenney CC0 ogg→mp3 base64，≈98KB 原始）+ `gsfx(名, 节流ms)` 引擎（含 `GSFX_FB` 合成兜底映射、`GSFX_TH` 节流、`gsfxPool` 防泄漏）+ `vibK(k)` 震动节奏库（`VIBS = {die:[60], boom:[80], win:[30,50,60], hurt:[40], tick:10, small:20}`，只在死亡/爆炸/大事件震）；win/lose 保留原 sfx 合成喇叭；掷骰子保持自带 sfxDice 链不重复接入
