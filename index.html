@@ -474,7 +474,7 @@ html.game-lock{overflow:hidden !important}
       </svg>
       <div>
         <h1>像素屋</h1>
-        <div class="tagline">PIXEL HOUSE v3.3.1</div>
+        <div class="tagline">PIXEL HOUSE v3.4.0</div>
       </div>
     </div>
     <div class="hdr-actions">
@@ -1769,12 +1769,16 @@ function mountToy(name){
   $('#toyTitle').textContent = t.title;
   $('#toyStats').innerHTML = '';
   $('#toyMount').innerHTML = '';
+  document.body.classList.add('game-full'); document.documentElement.classList.add('game-lock');  // 沉浸模式：玩具也独占屏幕
+  window.scrollTo(0, 0);  // 防返回按钮被顶出视窗+滚动锁死（同 v3.3.1 修法）
   t.mount($('#toyMount'), $('#toyStats'));
 }
 function backToToyLobby(){
   stopActive();
+  document.body.classList.remove('game-full'); document.documentElement.classList.remove('game-lock');
   $('#toyView').classList.add('hidden');
   $('#toyLobby').classList.remove('hidden');
+  window.scrollTo(0, 0);
 }
 $('#gameBack').addEventListener('click', backToLobby);
 $('#toyBack').addEventListener('click', backToToyLobby);
@@ -5084,14 +5088,14 @@ function popBubble(B, d){
   if(d.classList.contains('popped')) return;
   d.classList.add('popped');
   B.popped++;
-  sfx.pop();
+  gsfx('squish', 60); vibK('tick');
   updateBubbleHud(B);
-  if(B.popped === B.total) sfx.win();
+  if(B.popped === B.total){ sfx.win(); vibK('win'); }
 }
 function popAllBubble(B){
   B.grid.querySelectorAll('.bubble:not(.popped)').forEach(d => d.classList.add('popped'));
   B.popped = B.total;
-  sfx.win();
+  sfx.win(); vibK('win');
   updateBubbleHud(B);
 }
 function resetBubble(B){
@@ -5276,7 +5280,7 @@ function spawnBall(B, x, y){
     r:size/2, g:.25, damp:.78
   });
   updateBounceHud(B);
-  sfx.pop();
+  gsfx('squish', 80); vibK('tick');
 }
 function stepBounce(B){
   const w = B.box.clientWidth, h = B.box.clientHeight;
@@ -5443,18 +5447,18 @@ function updatePetUI(P){
 }
 function feedPet(){
   const P = pet; if(!P) return;
-  if(P.hunger >= 100){ P.status.textContent = '吃撑了！再喂要吐了'; sfx.bonk(); return; }
+  if(P.hunger >= 100){ P.status.textContent = '吃撑了！再喂要吐了'; gsfx('no'); return; }
   P.hunger = Math.min(100, P.hunger + 25);
   P.mood = Math.min(100, P.mood + 5);
   P.eatUntil = performance.now() + 1400;
-  sfx.eat();
+  gsfx('chomp'); vibK('small');
   updatePetUI(P);
 }
 function patPet(P, stage){
   if(!P) return;
   P.mood = Math.min(100, P.mood + 15);
   P.happyUntil = performance.now() + 1600;
-  sfx.point();
+  gsfx('ok', 200); vibK('tick');
   spawnHearts(stage);
   updatePetUI(P);
 }
@@ -5495,7 +5499,7 @@ TOYS.squishy = {
       blob.classList.add('squishing');
       S.n++;
       $('#sqCount').textContent = S.n;
-      sfx.eat();
+      gsfx('squish', 120); vibK('tick');
     });
     window.addEventListener('pointerup', () => blob.classList.remove('squishing'));
     $('#sqReset').addEventListener('click', () => { S.n = 0; $('#sqCount').textContent = '0'; sfx.click(); });
@@ -5600,7 +5604,7 @@ function burstFireworks(F, x, y){
   }
   F.n++;
   $('#fwCount').textContent = F.n;
-  sfx.pop();
+  gsfx('boom', 90); vibK('small');
 }
 function stepFireworks(F){
   const { ctx, cv } = F;
@@ -5648,16 +5652,16 @@ TOYS.fishtank = {
       const x = (e.clientX - r.left) / r.width * 480, y = (e.clientY - r.top) / r.height * 300;
       F.bubbles.push({ x, y, vy:-1, life:1 });
       F.fish.forEach(f => { f.vx = Math.sign(f.x - x || 1) * (Math.abs(f.vx) + 2.4); f.startled = 30; });
-      sfx.pop();
+      gsfx('ping', 120);
     });
     $('#ftFeed').addEventListener('click', () => {
       F.bubbles.push({ x:60 + Math.random()*360, y:290, vy:-1, life:1 });
       F.fish.forEach(f => { f.vx *= 1.2; });
-      sfx.eat();
+      gsfx('chomp');
     });
     $('#ftStartle').addEventListener('click', () => {
       F.fish.forEach(f => { f.vx = -f.vx + (Math.random()<.5?-1.5:1.5); f.startled = 40; });
-      sfx.bonk();
+      gsfx('crash'); vibK('small');
     });
     F.loop = () => { stepFish(F); F.raf = requestAnimationFrame(F.loop); };
     F.raf = requestAnimationFrame(F.loop);
@@ -5746,7 +5750,7 @@ TOYS.oracle = {
       ball.classList.remove('pulse');
       void ball.offsetWidth;
       ball.classList.add('pulse');
-      sfx.pop();
+      gsfx('sweep');
     });
   },
   destroy(){ oracle = null; }
@@ -5782,7 +5786,7 @@ TOYS.snowglobe = {
 function shakeSnow(S){
   S.shaking = 40;
   S.flakes.forEach(f => { f.vx = (Math.random()-.5)*3; f.vy = 1 + Math.random()*2; });
-  sfx.pop();
+  gsfx('slide'); vibK('small');
 }
 function stepSnow(S){
   const { ctx, cv } = S;
@@ -5873,7 +5877,7 @@ function confettiBurst(C,x,y){
   for(let i=0;i<40;i++){
     C.parts.push({x:x,y:y,vx:(Math.random()-.5)*6,vy:-(2+Math.random()*4),g:0.18,life:1,w:3+Math.floor(Math.random()*3),h:3+Math.floor(Math.random()*3),col:CONFETTI_COLS[Math.floor(Math.random()*CONFETTI_COLS.length)],rot:Math.random()*6});
   }
-  C.burst++; $('#cfC').textContent=C.burst; sfx.pop();
+  C.burst++; $('#cfC').textContent=C.burst; gsfx('squish', 80); vibK('tick');
 }
 function stepConfetti(C){
   const {ctx,cv}=C;
@@ -5912,7 +5916,7 @@ TOYS.ripple = {
 };
 function spawnRipple(R,x,y){
   R.ripples.push({x:x,y:y,r:2,life:1});
-  $('#rpC').textContent=R.ripples.length; sfx.pop();
+  $('#rpC').textContent=R.ripples.length; gsfx('ping', 120); vibK('tick');
 }
 function stepRipple(R){
   const {ctx,cv}=R;
@@ -6079,7 +6083,7 @@ function sprayFountain(F,x,y){
     const sp=3+Math.random()*4;
     F.drops.push({x:x,y:y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,g:0.16,life:1,col:FOUNTAIN_COLS[Math.floor(Math.random()*FOUNTAIN_COLS.length)]});
   }
-  F.burst++; $('#ftnC').textContent=F.burst; sfx.pop();
+  F.burst++; $('#ftnC').textContent=F.burst; gsfx('sweep', 150); vibK('tick');
 }
 function stepFountain(F){
   const {ctx,cv}=F;
@@ -6112,7 +6116,7 @@ TOYS.balloon = {
       const r=cv.getBoundingClientRect();
       popBalloon(B,(e.clientX-r.left)/r.width*480,(e.clientY-r.top)/r.height*320);
     });
-    $('#blB').addEventListener('click', ()=>{ spawnBalloon(B); sfx.pop(); });
+    $('#blB').addEventListener('click', ()=>{ spawnBalloon(B); gsfx('flap', 120); });
     B.loop=()=>{ stepBalloons(B); B.raf=requestAnimationFrame(B.loop); };
     B.raf=requestAnimationFrame(B.loop);
   },
@@ -6127,7 +6131,7 @@ function popBalloon(B,x,y){
   for(let i=B.balloons.length-1;i>=0;i--){
     const b=B.balloons[i];
     if(Math.abs(b.x-x)<b.size && Math.abs(b.y-y)<b.size*1.3){
-      B.balloons.splice(i,1); B.popped++; $('#blC').textContent=B.popped; sfx.pop(); return;
+      B.balloons.splice(i,1); B.popped++; $('#blC').textContent=B.popped; gsfx('boom', 80); vibK('small'); return;
     }
   }
 }
@@ -6174,8 +6178,8 @@ function catchStar(S,x,y){
     const d=dx*dx+dy*dy;
     if(d<bd){ bd=d; best=st; }
   }
-  if(best){ best.caught=true; S.caught++; $('#stC').textContent=S.caught; sfx.point(); }
-  else { S.wishes++; $('#stW').textContent=S.wishes; sfx.pop(); }
+  if(best){ best.caught=true; S.caught++; $('#stC').textContent=S.caught; gsfx('coin'); vibK('tick'); }
+  else { S.wishes++; $('#stW').textContent=S.wishes; gsfx('tick', 150); }
 }
 function stepStars(S,t){
   const {ctx,cv}=S;
@@ -6213,7 +6217,7 @@ TOYS.pump = {
         $('#pmTo').textContent='打气';
         return;
       }
-      P.size+=14; sfx.eat();
+      P.size+=14; gsfx('bounce', 120); vibK('tick');
       ball.style.width=P.size+'px'; ball.style.height=(P.size*1.15)+'px';
       ball.style.fontSize=Math.max(8, P.size*0.16)+'px';
       if(P.size>=190){
@@ -6222,7 +6226,7 @@ TOYS.pump = {
         ball.classList.add('popped'); ball.textContent='砰！';
         msg.textContent='吹爆了！点「换个气球」再来。';
         $('#pmTo').textContent='换个气球';
-        sfx.win();
+        gsfx('boom'); vibK('boom');
       }
     });
   },
@@ -6273,7 +6277,7 @@ function kaleidoSeed(K,reseed){
   if(reseed){
     K.palette=(K.palette+1)%K.PAL.length;
     $('#kalP').textContent=['霓虹','糖果','神秘'][K.palette];
-    sfx.pop();
+    gsfx('sweep');
   }
   K.ctx.fillStyle='#0e0f1d'; K.ctx.fillRect(0,0,480,360);
 }
@@ -6331,7 +6335,7 @@ TOYS.slime = {
       }
       SL.pokes=(SL.pokes||0)+1;
       $('#slmC').textContent=SL.pokes;
-      sfx.bonk(); SL.blink=Math.max(SL.blink,40);
+      gsfx('squish', 150); vibK('tick'); SL.blink=Math.max(SL.blink,40);
     });
     SL.loop=()=>{ stepSlime(SL); SL.raf=requestAnimationFrame(SL.loop); };
     SL.raf=requestAnimationFrame(SL.loop);
@@ -6419,7 +6423,7 @@ TOYS.waves = {
       W.ripples.push({x,y,r:2,a:0.9});
       W.count=(W.count||0)+1;
       $('#wavC').textContent=W.count;
-      sfx.pop();
+      gsfx('ping', 120); vibK('tick');
     });
     W.loop=()=>{ stepWaves(W); W.raf=requestAnimationFrame(W.loop); };
     W.raf=requestAnimationFrame(W.loop);
@@ -6570,7 +6574,7 @@ function treeGrow(T){
   };
   build(240,345,-Math.PI/2+(Math.random()-0.5)*0.2,64+Math.random()*26,0);
   T.maxDepth=Math.max.apply(null,T.segs.map(s=>s.d));
-  sfx.pop();
+  gsfx('sweep'); vibK('tick');
 }
 function stepTree(T){
   T.frames++;
@@ -6693,7 +6697,7 @@ TOYS.weather = {
       const b=document.createElement('button'); b.className='chip'+(m==='sunny'?' active':''); b.textContent=label;
       b.addEventListener('click',()=>{
         W.mode=m; W.chipEls.forEach(c=>c.classList.remove('active')); b.classList.add('active');
-        $('#wthM').textContent=label; sfx.pop();
+        $('#wthM').textContent=label; gsfx('slide');
       });
       chips.appendChild(b); W.chipEls.push(b);
     });
@@ -6759,7 +6763,7 @@ function stepWeather(W){
     }
     ctx.stroke();
     W.nextBolt--;
-    if(W.nextBolt<=0){ W.flash=7; W.nextBolt=100+Math.random()*160; sfx.bonk(); }
+    if(W.nextBolt<=0){ W.flash=7; W.nextBolt=100+Math.random()*160; gsfx('boom', 600); vibK('small'); }
   }
   if(W.mode==='snow'){
     ctx.fillStyle='rgba(238,242,255,.9)';
@@ -6821,7 +6825,7 @@ function stepBreath(B,now){
   let t=now-B.t0;
   const total=B.PHASES.reduce((s,p)=>s+p.d,0);
   const cyc=Math.floor(t/total);
-  if(cyc>B.cycle){ B.cycle=cyc; $('#brtC').textContent=cyc+1; sfx.point(); }
+  if(cyc>B.cycle){ B.cycle=cyc; $('#brtC').textContent=cyc+1; sfx.point(); vibK('tick'); }
   let tt=t%total, ph=B.PHASES[0], acc=0;
   acc=0; for(const p of B.PHASES){ if(tt<acc+p.d){ ph=p; break; } acc+=p.d; }
   const pt=tt-acc-0, prog=Math.min(1,Math.max(0,pt/ph.d));
@@ -7026,9 +7030,11 @@ function boomPress(S){
     S.damage=Math.min(100,S.damage+8);
     const i=Math.min(BOOM_MSGS.length-1,Math.floor(S.presses/10)-1);
     S.toast=BOOM_MSGS[i]; S.toastT=160;
-    tone(90,0.28,'square',0.09); setTimeout(()=>tone(58,0.34,'square',0.1),90);
+    gsfx('boom'); vibK('boom');
+    setTimeout(()=>tone(58,0.34,'square',0.1),90);
   } else {
     S.damage=Math.min(100,S.damage+3);
+    gsfx('crash', 120); vibK('tick');
     tone(110+Math.random()*70,0.08,'square',0.05);
   }
   S.rings.push({r:56,a:0.55});
@@ -7135,7 +7141,7 @@ function stepSpin(S){
     S.spin=S.frames-S.spinAt;
   } else if(S.spin>0){
     const secs=+(S.spin/60).toFixed(1);
-    if(secs>S.best){ S.best=secs; store.set('spd.best',S.best); $('#spdB').textContent=S.best.toFixed(1)+'s'; }
+    if(secs>S.best){ S.best=secs; store.set('spd.best',S.best); $('#spdB').textContent=S.best.toFixed(1)+'s'; vibK('small'); }
     S.spin=0;
   }
   S.hue=(S.hue+0.5+Math.abs(S.vel)*9)%360;
