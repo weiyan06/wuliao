@@ -332,6 +332,16 @@ body.no-crt .scanlines{display:none}
 .pet-bar .fill{height:100%; width:50%; transition:width .3s steps(6)}
 .fill.hunger{background:var(--green)}
 .fill.mood{background:var(--pink)}
+.fill.clean{background:#4da6ff}
+.pet-bubble{position:absolute; top:8%; left:50%; transform:translate(-50%, -6px); background:var(--bg2); border:3px solid var(--line); box-shadow:4px 4px 0 rgba(0,0,0,.5); padding:5px 10px; font-size:12px; color:var(--ink); opacity:0; transition:opacity .25s steps(4); pointer-events:none; z-index:6; max-width:78%; text-align:center; white-space:nowrap}
+.pet-bubble.show{opacity:1}
+.pet-skins{display:flex; gap:8px; justify-content:center; margin-top:10px; flex-wrap:wrap}
+.pet-skin{width:26px; height:26px; border:3px solid var(--line); box-shadow:2px 2px 0 rgba(0,0,0,.5); cursor:pointer; padding:0}
+.pet-skin.sel{outline:3px solid var(--yellow); outline-offset:1px; transform:translate(-1px,-1px)}
+.pet-name input{width:110px; font:inherit; font-size:11px; text-align:center; background:transparent; border:0; border-bottom:3px dashed var(--line); color:var(--green); padding:0}
+.bath-bubble{position:absolute; border-radius:50%; background:rgba(191,224,255,.28); border:3px solid #9fd0ff; box-shadow:inset -5px -5px 0 rgba(255,255,255,.4); cursor:pointer; padding:0; z-index:5; animation:bathWob 1.1s steps(6) infinite alternate}
+@keyframes bathWob{from{transform:translateY(0) scale(1)} to{transform:translateY(9px) scale(.94)}}
+.pet-zzz{position:absolute; top:16%; right:12%; z-index:6; font-family:'Press Start 2P',monospace; font-size:13px; color:var(--green); animation:bathWob 1.3s steps(3) infinite alternate; pointer-events:none}
 .pet-actions{display:flex; gap:10px; margin-top:12px}
 .pet-actions .px-btn{flex:1 1 auto; text-align:center}
 
@@ -475,7 +485,7 @@ html.game-lock{overflow:hidden !important}
       </svg>
       <div>
         <h1>像素屋</h1>
-        <div class="tagline">PIXEL HOUSE v3.4.2</div>
+        <div class="tagline">PIXEL HOUSE v3.5.0</div>
       </div>
     </div>
     <div class="hdr-actions">
@@ -6293,7 +6303,7 @@ function updateBounceHud(B){
   if(el) el.textContent = B.balls.length;
 }
 
-/* ---------------- 像素宠物：果冻 ---------------- */
+/* ---------------- 像素宠物 · 果冻进阶版 ---------------- */
 const SLIME_ROWS = [
   '....kkkkkkkk....',
   '..kkggggggggkk..',
@@ -6310,18 +6320,96 @@ const SLIME_ROWS = [
   '..kkggggggggkk..',
   '....kkkkkkkk....'
 ];
-const SLIME_COLORS = { k:'#0b0c18', g:'#3ddc84', w:'#b8f5d4', d:'#0b0c18', m:'#0b0c18', p:'#ff8ac2' };
-const EYE_CLOSED = 'kgkkggggggggkkgk';
+// 眼睛/嘴从身体行剥离，动态绘制；身体行里的 d/m 都当作身体色
+const SLIME_BODY_ROWS = SLIME_ROWS.map(r => r.replace(/[dm]/g, 'g'));
+const MOUTH_IDLE  = 'kgggggg.mm.ggggk';
 const MOUTH_HAPPY = 'kggg.mmmmmm.gggk';
 const MOUTH_SAD   = 'kggg.m....m.gggk';
+const PET_SKINS = [
+  {n:'果冻绿', b:'#3ddc84', w:'#b8f5d4', c:'#ff8ac2'},
+  {n:'草莓奶油', b:'#ff8ac2', w:'#ffd4e6', c:'#b18cff'},
+  {n:'葡萄紫', b:'#b18cff', w:'#ddd0ff', c:'#ffc53d'},
+  {n:'布丁黄', b:'#ffc53d', w:'#ffecaa', c:'#4da6ff'},
+  {n:'海盐蓝', b:'#4da6ff', w:'#bfe0ff', c:'#ff3d5a'},
+  {n:'雪糕白', b:'#eef0ff', w:'#ffffff', c:'#ff3d5a'}
+];
+const PET_STAGE_NAMES = ['小果冻', '大果冻', '果冻王'];
+const PET_FOODS = [
+  {n:'小蛋糕', h:35, m:10, c:-8, tag:'甜甜的能量！'},
+  {n:'苹果', h:15, m:5, c:6, tag:'健康又脆脆'},
+  {n:'小辣椒', h:10, m:20, c:-5, spicy:true, tag:'辣到蹦迪！'},
+  {n:'软面包', h:25, m:4, c:-3, tag:'柔柔香香'}
+];
+const PET_CHAT = {
+  hungry: ['肚子咕咕咕在开演唱会…', '好饿，闻到味道了吗~', '在线等一个投喂'],
+  dirty: ['身上黏糊糊的…', '想泡个泡泡浴…', '我闻起来像昨天'],
+  happy: ['心情好到咕嘟冒泡！', '要不要再摸摸我？', '今天也是果冻界的明星！', '软乎乎的好心情！'],
+  idle: ['唔——', '陪我玩会儿嘛', '今天有点小无聊', '咻，你在看我吗？', '新皮肤好看嘛？'],
+  sleep: ['Zzz… 梦里在吃大餐', '呼鲁呼鲁…', 'Zzz… 梦见你了']
+};
 let pet = null;
+function petDayStamp(d){ d = d || new Date(); return d.getFullYear() + '-' + (d.getMonth()+1) + '-' + d.getDate(); }
+function petLoad(){
+  const now = Date.now();
+  const s = store.get('pet.save', null) || {};
+  if(!s.name){ // 初次领养
+    s.name = '果冻'; s.skin = 0; s.hunger = 80; s.mood = 70; s.clean = 100;
+    s.careDay = 1; s.stage = 0; s.feeds = 0; s.pats = 0; s.born = now;
+    s.lastDay = petDayStamp();
+  }
+  // 离线衰减（封顶 96h，不会一夜饿死）
+  const hours = Math.min(96, Math.max(0, (now - (s.ts || now)) / 36e5));
+  s.hunger = Math.max(0, Math.round(s.hunger - hours * 2));
+  s.mood = Math.max(0, Math.round(s.mood - hours * 1.5));
+  s.clean = Math.max(15, Math.round(s.clean - hours * 1.2));
+  // 新的一天 → 照顾天数 +1 + 元气小回充
+  const today = petDayStamp();
+  if(s.lastDay !== today){ s.careDay = (s.careDay|0) + 1; s.lastDay = today; s.mood = Math.min(100, s.mood + 10); }
+  const ns = s.careDay >= 15 ? 2 : (s.careDay >= 5 ? 1 : 0);
+  s.levelUp = ns > (s.stage|0);
+  s.stage = ns;
+  s.ts = now;
+  store.set('pet.save', { v:1, name:s.name, skin:s.skin, hunger:s.hunger, mood:s.mood, clean:s.clean,
+    born:s.born, careDay:s.careDay, lastDay:s.lastDay, stage:s.stage, feeds:s.feeds, pats:s.pats, ts:s.ts });
+  return s;
+}
+function petSave(){
+  const P = pet; if(!P) return;
+  store.set('pet.save', { v:1, name:P.name, skin:P.skin, hunger:P.hunger, mood:P.mood, clean:P.clean,
+    born:P.born, careDay:P.careDay, lastDay:P.lastDay, stage:P.stage, feeds:P.feeds, pats:P.pats, ts:Date.now() });
+}
+function petIsSleeping(P, t){
+  if(P.awakeUntil > t) return false;
+  const h = new Date().getHours();
+  return h >= 22 || h < 8;
+}
+function pickPetChat(P, t, sleeping){
+  const pool = sleeping ? PET_CHAT.sleep
+    : P.hunger < 25 ? PET_CHAT.hungry
+    : P.clean < 35 ? PET_CHAT.dirty
+    : P.mood >= 75 ? PET_CHAT.happy : PET_CHAT.idle;
+  return pool[Math.floor(Math.random()*pool.length)];
+}
+function showBubble(P, txt){
+  const b = P.bubbleEl; if(!b) return;
+  b.textContent = txt;
+  b.classList.add('show');
+  clearTimeout(P.bubT);
+  P.bubT = setTimeout(() => b.classList.remove('show'), 3200);
+}
 TOYS.pet = {
   title: '像素宠物',
   mount(mountEl, statsEl){
     mountEl.classList.add('stage');
+    const s = petLoad();
     const P = pet = {
-      hunger:80, mood:70, raf:0, frameN:0,
-      lastBlink:0, blinkUntil:0, eatUntil:0, happyUntil:0,
+      name:s.name, skin:s.skin, hunger:s.hunger, mood:s.mood, clean:s.clean,
+      born:s.born, careDay:s.careDay, lastDay:s.lastDay, stage:s.stage, feeds:s.feeds, pats:s.pats,
+      raf:0, frameN:0, lastBlink:0, blinkUntil:0, eatUntil:0, happyUntil:0,
+      hopUntil:0, wiggleUntil:0, spicyUntil:0, shyUntil:0, awakeUntil:0,
+      ptrX:7.5, ptrY:5, ptrT:0, wasTracking:false, look:{dx:4, dy:4}, nextWander:0,
+      nextChatter:performance.now() + 5200, nextStunt:performance.now() + 4200,
+      lastShyMood:0, bathActive:null, spots:[], spotsFlag:-1, bubT:0,
       reduced: !!window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches
     };
     const wrap = document.createElement('div');
@@ -6334,125 +6422,340 @@ TOYS.pet = {
     stage.appendChild(cv);
     const name = document.createElement('div');
     name.className = 'pet-name';
-    name.textContent = '果冻';
+    name.textContent = P.name;
     stage.appendChild(name);
+    const zzz = document.createElement('div');
+    zzz.className = 'pet-zzz';
+    zzz.textContent = 'Zzz';
+    zzz.style.display = 'none';
+    stage.appendChild(zzz);
     const status = document.createElement('div');
     status.className = 'pet-status';
-    status.textContent = '状态不错';
     stage.appendChild(status);
+    const bubble = document.createElement('div');
+    bubble.className = 'pet-bubble';
+    stage.appendChild(bubble);
     wrap.appendChild(stage);
     const bars = document.createElement('div');
     bars.className = 'pet-bars';
     bars.innerHTML =
       '<div class="pet-bar"><div class="lbl">饱食度</div><div class="bar"><div class="fill hunger" id="petHunger"></div></div></div>' +
-      '<div class="pet-bar"><div class="lbl">心情</div><div class="bar"><div class="fill mood" id="petMood"></div></div></div>';
+      '<div class="pet-bar"><div class="lbl">心情</div><div class="bar"><div class="fill mood" id="petMood"></div></div></div>' +
+      '<div class="pet-bar"><div class="lbl">清洁度</div><div class="bar"><div class="fill clean" id="petClean"></div></div></div>';
     wrap.appendChild(bars);
-    const acts = document.createElement('div');
-    acts.className = 'pet-actions';
+    const actRow = document.createElement('div');
+    actRow.className = 'pet-actions';
     const feed = document.createElement('button');
     feed.className = 'px-btn green';
     feed.textContent = '喂食';
     const pat = document.createElement('button');
     pat.className = 'px-btn pink';
     pat.textContent = '摸摸';
-    acts.appendChild(feed);
-    acts.appendChild(pat);
-    wrap.appendChild(acts);
+    const bath = document.createElement('button');
+    bath.className = 'px-btn ghost';
+    bath.textContent = '搓澡';
+    actRow.appendChild(feed); actRow.appendChild(pat); actRow.appendChild(bath);
+    wrap.appendChild(actRow);
+    const skins = document.createElement('div');
+    skins.className = 'pet-skins';
+    const skinBtns = [];
+    PET_SKINS.forEach((sk, i) => {
+      const b = document.createElement('button');
+      b.className = 'pet-skin' + (i === P.skin ? ' sel' : '');
+      b.style.background = sk.b;
+      b.title = sk.n;
+      b.setAttribute('aria-label', '换肤 ' + sk.n);
+      b.addEventListener('click', () => {
+        P.skin = i;
+        skinBtns.forEach(x => x.classList.toggle('sel', x === b));
+        showBubble(P, '换了新皮肤：' + sk.n + '！');
+        gsfx('slide'); vibK('tick');
+        petSave();
+      });
+      skinBtns.push(b);
+      skins.appendChild(b);
+    });
+    wrap.appendChild(skins);
     mountEl.appendChild(wrap);
-    P.canvas = cv; P.ctx = cv.getContext('2d'); P.stage = stage; P.status = status;
+    P.stageEl = stage; P.status = status; P.nameEl = name; P.bubbleEl = bubble; P.zzzEl = zzz;
+    P.canvas = cv; P.ctx = cv.getContext('2d');
+    // 点名字改名
+    name.addEventListener('click', () => {
+      if(name.querySelector('input')) return;
+      const inp = document.createElement('input');
+      inp.type = 'text'; inp.maxLength = 8; inp.value = P.name;
+      name.textContent = '';
+      name.appendChild(inp);
+      inp.focus(); inp.select();
+      const done = () => {
+        P.name = inp.value.trim() || '果冻';
+        name.textContent = P.name;
+        gsfx('ok');
+        showBubble(P, '叫得顺口就行~ 我记住啦');
+        petSave();
+      };
+      inp.addEventListener('blur', done);
+      inp.addEventListener('keydown', e => { if(e.key === 'Enter') inp.blur(); });
+    });
     feed.addEventListener('click', feedPet);
     pat.addEventListener('click', () => patPet(P, stage));
     cv.addEventListener('click', () => patPet(P, stage));
+    // 眼睛跟随指针 + 摸到身体会害羞
+    cv.addEventListener('pointermove', e => {
+      const r = cv.getBoundingClientRect();
+      P.ptrX = (e.clientX - r.left) / r.width * 16;
+      P.ptrY = (e.clientY - r.top) / r.height * 16;
+      P.ptrT = performance.now();
+      P.look = { dx: P.ptrX > 9 ? 8 : (P.ptrX < 6.5 ? 0 : 4), dy: P.ptrY > 7 ? 8 : (P.ptrY < 4.5 ? 0 : 4) };
+      if(P.ptrX > 3 && P.ptrX < 13 && P.ptrY > 3 && P.ptrY < 10.5){
+        const t = performance.now();
+        P.shyUntil = t + 420;
+        if(t - P.lastShyMood > 1500){ P.lastShyMood = t; P.mood = Math.min(100, P.mood + 2); updatePetUI(P); }
+      }
+    });
+    cv.addEventListener('pointerleave', () => { P.ptrT = 0; });
+    bath.addEventListener('click', () => startBath(P));
+    // 升级庆祝
+    if(s.levelUp){
+      setTimeout(() => { showBubble(P, '照顾了 ' + P.careDay + ' 天！进化成「' + PET_STAGE_NAMES[P.stage] + '」啦'); sfx.win(); vibK('win'); }, 700);
+    }
     P.loop = t => { petFrame(P, t); P.raf = requestAnimationFrame(P.loop); };
     P.raf = requestAnimationFrame(P.loop);
+    updatePetUI(P);
   },
   destroy(){
-    if(pet){ cancelAnimationFrame(pet.raf); pet = null; }
+    if(pet){ petSave(); cancelAnimationFrame(pet.raf); pet = null; }
   }
 };
-function slimeRowsFor(state){
-  const rows = SLIME_ROWS.slice();
-  if(state === 'blink' || state === 'sad'){
-    rows[5] = EYE_CLOSED;
-    rows[6] = EYE_CLOSED;
-  }
-  if(state === 'sad') rows[8] = MOUTH_SAD;
-  if(state === 'happy') rows[8] = MOUTH_HAPPY;
-  if(state === 'eat'){
-    rows[8] = MOUTH_HAPPY;
-    rows[9] = MOUTH_HAPPY;
-  }
-  return rows;
-}
-function slimeState(P, t){
-  if(P.eatUntil && t < P.eatUntil) return 'eat';
-  if(P.blinkUntil && t < P.blinkUntil) return 'blink';
-  if(t - P.lastBlink > 3200 + Math.random()*1200){ P.lastBlink = t; P.blinkUntil = t + 190; return 'blink'; }
-  if(P.hunger < 25) return 'sad';
-  if(P.happyUntil && t < P.happyUntil) return 'happy';
-  return 'idle';
-}
 function petFrame(P, t){
   const ctx = P.ctx;
   if(!ctx) return;
   const W = P.canvas.width, H = P.canvas.height;
   ctx.clearRect(0, 0, W, H);
-  // 地面阴影
+  const sleeping = petIsSleeping(P, t);
+  const bathing = !!P.bathActive;
+  // 随机小动作（蹦跳/摇头）
+  if(!sleeping && !bathing){
+    if(t > P.nextStunt){
+      P.nextStunt = t + 6000 + Math.random()*7000;
+      if(Math.random() < .55) P.hopUntil = t + 700;
+      else P.wiggleUntil = t + 700;
+    }
+  }
+  // 吐槽气泡
+  if(t > P.nextChatter && !bathing){
+    P.nextChatter = t + 9000 + Math.random()*11000;
+    showBubble(P, pickPetChat(P, t, sleeping));
+  }
+  // 眼神：跟随指针 / 闲置随机漂移
+  const tracking = P.ptrT && t - P.ptrT < 2500;
+  if(tracking){
+    P.look = { dx: P.ptrX > 9 ? 8 : (P.ptrX < 6.5 ? 0 : 4), dy: P.ptrY > 7 ? 8 : (P.ptrY < 4.5 ? 0 : 4) };
+    if(!P.wasTracking){ showBubble(P, '咦，你的手指跟着我了？'); P.wasTracking = true; }
+  } else {
+    P.wasTracking = false;
+    if(t > P.nextWander){
+      P.nextWander = t + 1400 + Math.random()*1200;
+      P.look = { dx: [0,4,8][Math.floor(Math.random()*3)], dy: [0,4,8][Math.floor(Math.random()*3)] };
+    }
+  }
+  // 洗澡小游戏
+  if(bathing) stepBath(P, t);
+  // --- 绘制 ---
+  const cooking = P.eatUntil && t < P.eatUntil;
   ctx.fillStyle = 'rgba(0,0,0,.35)';
   ctx.fillRect(W/2 - 46, 140, 92, 10);
-  // 呼吸晃动
-  const wob = P.reduced ? 1 : 1 + 0.03 * Math.sin(t/260);
+  const stageScale = [1, 1.12, 1.12][P.stage];
+  const hop = P.hopUntil > t ? -Math.abs(Math.sin((P.hopUntil - t)/700*Math.PI))*14 : 0;
+  let wob = P.reduced ? 1 : 1 + 0.03 * Math.sin(t/260);
+  if(cooking) wob *= 1 + 0.05*Math.sin(t/70);
+  if(P.spicyUntil > t) wob *= 1 + 0.07*Math.sin(t/45);
+  const shyNow = P.shyUntil > t;
+  if(P.zzzEl) P.zzzEl.style.display = sleeping ? 'block' : 'none';
   ctx.save();
-  ctx.translate(W/2, 42);
-  ctx.scale(wob, 1);
-  ctx.translate(-W/2, -42);
-  const state = slimeState(P, t);
-  const rows = slimeRowsFor(state);
-  const scale = 8, ox = (W - 16*scale)/2, oy = 34;
+  if(P.wiggleUntil > t) ctx.translate(Math.sin(t/40)*5, 0);
+  ctx.translate(W/2, 42 + hop);
+  if(sleeping) ctx.scale(1.06*stageScale*wob, 0.95*stageScale*(1+0.02*Math.sin(t/150)));
+  else if(shyNow) ctx.scale(0.96*stageScale*wob, 1.03*stageScale);
+  else if(cooking) ctx.scale(1.04*stageScale*wob, 0.98*stageScale);
+  else ctx.scale(stageScale*wob, stageScale*(1 + 0.03*Math.sin(t/260)));
+  const ox = (W - 16*8)/2, oy = 34;
+  const sk = PET_SKINS[P.skin] || PET_SKINS[0];
+  const skinCols = { k:'#0b0c18', g:sk.b, w:sk.w, p:sk.c };
+  // 身体
+  const rows = SLIME_BODY_ROWS;
   for(let y=0;y<rows.length;y++){
     for(let x=0;x<16;x++){
       const ch = rows[y][x];
       if(ch === '.') continue;
-      ctx.fillStyle = SLIME_COLORS[ch] || '#3ddc84';
-      ctx.fillRect(ox + x*scale, oy + y*scale, scale, scale);
+      ctx.fillStyle = skinCols[ch] || sk.b;
+      ctx.fillRect(ox + x*8, oy + y*8, 8, 8);
     }
   }
+  // 眼睛（白眼球 + 黑瞳，跟随 look）
+  const eyesClosed = sleeping || shyNow || P.blinkUntil > t;
+  const eyeY = oy + 5*8;
+  [2, 12].forEach(ex => {
+    const x = ox + ex*8;
+    if(eyesClosed){
+      ctx.fillStyle = '#0b0c18';
+      ctx.fillRect(x, eyeY + 10, 16, 4);
+    } else {
+      ctx.fillStyle = sk.w;
+      ctx.fillRect(x, eyeY, 16, 16);
+      ctx.fillStyle = '#0b0c18';
+      ctx.fillRect(x + P.look.dx, eyeY + P.look.dy, 8, 8);
+    }
+  });
+  // 嘴
+  const mouthRows = [];
+  if(cooking){ mouthRows.push({row:8, str:MOUTH_HAPPY}); mouthRows.push({row:9, str:MOUTH_HAPPY}); }
+  else if(sleeping) mouthRows.push({row:8, str:MOUTH_IDLE});
+  else if(P.hunger < 25) mouthRows.push({row:8, str:MOUTH_SAD});
+  else if(P.happyUntil && t < P.happyUntil) mouthRows.push({row:8, str:MOUTH_HAPPY});
+  else mouthRows.push({row:8, str:MOUTH_IDLE});
+  mouthRows.forEach(mr => {
+    const str = mr.str;
+    for(let x=0;x<16;x++){
+      if(str[x] === 'm'){ ctx.fillStyle = '#0b0c18'; ctx.fillRect(ox + x*8, oy + mr.row*8, 8, 8); }
+    }
+  });
+  // 脏泥斑点
+  if(P.clean <= 35){
+    if(!P.spots.length || P.spotsFlag !== Math.floor(P.clean/12)){
+      P.spotsFlag = Math.floor(P.clean/12);
+      const n = P.clean <= 15 ? 5 : 3;
+      P.spots = Array.from({length:n}, () => ({x: 2+Math.floor(Math.random()*12), y: 3+Math.floor(Math.random()*9)}));
+    }
+    ctx.fillStyle = '#8a5a33';
+    P.spots.forEach(s => ctx.fillRect(ox + s.x*8 + 1, oy + s.y*8 + 1, 7, 7));
+  } else { P.spots = []; P.spotsFlag = -1; }
+  // 果冻王 → 头顶金冠
+  if(P.stage >= 2){
+    ctx.fillStyle = '#ffc53d';
+    ctx.fillRect(ox + 4*8, oy - 8, 16*8 - 32, 8);
+    ctx.fillRect(ox + 4*8, oy - 16, 16, 8);
+    ctx.fillRect(ox + 7*8, oy - 16, 16, 8);
+    ctx.fillRect(ox + 10*8, oy - 16, 16, 8);
+    ctx.fillStyle = '#ff3d5a';
+    ctx.fillRect(ox + 6*8, oy - 5, 8, 5);
+    ctx.fillRect(ox + 9*8, oy - 5, 8, 5);
+  }
   ctx.restore();
-  // 状态与数值（每 15 帧刷新一次）
+  // --- 数值流转 & 存档 ---
   P.frameN++;
-  if(P.frameN % 15 === 0){
+  const dec = sleeping ? 240 : 90;
+  if(P.frameN % dec === 0){
     P.hunger = Math.max(0, P.hunger - 1);
     P.mood = Math.max(0, P.mood - 1);
+    if(!sleeping) P.clean = Math.max(0, P.clean - 1);
     updatePetUI(P);
+    if(P.frameN % 240 === 0) petSave();
   }
 }
 function updatePetUI(P){
-  const h = $('#petHunger'), m = $('#petMood');
+  const h = $('#petHunger'), m = $('#petMood'), c = $('#petClean');
   if(h) h.style.width = P.hunger + '%';
   if(m) m.style.width = P.mood + '%';
+  if(c) c.style.width = P.clean + '%';
   if(!P.status) return;
+  const t = performance.now();
+  if(P.bathActive){ P.status.textContent = '泡泡中… 已点破 ' + P.bathActive.score + ' 个'; return; }
+  if(petIsSleeping(P, t)){ P.status.textContent = '呼…呼…（睡着了）'; return; }
+  if(P.eatUntil > t){ P.status.textContent = '啊呜啊呜！'; return; }
+  if(P.spicyUntil > t){ P.status.textContent = '辣辣辣辣！'; return; }
   if(P.hunger >= 100) P.status.textContent = '吃撑了，动不了';
-  else if(P.hunger <= 20) P.status.textContent = '好饿……求投喂';
+  else if(P.hunger <= 20) P.status.textContent = '好饿……想被投喂';
+  else if(P.clean <= 20) P.status.textContent = '泥巴巴的，想泡泡浴';
   else if(P.mood >= 75) P.status.textContent = '开心得冒泡泡';
   else if(P.mood <= 20) P.status.textContent = '有点低落，摸摸我';
   else P.status.textContent = '状态不错';
 }
 function feedPet(){
   const P = pet; if(!P) return;
-  if(P.hunger >= 100){ P.status.textContent = '吃撑了！再喂要吐了'; gsfx('no'); return; }
-  P.hunger = Math.min(100, P.hunger + 25);
-  P.mood = Math.min(100, P.mood + 5);
-  P.eatUntil = performance.now() + 1400;
-  gsfx('chomp'); vibK('small');
+  const t = performance.now();
+  const wasSleeping = petIsSleeping(P, t);
+  if(P.hunger >= 98 && !wasSleeping){ P.status.textContent = '吃撑了！再喂要吐了'; gsfx('no'); showBubble(P, '真的吃不下啦…'); return; }
+  const f = PET_FOODS[Math.floor(Math.random()*PET_FOODS.length)];
+  P.hunger = Math.min(100, P.hunger + f.h);
+  P.mood = Math.min(100, P.mood + f.m);
+  P.clean = Math.max(0, P.clean + f.c);
+  P.feeds++;
+  P.eatUntil = t + 1400;
+  if(wasSleeping){
+    P.awakeUntil = t + 6000;
+    gsfx('chomp'); vibK('small');
+    showBubble(P, '睡得再香也放不下' + f.n + '！');
+  } else if(f.spicy){
+    P.spicyUntil = t + 1700;
+    P.hopUntil = t + 800;
+    gsfx('boom'); vibK('boom');
+    showBubble(P, f.n + '！辣辣辣辣！！');
+  } else {
+    gsfx('chomp'); vibK('small');
+    showBubble(P, f.n + '！' + f.tag);
+  }
   updatePetUI(P);
+  petSave();
 }
 function patPet(P, stage){
   if(!P) return;
+  const t = performance.now();
+  P.pats++;
+  if(petIsSleeping(P, t)){
+    P.awakeUntil = t + 1500;
+    showBubble(P, '呼……别吵我睡觉啦');
+    gsfx('tick', 300); vibK('tick');
+    updatePetUI(P);
+    return;
+  }
   P.mood = Math.min(100, P.mood + 15);
-  P.happyUntil = performance.now() + 1600;
+  P.happyUntil = t + 1600;
   gsfx('ok', 200); vibK('tick');
   spawnHearts(stage);
+  showBubble(P, '被摸得软乎乎~');
   updatePetUI(P);
+}
+function startBath(P){
+  if(P.bathActive) return;
+  if(P.clean >= 100){ showBubble(P, '已经香喷喷的啦！'); gsfx('ok'); return; }
+  P.bathActive = { t0: performance.now(), score: 0, lastSpawn: 0 };
+  showBubble(P, '搓泡泡咯~ 3 秒内狂点小泡泡！');
+  gsfx('sweep'); vibK('small');
+  updatePetUI(P);
+}
+function stepBath(P, t){
+  const B = P.bathActive;
+  if(t - B.lastSpawn > 320){
+    B.lastSpawn = t;
+    const st = P.stageEl;
+    const sz = 26 + Math.random()*26;
+    const b = document.createElement('button');
+    b.className = 'bath-bubble';
+    b.style.width = sz + 'px';
+    b.style.height = sz + 'px';
+    b.style.left = (6 + Math.random()*74) + '%';
+    b.style.top = (8 + Math.random()*55) + '%';
+    b.addEventListener('click', () => {
+      B.score++;
+      b.remove();
+      gsfx('point', 60); vibK('tick');
+      updatePetUI(P);
+    });
+    st.appendChild(b);
+  }
+  if(t - B.t0 > 3200){
+    const st = P.stageEl;
+    st.querySelectorAll('.bath-bubble').forEach(x => x.remove());
+    const bonus = 15 + B.score*5;
+    P.clean = Math.min(100, P.clean + bonus);
+    P.mood = Math.min(100, P.mood + (B.score > 4 ? 8 : 3));
+    showBubble(P, '洗得亮晶晶的（点破 ' + B.score + ' 个泡泡）');
+    gsfx('sweep'); vibK('small');
+    P.bathActive = null;
+    updatePetUI(P);
+    petSave();
+  }
 }
 function spawnHearts(stage){
   for(let i=0;i<3;i++){
