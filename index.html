@@ -470,7 +470,7 @@ body.no-crt .scanlines{display:none}
       </svg>
       <div>
         <h1>像素屋</h1>
-        <div class="tagline">PIXEL HOUSE v3.2.4</div>
+        <div class="tagline">PIXEL HOUSE v3.2.5</div>
       </div>
     </div>
     <div class="hdr-actions">
@@ -501,6 +501,16 @@ body.no-crt .scanlines{display:none}
       <div id="gameLobby" class="lobby">
         <p class="view-tip">选一款小游戏开玩，分数自动保存在本地。</p>
         <div class="card-grid">
+          <button class="game-card" data-game="dice" type="button">
+            <span class="card-icon" aria-hidden="true">
+              <svg width="40" height="40" viewBox="0 0 32 32">
+                <rect x="5" y="5" width="22" height="22" fill="#eef0ff"/>
+                <rect x="9" y="9" width="4" height="4" fill="#0b0c18"/><rect x="19" y="19" width="4" height="4" fill="#0b0c18"/><rect x="14" y="14" width="4" height="4" fill="#0b0c18"/>
+              </svg>
+            </span>
+            <span class="card-name">掷骰子</span>
+            <span class="card-desc">双手一抛，见证点数与运势</span>
+          </button>
           <button class="game-card" data-game="snake" type="button">
             <span class="card-icon" aria-hidden="true">
               <svg width="40" height="40" viewBox="0 0 32 32">
@@ -681,16 +691,6 @@ body.no-crt .scanlines{display:none}
             </span>
             <span class="card-name">幸运转盘</span>
             <span class="card-desc">转一下，看看今天的运气</span>
-          </button>
-          <button class="game-card" data-game="dice" type="button">
-            <span class="card-icon" aria-hidden="true">
-              <svg width="40" height="40" viewBox="0 0 32 32">
-                <rect x="5" y="5" width="22" height="22" fill="#eef0ff"/>
-                <rect x="9" y="9" width="4" height="4" fill="#0b0c18"/><rect x="19" y="19" width="4" height="4" fill="#0b0c18"/><rect x="14" y="14" width="4" height="4" fill="#0b0c18"/>
-              </svg>
-            </span>
-            <span class="card-name">掷骰子</span>
-            <span class="card-desc">双手一抛，见证点数与运势</span>
           </button>
           <button class="game-card" data-game="reflex" type="button">
             <span class="card-icon" aria-hidden="true">
@@ -3447,6 +3447,9 @@ function sfxDice(onEnd){
 function sfxDiceStop(){ if(diceAudio){ diceAudio.onended=null; diceAudio.pause(); diceAudio=null; } }
 /* 手机振动：安卓 navigator.vibrate 支持；iOS/电脑无此 API 自动静默 */
 function vib(p){ try{ if(navigator&&navigator.vibrate) navigator.vibrate(p); }catch(e){} }
+function vibStop(){ try{ if(navigator&&navigator.vibrate) navigator.vibrate(0); }catch(e){} }
+/* 骰子滚动震感：25ms震+70ms间隔循环，总长≈2.4s（比最长音效富余，settle 时掐断） */
+const RATTLE_VIB=(function(){ const a=[]; for(let i=0;i<25;i++) a.push(25,70); return a; })();
 let dice = null;
 /* 摇一摇：手机重力传感器触发掷骰（devicemotion） */
 let diceShake=false, shakePrev=null, shakeLastT=0, shakeBound=false, shakeGot=false;
@@ -3544,11 +3547,11 @@ GAMES.dice = {
         $('#diSix').textContent=D.six;
         total.textContent='总和：'+roundSum;
         sfx.pop();
-        vib(15);  // 落定轻震一下（安卓）
+        vibStop(); vib(15);  // 掐断滚动震感，落定轻震一下收尾（安卓）
       };
       // 声音有多久动画就有多久：onended（或兜底）触发 settle
       const a=sfxDice(settle);
-      vib([30,60,30]);  // 掷出瞬间的短促节奏（安卓；iOS/电脑自动忽略）
+      vib(RATTLE_VIB);  // 滚动全程：哒-哒-哒磙动节奏（安卓；iOS/电脑自动忽略）
       let frame=0;
       rollInterval=D.iv=setInterval(()=>{
         diceValues=[];
