@@ -217,6 +217,13 @@ body.no-crt .scanlines{display:none}
 .note-time{font-size:11px; color:var(--muted,#8a8fc7)}
 .note-acts{display:flex; gap:6px}
 .note-acts .px-btn{padding:4px 10px; font-size:11px}
+.life-tag{display:inline-block; font-size:11px; color:#0b0c18; background:var(--yellow,#ffc53d); padding:1px 8px; margin:6px 0 0}
+.life-claim{margin:8px 0 6px; font-size:14px; line-height:1.8}
+.life-why{margin:0; font-size:12px; color:var(--muted,#8a8fc7); line-height:1.8}
+.life-card{border:2px solid var(--line,#0b0c18); background:var(--panel2,#1f2140); box-shadow:4px 4px 0 rgba(0,0,0,.4); padding:12px; margin-bottom:12px}
+.life-card .life-why{margin-top:4px}
+.life-verdict{font-size:12px; margin-top:8px}
+.life-ok{color:#6be27a} .life-no{color:#ff7b7b}
 .note-fold{padding:2px 10px; font-size:11px; color:var(--muted,#8a8fc7); margin-left:auto}
 .random-card{
   background:var(--panel); border:3px solid var(--line); box-shadow:5px 5px 0 0 rgba(0,0,0,.5);
@@ -462,7 +469,7 @@ body.no-crt .scanlines{display:none}
       </svg>
       <div>
         <h1>像素屋</h1>
-        <div class="tagline">PIXEL HOUSE v3.1.6</div>
+        <div class="tagline">PIXEL HOUSE v3.2.0</div>
       </div>
     </div>
     <div class="hdr-actions">
@@ -481,6 +488,7 @@ body.no-crt .scanlines{display:none}
     <button class="tab-btn" data-tab="story" type="button">睡前故事</button>
     <button class="tab-btn" data-tab="vocab" type="button">每日背单词</button>
     <button class="tab-btn" data-tab="movies" type="button">电影推荐</button>
+    <button class="tab-btn" data-tab="life" type="button">生活妙招</button>
     <button class="tab-btn" data-tab="notes" type="button">随手记</button>
     <button class="tab-btn" data-tab="toys" type="button">互动玩具</button>
   </nav>
@@ -1168,6 +1176,42 @@ body.no-crt .scanlines{display:none}
       </div>
     </section>
 
+    <!-- ===== 视图：生活妙招 ===== -->
+    <section id="view-life" class="view">
+      <div class="lobby">
+        <p class="view-tip">生活妙招 · 每天一条靠谱小常识 · 底部还有真假 5 连测</p>
+        <div class="vocab-hero">
+          <div class="story-top">
+            <span class="speak-lv">☀ 今日妙招</span>
+            <h2 id="lifeDailyTitle">今日一条</h2>
+            <button id="lifeFavDaily" class="px-btn ghost" type="button">☆</button>
+          </div>
+          <span id="lifeDailyTag" class="life-tag">厨房</span>
+          <p id="lifeDailyClaim" class="life-claim">加载中…</p>
+          <p id="lifeDailyWhy" class="life-why"></p>
+          <div class="story-tools">
+            <button id="lifeDailyBtn" class="px-btn yellow" type="button">🎲 换一条看看</button>
+          </div>
+        </div>
+        <div class="poem-tools">
+          <input id="lifeSearch" class="poem-search" type="text" placeholder="搜妙招关键词…" />
+        </div>
+        <div class="poem-tools" id="lifeChips"></div>
+        <p class="view-tip" id="lifeStat">共 0 条</p>
+        <div id="lifeList"></div>
+        <div class="pager" id="lifePager" aria-label="妙招分页"></div>
+        <div class="vocab-hero">
+          <div class="story-top">
+            <span class="speak-lv">🎲 真假 5 连测</span>
+            <h2 id="lifeQuizTitle">敢不敢连对 5 题</h2>
+            <span id="lifeQuizBest" class="story-moon">🏆 0</span>
+          </div>
+          <p id="lifeQuizIntro" class="story-night">每题一个说法，判断真假，连对越多越厉害。</p>
+          <div id="lifeQuizBody"></div>
+        </div>
+      </div>
+    </section>
+
     <!-- ===== 视图：随手记 ===== -->
     <section id="view-notes" class="view">
       <div id="noteLobby" class="lobby">
@@ -1581,6 +1625,7 @@ body.no-crt .scanlines{display:none}
 </div>
 
 <script src="data/movies.js"></script>
+<script src="data/life.js"></script>
 <script src="data/site.js"></script>
 <script>
 "use strict";
@@ -1636,7 +1681,7 @@ $('#crtBtn').addEventListener('click', ()=>{ crtOn=!crtOn; syncHeader(); sfx.cli
 $('#muteBtn').addEventListener('click', ()=>{ muted=!muted; store.set('muted', muted); syncHeader(); if(!muted) sfx.click(); });
 
 /* ---------- 标签页切换（支持 hash） ---------- */
-const VIEWS = { games:'view-games', random:'view-random', poems:'view-poems', speak:'view-speak', food:'view-food', story:'view-story', vocab:'view-vocab', movies:'view-movies', notes:'view-notes', toys:'view-toys' };
+const VIEWS = { games:'view-games', random:'view-random', poems:'view-poems', speak:'view-speak', food:'view-food', story:'view-story', vocab:'view-vocab', movies:'view-movies', life:'view-life', notes:'view-notes', toys:'view-toys' };
 const state = { tab:'games', game:null, toy:null };
 
 function stopActive(){
@@ -8161,6 +8206,136 @@ renderNotes(); noteBtnState(); noteSyncUi(); noteSyncFold(); if(noteToken) noteS
     if(t) history.replaceState(null,'',location.pathname+location.hash);
   }catch(e){}
 })();
+
+/* ---------- 生活妙招 ---------- */
+const LIFE_CATS=(function(){ const s={}; LIFE.forEach(x=>{ s[x.c]=1; }); return Object.keys(s); })();
+let lifeFav=store.get('life.favs', []);
+if(!Array.isArray(lifeFav)) lifeFav=[];
+let lifeCat='全部', lifeQ='';
+let lifeQuiz=null, lifeSlide=0;
+function lifeTodayIdx(){
+  const d=new Date();
+  return (d.getFullYear()*372+(d.getMonth()+1)*31+d.getDate())%LIFE.length;
+}
+function renderLifeDaily(){
+  const i=lifeTodayIdx(), n=LIFE[i];
+  $('#lifeDailyTag').textContent='【'+n.c+'】'+(n.v?'真':'假')+'话';
+  $('#lifeDailyClaim').textContent=n.t;
+  $('#lifeDailyWhy').textContent='为什么：'+n.w;
+  lifeFavBtn();
+}
+function lifeFavBtn(){ $('#lifeFavDaily').textContent=lifeFav.indexOf(lifeTodayIdx())>=0?'★':'☆'; }
+$('#lifeFavDaily').addEventListener('click', ()=>{
+  const i=lifeTodayIdx(), k=lifeFav.indexOf(i);
+  if(k>=0) lifeFav.splice(k,1); else lifeFav.push(i);
+  store.set('life.favs', lifeFav); lifeFavBtn();
+  renderLifeList(); sfx.point();
+});
+$('#lifeDailyBtn').addEventListener('click', ()=>{
+  let i=lifeTodayIdx();
+  while(LIFE.length>1&&i===lifeTodayIdx()) i=Math.floor(Math.random()*LIFE.length);
+  renderLifeDaily._custom=i;
+  const n=LIFE[i];
+  $('#lifeDailyTag').textContent='【'+n.c+'】'+(n.v?'真':'假')+'话';
+  $('#lifeDailyClaim').textContent=n.t;
+  $('#lifeDailyWhy').textContent='为什么：'+n.w;
+  sfx.pop();
+});
+function renderLifeChips(){
+  $('#lifeChips').innerHTML=['全部'].concat(LIFE_CATS).map(c=>
+    '<button class="px-btn'+(lifeCat===c?' yellow':' ghost')+'" data-life-cat="'+c+'" type="button">'+c+'</button>'
+  ).join(' ');
+}
+$('#lifeChips').addEventListener('click', e=>{
+  const b=e.target.closest('[data-life-cat]'); if(!b) return;
+  lifeCat=b.dataset.lifeCat; renderLifeChips(); renderLifeList(); sfx.click();
+});
+$('#lifeSearch').addEventListener('input', e=>{ lifeQ=e.target.value.trim(); renderLifeList(); });
+function lifeIdx(){
+  const q=lifeQ.toLowerCase();
+  return LIFE.map((n,i)=>i).filter(i=>{
+    const n=LIFE[i];
+    return (lifeCat==='全部'||n.c===lifeCat)&&(!q||((n.t+n.w+n.c).toLowerCase().indexOf(q)>=0));
+  }).sort((a,b)=>{ const fa=lifeFav.indexOf(a)>=0?0:1, fb=lifeFav.indexOf(b)>=0?0:1; return fa-fb||a-b; });
+}
+function renderLifeList(){
+  const idx=lifeIdx();
+  $('#lifeStat').textContent=lifeQ?('筛出 '+idx.length+' / 共 '+LIFE.length+' 条'):('收藏 '+lifeFav.length+' · 共 '+LIFE.length+' 条');
+  $('#lifeList').innerHTML=idx.map(i=>{
+    const n=LIFE[i];
+    return '<div class="life-card" data-li="'+i+'">'
+      +'<span class="life-tag">'+n.c+'</span>'
+      +'<p class="life-claim">'+escHtml(n.t)+'</p>'
+      +'<p class="life-why">'+(n.v?'✔ 是真的：':'✘ 是谣言：')+escHtml(n.w)+'</p>'
+      +'<div style="text-align:right"><button class="px-btn ghost" data-life-fav="'+i+'" type="button">'+(lifeFav.indexOf(i)>=0?'★ 已收藏':'☆ 收藏')+'</button></div>'
+      +'</div>';
+  }).join('');
+  initPager('#lifePager', '#lifeList .life-card', 12);
+}
+$('#lifeList').addEventListener('click', e=>{
+  const b=e.target.closest('[data-life-fav]'); if(!b) return;
+  const i=Number(b.dataset.lifeFav), k=lifeFav.indexOf(i);
+  if(k>=0) lifeFav.splice(k,1); else lifeFav.push(i);
+  store.set('life.favs', lifeFav); renderLifeList(); sfx.point();
+});
+function lifeBest(){ return store.get('life.best', 0); }
+function lifeQuizStart(){
+  const order=[];
+  const pool=LIFE.map((n,i)=>i);
+  while(order.length<Math.min(5, pool.length)){
+    const k=Math.floor(Math.random()*pool.length);
+    order.push(pool.splice(k,1)[0]);
+  }
+  lifeQuiz={order, step:0, right:0, pick:null};
+  lifeQuizTitle(); renderLifeQuiz(); sfx.win();
+}
+function lifeQuizTitle(){
+  $('#lifeQuizTitle').textContent=!lifeQuiz?'敢不敢连对 5 题':(lifeQuiz.step>=lifeQuiz.order.length?('连对 '+lifeQuiz.right+' 题'):('第 '+(lifeQuiz.step+1)+' / '+lifeQuiz.order.length+' 题'));
+  $('#lifeQuizBest').textContent='🏆 '+lifeBest();
+}
+function renderLifeQuiz(){
+  const box=$('#lifeQuizBody');
+  if(!lifeQuiz){
+    box.innerHTML='<div class="story-tools"><button id="lifeQuizGo" class="px-btn yellow" type="button">▶ 开始 5 连测</button></div>';
+    return;
+  }
+  if(lifeQuiz.step>=lifeQuiz.order.length){
+    const best=Math.max(lifeBest(), lifeQuiz.right);
+    store.set('life.best', best);
+    const grade=lifeQuiz.right>=5?'🎉 满连对！生活达人':(lifeQuiz.right>=3?'👍 不错，有一手':'😅 又涨了知识');
+    box.innerHTML='<p class="life-claim">本轮连对 '+lifeQuiz.right+' / '+lifeQuiz.order.length+' 题，'+grade+'</p>'
+      +'<p class="life-why">历史最佳连对 '+best+' 题</p>'
+      +'<div class="story-tools"><button id="lifeQuizGo" class="px-btn yellow" type="button">↺ 再来一轮</button></div>';
+    lifeQuizTitle(); lifeQuiz=null;
+    $('#lifeQuizGo').addEventListener('click', lifeQuizStart);
+    return;
+  }
+  const n=LIFE[lifeQuiz.order[lifeQuiz.step]];
+  if(lifeQuiz.pick===null){
+    box.innerHTML='<span class="life-tag">'+n.c+'</span>'
+      +'<p class="life-claim">'+escHtml(n.t)+'</p>'
+      +'<div class="story-tools">'
+      +'<button class="px-btn green" data-lq="1" type="button">✔ 真</button>'
+      +'<button class="px-btn ghost" data-lq="0" type="button">✘ 假</button>'
+      +'</div>';
+  } else {
+    const right=lifeQuiz.pick===n.v;
+    if(right) lifeQuiz.right++;
+    box.innerHTML='<span class="life-tag">'+n.c+'</span>'
+      +'<p class="life-claim">'+escHtml(n.t)+'</p>'
+      +'<p class="life-verdict '+(right?'life-ok':'life-no')+'">'+(right?'✔ 答对了':'✘ 答错了')+'——这说法是<strong>'+(n.v?'真':'假')+'</strong>的</p>'
+      +'<p class="life-why">'+escHtml(n.w)+'</p>'
+      +'<div class="story-tools"><button id="lifeQuizNext" class="px-btn yellow" type="button">下一题 →</button></div>';
+  }
+  lifeQuizTitle();
+}
+$('#lifeQuizBody').addEventListener('click', e=>{
+  const a=e.target.closest('[data-lq]');
+  if(a){ lifeQuiz.pick=Number(a.dataset.lq); renderLifeQuiz(); sfx.click(); return; }
+  if(e.target.id==='lifeQuizNext'){ lifeQuiz.step++; lifeQuiz.pick=null; renderLifeQuiz(); return; }
+  if(e.target.id==='lifeQuizGo'){ lifeQuizStart(); return; }
+});
+renderLifeChips(); renderLifeDaily(); renderLifeList(); renderLifeQuiz(); $('#lifeQuizBest').textContent='🏆 '+lifeBest();
 
 /* ---------- 启动 ---------- */
 
