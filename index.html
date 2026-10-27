@@ -421,6 +421,7 @@ body.no-crt .scanlines{display:none}
 .dice-dot.on.red{background:#d4312a}
 .dice-dot.big{box-shadow:0 0 0 9px #d4312a}
 .dice-total{text-align:center;font-family:'Press Start 2P',monospace;font-size:13px;color:var(--green);margin-bottom:14px}
+.dice-shake-msg{font-size:11px;color:var(--muted,#8a8fc7);text-align:center;margin:8px 0 0;min-height:1em}
 .reflex-pad{height:220px;background:var(--panel2);border:4px solid var(--line);box-shadow:6px 6px 0 rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:17px;color:var(--muted);text-align:center;user-select:none}
 .reflex-pad.wait{background:#2c2d5c}
 .reflex-pad.green{background:var(--green);color:var(--line)}
@@ -469,7 +470,7 @@ body.no-crt .scanlines{display:none}
       </svg>
       <div>
         <h1>像素屋</h1>
-        <div class="tagline">PIXEL HOUSE v3.2.2</div>
+        <div class="tagline">PIXEL HOUSE v3.2.3</div>
       </div>
     </div>
     <div class="hdr-actions">
@@ -3445,6 +3446,44 @@ function sfxDice(onEnd){
 }
 function sfxDiceStop(){ if(diceAudio){ diceAudio.onended=null; diceAudio.pause(); diceAudio=null; } }
 let dice = null;
+/* 摇一摇：手机重力传感器触发掷骰（devicemotion） */
+let diceShake=false, shakePrev=null, shakeLastT=0, shakeBound=false, shakeGot=false;
+function diceShakeUpdate(){
+  if(dice && dice.shakeBtn){
+    dice.shakeBtn.textContent='📱 摇一摇：'+(diceShake?'开':'关');
+    dice.shakeBtn.classList.toggle('yellow', diceShake);
+  }
+}
+function shakeDevMotion(e){
+  const a=e && (e.accelerationIncludingGravity||e.acceleration);
+  if(!a||a.x==null) return;
+  shakeGot=true;
+  if(!diceShake||!dice||!dice.roll) return;
+  const t=Date.now();
+  if(shakePrev){
+    const d=Math.abs(a.x-shakePrev.x)+Math.abs(a.y-shakePrev.y)+Math.abs(a.z-shakePrev.z);
+    if(d>=20&&t-shakeLastT>=1200){ shakeLastT=t; dice.roll(); }
+  }
+  shakePrev={x:a.x,y:a.y,z:a.z};
+}
+function diceShakeToggle(){
+  if(diceShake){ diceShake=false; diceShakeUpdate(); return; }
+  const start=()=>{
+    if(!shakeBound){ window.addEventListener('devicemotion', shakeDevMotion); shakeBound=true; }
+    shakePrev=null; shakeLastT=0; shakeGot=false;
+    diceShake=true; diceShakeUpdate(); sfx.point();
+    // 2.5s 内没收到任何传感器数据：多半是电脑访问或浏览器不支持
+    setTimeout(()=>{ if(diceShake&&!shakeGot&&dice&&dice.shakeMsg) dice.shakeMsg.textContent='⚠ 没有收到传感器数据，摇一摇需要用手机浏览器访问'; }, 2500);
+  };
+  // iOS 13+ 需要用户手势里主动请求权限
+  const req=window.DeviceMotionEvent&&typeof DeviceMotionEvent.requestPermission==='function';
+  if(req){
+    DeviceMotionEvent.requestPermission().then(s=>{
+      if(s==='granted') start();
+      else if(dice&&dice.shakeMsg) dice.shakeMsg.textContent='⚠ 动作权限被拒：Safari 设置 → 网站设置 → 动作与方向 → 允许';
+    }).catch(()=>{ if(dice&&dice.shakeMsg) dice.shakeMsg.textContent='⚠ 权限请求失败，请再试一次（注意必须是 https 页面）'; });
+  }else start();
+}
 GAMES.dice = {
   title:'掷骰子',
   mount(mountEl, statsEl){
@@ -3463,9 +3502,20 @@ GAMES.dice = {
     mountEl.appendChild(total);
     const btn=document.createElement('button'); btn.className='px-btn big green'; btn.textContent='掷骰子';
     mountEl.appendChild(btn);
+    // 摇一摇开关（手机才显示：需传感器事件能力 + 触摸设备；电脑上不出现）
+    if(window.DeviceMotionEvent&&((navigator.maxTouchPoints||0)>0||'ontouchstart' in window)){
+      const sb=document.createElement('button'); sb.className='px-btn ghost'; sb.type='button';
+      sb.textContent='📱 摇一摇：'+(diceShake?'开':'关');
+      mountEl.appendChild(sb);
+      const sm=document.createElement('p'); sm.className='dice-shake-msg'; sm.textContent='';
+      mountEl.appendChild(sm);
+      D.shakeBtn=sb; D.shakeMsg=sm;
+      sb.addEventListener('click', diceShakeToggle);
+      if(diceShake){ sb.classList.add('yellow'); }
+    }
     let rollInterval = null;
     let diceValues = [];
-    btn.addEventListener('click', ()=>{
+    const roll=()=>{
       if(rollInterval) clearInterval(rollInterval);
       sfxDiceStop();
       D.rolls++;
@@ -3506,7 +3556,9 @@ GAMES.dice = {
         // 静音/无声环境下 1.2s 自动落定
         if(!a && frame>=24) settle();
       }, 50);
-    });
+    };
+    btn.addEventListener('click', roll);
+    D.roll=roll;
   },
   destroy(){ if(dice && dice.iv){ clearInterval(dice.iv); dice.iv=null; } sfxDiceStop(); dice=null; }
 };
