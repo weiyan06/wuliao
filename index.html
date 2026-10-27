@@ -470,7 +470,7 @@ body.no-crt .scanlines{display:none}
       </svg>
       <div>
         <h1>像素屋</h1>
-        <div class="tagline">PIXEL HOUSE v3.2.3</div>
+        <div class="tagline">PIXEL HOUSE v3.2.4</div>
       </div>
     </div>
     <div class="hdr-actions">
@@ -3445,6 +3445,8 @@ function sfxDice(onEnd){
   }catch(e){ return null; }
 }
 function sfxDiceStop(){ if(diceAudio){ diceAudio.onended=null; diceAudio.pause(); diceAudio=null; } }
+/* 手机振动：安卓 navigator.vibrate 支持；iOS/电脑无此 API 自动静默 */
+function vib(p){ try{ if(navigator&&navigator.vibrate) navigator.vibrate(p); }catch(e){} }
 let dice = null;
 /* 摇一摇：手机重力传感器触发掷骰（devicemotion） */
 let diceShake=false, shakePrev=null, shakeLastT=0, shakeBound=false, shakeGot=false;
@@ -3542,9 +3544,11 @@ GAMES.dice = {
         $('#diSix').textContent=D.six;
         total.textContent='总和：'+roundSum;
         sfx.pop();
+        vib(15);  // 落定轻震一下（安卓）
       };
       // 声音有多久动画就有多久：onended（或兜底）触发 settle
       const a=sfxDice(settle);
+      vib([30,60,30]);  // 掷出瞬间的短促节奏（安卓；iOS/电脑自动忽略）
       let frame=0;
       rollInterval=D.iv=setInterval(()=>{
         diceValues=[];
