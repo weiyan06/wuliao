@@ -461,7 +461,7 @@ body.no-crt .scanlines{display:none}
       </svg>
       <div>
         <h1>像素快乐星球</h1>
-        <div class="tagline">BOREDOM KILLER v3.1.1</div>
+        <div class="tagline">BOREDOM KILLER v3.1.2</div>
       </div>
     </div>
     <div class="hdr-actions">
@@ -8088,11 +8088,16 @@ function noteSyncNow(){
   if(noteSyncBusy){ noteSyncQueued=true; return Promise.resolve(); }
   noteSyncBusy=true; noteSyncUi('busy');
   let gid=store.get('notes.gist','');
-  const ensure=gid?Promise.resolve({id:gid}):noteGh('/gists?per_page=100','GET').then(list=>{
+  const discover=noteGh('/gists?per_page=100','GET').then(list=>{
     const hit=(list||[]).find(g=>((g.description||'').indexOf(GIST_MARK)>=0)||(g.files&&g.files[GIST_FILE]));
     if(hit) return hit;
     return noteGh('/gists','POST',{ description:'像素快乐星球 · 随手记 ('+GIST_MARK+')', public:false, files:(function(){ const o={}; o[GIST_FILE]={content:'[]'}; return o; })() });
   });
+  const ensure=gid?noteGh('/gists/'+gid,'GET').catch(e=>{
+    if(String(e&&e.message||'').indexOf('404')<0) throw e;
+    store.set('notes.gist','');
+    return discover;
+  }):discover;
   return ensure.then(g=>{ gid=g.id; store.set('notes.gist',gid); return noteGh('/gists/'+gid,'GET'); })
     .then(g=>{
       let remote=[];
