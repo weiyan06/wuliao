@@ -665,7 +665,7 @@ body.konami-on .wrap{animation:konamiHue .9s steps(6) infinite}
       </svg>
       <div>
         <h1>像素屋</h1>
-        <div class="tagline">PIXEL HOUSE v3.7.2</div>
+        <div class="tagline">PIXEL HOUSE v3.7.3</div>
       </div>
     </div>
     <div class="hdr-actions">
@@ -12284,6 +12284,7 @@ async function nesImportFiles(files){
     let got = null;
     try{
       got = /\.zip$/i.test(f.name) ? await nesZipExtract(await f.arrayBuffer()) : await nesFileBytes(f);
+      if(got && got.zip && f.name) got.name = f.name.replace(/\.zip$/i, '');   // zip 导入优先用 zip 文件名（整理过的中文名直接上卡带架）
     }catch(err){
       bad++; nesToast((err && err.message) || '解析失败，换个文件试试'); continue;
     }
