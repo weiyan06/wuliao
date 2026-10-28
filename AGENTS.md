@@ -104,6 +104,7 @@
 
 ## 版本历史（摘要）
 
+- **v3.7.5 默认键位按用户习惯重设 + 真连发**：P1 = WASD 移动 · J=B(攻击) · K=A(跳跃) · U=连发攻击 · I=连发跳跃 · 数字1=确定 · 数字3=选择；P2 = 方向键 · 小键盘1(B)/2(A)/4(TB)/5(TA) · 小键盘Enter=确定 · 右Shift=选择；连发键为软件实现（按住时主循环每 55ms 翻转底层 A/B ≈18 次/秒，暂停/失焦/停止自动释放防卡键）；`nesKeysLoad` 检测 v3.7.4 旧结构（缺 TA/TB）整体换新默认，新结构只补缺失项（自定义保留）
 - **v3.7.4 双人可自定义按键 + 卡带架清空**：`nesKeys` 键位映射（localStorage `nes.keys`，值=e.code），P1 默认 方向键+Z(B)/X(A)+Enter/右Shift、P2 默认 WASD+K(A)/J(B)+I(START)/U(SELECT)（4399 双人风格，双人分坐键盘两边）；大厅「按键设置 · 双人」卡片 + 游戏内「按键」按钮（自动暂停）进 `#nesKeysView`：点框→按键即绑（抢占式去重、Esc 取消、恢复默认），jsnes 双打 `buttonDown(2,…)` 接通，`S.down` 改为 `p:btn` 键；导入命名统一走 `nesPrettyName`（zip 文件名优先，点号→空格、剥 (J)(JU)(Chs) 等尾巴）；卡带架新增「🗑 清空卡带架」（确认后批量删 IndexedDB）
 - **v3.7.3 zip 导入用 zip 文件名**：卡带架导入 .zip 时 ROM 名优先取 zip 文件名（去 .zip），整理过中文名的 zip 包直接在卡带架显示中文名
 - **v3.7.2 我的卡带架**：复古游戏厅 ROM 本机持久化——导入的 .nes/.zip 存 IndexedDB `wuliao-nes-carts`（只存用户设备，网站/仓库零 ROM 字节）；大厅新卡片「我的卡带架 · N 张」→ 管理视图（玩/改名/删除，`#nesRackView`）；「载入 ROM」支持一次多选批量导入（`nesImportFiles`，大厅导入自动开玩第一张、卡带架内导入只入架）；模拟器就绪时 `nesRackLoad()` 自动回灌 `nesUserRoms`，rom.id 改为稳定 `rack<key>`（本机存档跨会话可挂回）；卡带架不可用（隐私模式/空间不足）自动降级为会话内可玩

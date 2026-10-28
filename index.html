@@ -674,7 +674,7 @@ body.konami-on .wrap{animation:konamiHue .9s steps(6) infinite}
       </svg>
       <div>
         <h1>像素屋</h1>
-        <div class="tagline">PIXEL HOUSE v3.7.4</div>
+        <div class="tagline">PIXEL HOUSE v3.7.5</div>
       </div>
     </div>
     <div class="hdr-actions">
@@ -1995,7 +1995,7 @@ body.konami-on .wrap{animation:konamiHue .9s steps(6) infinite}
         <details class="nes-about">
           <summary>怎么玩 / 按键 / 版权说明</summary>
           <div class="nes-about-body">
-            <p><b>键盘</b>：默认 <b>玩家1</b> = 方向键移动 · <span class="kbd">X</span> = A · <span class="kbd">Z</span> = B · <span class="kbd">Enter</span> = Start · <span class="kbd">右Shift</span> = Select；<b>玩家2</b> = <span class="kbd">W A S D</span> 移动 · <span class="kbd">K</span> = A · <span class="kbd">J</span> = B · <span class="kbd">I</span> = Start · <span class="kbd">U</span> = Select。都可以改：大厅点「按键设置」，游戏里点「按键」。</p>
+            <p><b>键盘</b>：默认 <b>玩家1</b> = <span class="kbd">W A S D</span> 移动 · <span class="kbd">J</span> = 攻击 · <span class="kbd">K</span> = 跳跃 · <span class="kbd">U</span>/<span class="kbd">I</span> = 连发攻击/连发跳跃 · <span class="kbd">1</span> = 确定 · <span class="kbd">3</span> = 选择；<b>玩家2</b> = 方向键移动 · <span class="kbd">小键盘1</span> = 攻击 · <span class="kbd">2</span> = 跳跃 · <span class="kbd">4</span>/<span class="kbd">5</span> = 连发 · <span class="kbd">小键盘Enter</span> = 确定 · <span class="kbd">右Shift</span> = 选择。都可以改：大厅点「按键设置」，游戏里点「按键」。</p>
             <p><b>手机</b>：进入游戏后屏幕下方会出现虚拟手柄，横屏更好按。</p>
             <p><b>存档</b>：游戏面板里的「存档」把当前进度存进本机浏览器，换设备/清缓存就没了；它和游戏自带的电池存档是两回事。</p>
             <p><b>卡带架</b>：导入的 ROM 保存在你本机浏览器的 IndexedDB 里（只在这台设备上），换设备/清浏览器数据就没了；不占用网站空间，也不会上传。</p>
@@ -11736,18 +11736,25 @@ function konamiFire(){
    只内置可再分发的自制游戏；用户自己的 .nes 由 <input type=file> 本机读入，不上传、不落库。 */
 const NES_W = 256, NES_H = 240, NES_PX = NES_W * NES_H;
 const NES_STEP = 1000 / 60.0988;                 // NTSC 一帧 16.639ms
-/* ---- 按键映射：可自定义 + 双人（localStorage 持久化，键值为 e.code） ---- */
-const NES_BTN_ORDER = ['UP','DOWN','LEFT','RIGHT','A','B','START','SELECT'];
-const NES_BTN_LABELS = { UP:'上', DOWN:'下', LEFT:'左', RIGHT:'右', A:'A 键（跳 / 攻击）', B:'B 键（跑 / 连发）', START:'START（开始 / 暂停）', SELECT:'SELECT（切换）' };
+/* ---- 按键映射：可自定义 + 双人 + 连发（localStorage 持久化，键值为 e.code） ---- */
+const NES_BTN_ORDER = ['UP','DOWN','LEFT','RIGHT','B','A','TB','TA','START','SELECT'];
+const NES_BTN_LABELS = { UP:'上', DOWN:'下', LEFT:'左', RIGHT:'右', B:'B 键（攻击）', A:'A 键（跳跃）', TB:'连发 B（连发攻击）', TA:'连发 A（连发跳跃）', START:'START（确定 / 暂停）', SELECT:'SELECT（选择）' };
 const NES_KEYS_DEF = {
-  p1: { UP:'ArrowUp', DOWN:'ArrowDown', LEFT:'ArrowLeft', RIGHT:'ArrowRight', A:'KeyX', B:'KeyZ', START:'Enter', SELECT:'ShiftRight' },
-  p2: { UP:'KeyW', DOWN:'KeyS', LEFT:'KeyA', RIGHT:'KeyD', A:'KeyK', B:'KeyJ', START:'KeyI', SELECT:'KeyU' }
+  p1: { UP:'KeyW', DOWN:'KeyS', LEFT:'KeyA', RIGHT:'KeyD', B:'KeyJ', A:'KeyK', TB:'KeyU', TA:'KeyI', START:'Digit1', SELECT:'Digit3' },
+  p2: { UP:'ArrowUp', DOWN:'ArrowDown', LEFT:'ArrowLeft', RIGHT:'ArrowRight', B:'Numpad1', A:'Numpad2', TB:'Numpad4', TA:'Numpad5', START:'NumpadEnter', SELECT:'ShiftRight' }
 };
 let nesKeys = null;                                // {p1:{UP…},p2:{…}}，值为 e.code
 let nesKeyCapture = null;                          // 改键中：{p, btn, el}
 function nesKeysLoad(){
   const saved = store.get('nes.keys', null);
-  nesKeys = (saved && saved.p1 && saved.p2) ? saved : JSON.parse(JSON.stringify(NES_KEYS_DEF));
+  const def = JSON.parse(JSON.stringify(NES_KEYS_DEF));
+  if(saved && saved.p1 && saved.p2 && typeof saved.p1.TA !== 'undefined'){
+    // 新结构：尊重用户自定义，仅补缺失项
+    ['p1','p2'].forEach(p => NES_BTN_ORDER.forEach(b => { if(typeof saved[p][b] === 'undefined') saved[p][b] = def[p][b]; }));
+    nesKeys = saved;
+  } else {
+    nesKeys = def;   // 无存档或 v3.7.4 旧结构：整体用新默认键位
+  }
 }
 function nesKeysSave(){ store.set('nes.keys', nesKeys); }
 function nesKeyName(code){
@@ -11766,9 +11773,10 @@ function nesKeyName(code){
 function nesHintText(){
   if(!nesKeys) nesKeysLoad();
   const k = nesKeys, n = nesKeyName;
-  return 'P1：' + n(k.p1.UP) + n(k.p1.DOWN) + n(k.p1.LEFT) + n(k.p1.RIGHT) + ' 移动 · ' + n(k.p1.A) + ' = A · ' + n(k.p1.B) + ' = B · '
-    + n(k.p1.START) + ' = Start · ' + n(k.p1.SELECT) + ' = Select　｜　P2：' + n(k.p2.UP) + n(k.p2.DOWN) + n(k.p2.LEFT) + n(k.p2.RIGHT)
-    + ' 移动 · ' + n(k.p2.A) + ' = A · ' + n(k.p2.B) + ' = B · ' + n(k.p2.START) + ' = Start（游戏里点「按键」可自定义）';
+  const pad = p => n(k[p].UP) + n(k[p].DOWN) + n(k[p].LEFT) + n(k[p].RIGHT);
+  const act = p => n(k[p].B) + ' = 攻击 · ' + n(k[p].A) + ' = 跳跃 · ' + n(k[p].TB) + '/' + n(k[p].TA) + ' = 连发';
+  return 'P1：' + pad('p1') + ' 移动 · ' + act('p1') + ' · ' + n(k.p1.START) + ' = 确定 · ' + n(k.p1.SELECT) + ' = 选择　｜　P2：'
+    + pad('p2') + ' 移动 · ' + act('p2') + ' · ' + n(k.p2.START) + ' = 确定 · ' + n(k.p2.SELECT) + ' = 选择（游戏里点「按键」可自定义）';
 }
 const NES_CART_SVG = '<svg width="40" height="40" viewBox="0 0 32 32">'
   + '<rect x="4" y="3" width="24" height="26" fill="#2b2f45"/><rect x="6" y="5" width="20" height="12" fill="#4a5170"/>'
@@ -11864,7 +11872,7 @@ function renderNesLobby(){
   html += '<button class="game-card" id="nesKeysCard" type="button">'
     + '<span class="card-icon" aria-hidden="true">' + NES_KEYS_SVG + '</span>'
     + '<span class="card-name">按键设置 · 双人</span>'
-    + '<span class="card-desc">P1 方向键 + Z/X · P2 WASD + J/K，均可自定义</span>'
+    + '<span class="card-desc">P1 WASD+J/K · P2 方向键+小键盘，含连发键，均可自定义</span>'
     + '</button>';
   grid.innerHTML = html;
 }
@@ -11948,6 +11956,7 @@ function nesLoop(ts){
       return;
     }
     if(n >= 4) S.acc = 0;
+    nesTurboTick(S, ts);
   }
   nesAudioFlush(S);
   if(ts - S.fpsT > 600){
@@ -11989,6 +11998,43 @@ function nesKeyHit(code){
   }
   return null;
 }
+/* 连发键：按住时在主循环里自动快速点按底层 A/B（≈18 次/秒），松开即停 */
+const NES_TURBO_MS = 55;
+function nesTurboBtn(btn){ return btn === 'TA' ? 'A' : 'B'; }
+function nesTurbo(p, k, down){
+  const S = nesSession;
+  if(!S || !S.nes) return;
+  const key = p + ':' + k;
+  if(down){
+    if(S.turbo[key]) return;
+    S.turbo[key] = { on:false, t:0 };
+  } else {
+    const t = S.turbo[key];
+    if(!t) return;
+    if(t.on){ const code = nesBtnCode(nesTurboBtn(k)); if(code >= 0){ try{ S.nes.buttonUp(p, code); }catch(e){} } }
+    delete S.turbo[key];
+  }
+}
+function nesTurboTick(S, ts){
+  Object.keys(S.turbo).forEach(key => {
+    const i = key.indexOf(':'), p = Number(key.slice(0, i)), k = key.slice(i + 1);
+    const t = S.turbo[key];
+    if(ts - t.t < NES_TURBO_MS) return;
+    t.t = ts; t.on = !t.on;
+    const code = nesBtnCode(nesTurboBtn(k));
+    if(code < 0) return;
+    try{ S.nes[t.on ? 'buttonDown' : 'buttonUp'](p, code); }catch(e){}
+  });
+}
+function nesTurboRelease(S){
+  if(!S) return;
+  Object.keys(S.turbo || {}).forEach(key => {
+    const i = key.indexOf(':'), p = Number(key.slice(0, i)), k = key.slice(i + 1);
+    const t = S.turbo[key];
+    if(t && t.on){ const code = nesBtnCode(nesTurboBtn(k)); if(code >= 0){ try{ S.nes.buttonUp(p, code); }catch(e){} } }
+  });
+  S.turbo = {};
+}
 function nesKeyEvent(e, down){
   if(nesKeyCapture){
     if(!down) return;
@@ -12010,7 +12056,8 @@ function nesKeyEvent(e, down){
   const hit = nesKeyHit(e.code);
   if(!hit) return;
   e.preventDefault();
-  nesPress(hit[0], hit[1], down);
+  if(hit[1] === 'TA' || hit[1] === 'TB') nesTurbo(hit[0], hit[1], down);
+  else nesPress(hit[0], hit[1], down);
 }
 document.addEventListener('keydown', e => nesKeyEvent(e, true));
 document.addEventListener('keyup', e => nesKeyEvent(e, false));
@@ -12022,6 +12069,7 @@ document.addEventListener('pointerdown', () => {
 window.addEventListener('blur', () => {
   const S = nesSession; if(!S) return;
   Object.keys(S.down).forEach(key => { const i = key.indexOf(':'); nesPress(Number(key.slice(0, i)), key.slice(i + 1), false); });
+  nesTurboRelease(S);
 });
 /* 键盘焦点在 canvas 外也生效，但点输入框不算 */
 
@@ -12116,6 +12164,7 @@ function nesPauseUi(S){
   if(stage) stage.classList.toggle('nes-paused', !!S.paused);
   const b = $('#nesPauseBtn');
   if(b) b.textContent = S.paused ? '继续' : '暂停';
+  if(S.paused) nesTurboRelease(S);   // 暂停时松掉连发，防止恢复后按键卡死
 }
 function stopNes(){
   const S = nesSession;
@@ -12123,6 +12172,7 @@ function stopNes(){
   nesSession = null;
   S.running = false;
   if(S.raf) cancelAnimationFrame(S.raf);
+  nesTurboRelease(S);
   Object.keys(S.down).forEach(key => {
     const i = key.indexOf(':'), p = Number(key.slice(0, i)), k = key.slice(i + 1);
     const c = nesBtnCode(k);
@@ -12157,7 +12207,7 @@ function nesBoot(rom){
   const img = ctx2d.createImageData(NES_W, NES_H);
   const S = nesSession = {
     rom, running:true, paused:false, raf:0, last:0, acc:0, frames:0, fpsT:0,
-    down:{}, ctx:ctx2d, img, u32:new Uint32Array(img.data.buffer),
+    down:{}, turbo:{}, ctx:ctx2d, img, u32:new Uint32Array(img.data.buffer),
     audio:{ ctx:null, gain:null, next:0, L:new Float32Array(4096), R:new Float32Array(4096), n:0 }
   };
   S.nes = nesNewEmu(S);
@@ -12198,7 +12248,7 @@ function nesBoot(rom){
     try{
       s.nes = nesNewEmu(s);
       s.nes.loadROM(s.rom.bin);
-      s.paused = false; s.last = 0; s.acc = 0; s.down = {};
+      s.paused = false; s.last = 0; s.acc = 0; s.down = {}; s.turbo = {};
       nesPauseUi(s); nesToast('已重置'); sfx.click();
     }catch(e){ nesToast('重置失败：' + (e && e.message ? e.message : '出错了')); }
   });
@@ -12539,7 +12589,7 @@ function renderNesKeys(){
     });
     return h + '</div></div>';
   };
-  host.innerHTML = sec('p1', '玩家 1（默认：方向键 + Z/X + Enter/右Shift）') + sec('p2', '玩家 2（默认：WASD + J/K + U/I，双人分坐键盘两边）');
+  host.innerHTML = sec('p1', '玩家 1（默认：WASD + J/K + U/I + 1/3）') + sec('p2', '玩家 2（默认：方向键 + 小键盘 1/2/4/5 + 小键盘Enter/右Shift）');
 }
 function nesOpenKeys(from){
   nesKeysFrom = from || 'lobby';
