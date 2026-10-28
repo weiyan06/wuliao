@@ -674,7 +674,7 @@ body.konami-on .wrap{animation:konamiHue .9s steps(6) infinite}
       </svg>
       <div>
         <h1>像素屋</h1>
-        <div class="tagline">PIXEL HOUSE v3.7.5</div>
+        <div class="tagline">PIXEL HOUSE v3.7.6</div>
       </div>
     </div>
     <div class="hdr-actions">
@@ -11931,8 +11931,7 @@ function nesAudioFlush(S){
 function nesFrame(S, buf){
   const d = S.u32;
   for(let i = 0; i < NES_PX; i++){
-    const v = buf[i];
-    d[i] = 0xFF000000 | ((v & 0xFF) << 16) | (v & 0xFF00) | ((v >>> 16) & 0xFF);
+    d[i] = 0xFF000000 | (buf[i] & 0xFFFFFF);   // jsnes 输出 0x00BBGGRR，小端 u32 直接补 alpha 即 RGBA
   }
   S.ctx.putImageData(S.img, 0, 0);
 }
