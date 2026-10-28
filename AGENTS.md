@@ -75,7 +75,7 @@
 4. **双端推送**：`git push gitee HEAD:refs/heads/master` 和 `git push origin HEAD:refs/heads/master`（GitHub master 曾被 curl PUT 搞成分叉，需要时 `push -f` 对齐本地）
 5. **等 Pages 构建**：`gh api repos/weiyan06/wuliao/pages/builds/latest --jq '.status'` 轮询到 `built`
 6. **线上抽查**：`curl --compressed` 验 index 版本号 + 新数据文件 200
-7. **同步桌面仓库**：`git -C C:\Users\95639\Desktop\ai\wuliao fetch --all && git merge --ff-only origin/master`
+7. **同步桌面仓库**：`git -C C:\Users\95639\Desktop\ai\wuliao fetch gitee && git merge --ff-only gitee/master`（GitHub 端历史可能因 `gh api` 提交分叉，以 gitee 为准）
 8. **升版本**：index.html 顶栏 `.tagline` 的 `PIXEL HOUSE vX.Y`（功能+1 小版本，修复 +0.0.1）；大改动顺手回来更新本文件的数字
 
 ## 血泪坑清单（别重蹈覆辙）
