@@ -4,9 +4,21 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>像素屋 · 打发无聊神器</title>
-<meta name="description" content="复古像素风的无聊终结器：小游戏合集、趣味随机内容、互动小玩具，一个网页全搞定。">
+<meta name="description" content="复古像素风的无聊终结器：40 款小游戏、36 个互动玩具、随机内容与每日栏目，一个网页全搞定。">
+<meta name="theme-color" content="#171826">
+<link rel="canonical" href="https://weiyan06.github.io/wuliao/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="像素屋 · PIXEL HOUSE">
+<meta property="og:title" content="像素屋 · 打发无聊神器">
+<meta property="og:description" content="40 款小游戏 + 36 个互动玩具 + 每日内容，纯原生零依赖的像素风摸鱼站。">
+<meta property="og:url" content="https://weiyan06.github.io/wuliao/">
+<meta name="twitter:card" content="summary">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23171826'/%3E%3Cg transform='translate(4,6) scale(4)' fill='%23ff3d5a'%3E%3Crect x='1' y='0' width='1' height='1'/%3E%3Crect x='4' y='0' width='1' height='1'/%3E%3Crect x='0' y='1' width='6' height='1'/%3E%3Crect x='0' y='2' width='6' height='1'/%3E%3Crect x='1' y='3' width='4' height='1'/%3E%3Crect x='2' y='4' width='2' height='1'/%3E%3C/g%3E%3C/svg%3E">
-<link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Press+Start+2P&family=DotGothic16&display=swap" onerror="this.onerror=null;this.href='https://fonts.loli.net/css2?family=Press+Start+2P&amp;family=DotGothic16&amp;display=swap';">
+<link rel="preconnect" href="https://miaoda.feishu.cn" crossorigin>
+<link rel="preconnect" href="https://sf3-scmcdn-cn.feishucdn.com" crossorigin>
+<!-- 字体 CSS 不阻塞首屏：先出内容，字体到了再换（display=swap 本身也允许回退） -->
+<link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Press+Start+2P&family=DotGothic16&display=swap" media="print" onload="this.media='all'" onerror="this.onerror=null;this.href='https://fonts.loli.net/css2?family=Press+Start+2P&amp;family=DotGothic16&amp;display=swap';this.media='all';">
+<noscript><link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Press+Start+2P&family=DotGothic16&display=swap"></noscript>
 <style>
 /* ============ 设计令牌：复古街机风 ============ */
 :root{
@@ -1939,7 +1951,6 @@ body.konami-on .wrap{animation:konamiHue .9s steps(6) infinite}
 
 <script src="data/movies.js"></script>
 <script src="data/life.js"></script>
-<script src="data/gsfx.js"></script>
 <script src="data/dsfx.js"></script>
 <script src="data/daily.js"></script>
 <script src="data/site.js"></script>
@@ -2011,6 +2022,30 @@ function gsfx(name, th){
 const VIBS = { die:[60], boom:[80], win:[30,50,60], hurt:[40], tick:10, small:20 };
 function vibK(k){ vib(VIBS[k] || 20); }
 
+/* ---------- 游戏音效数据懒加载 ----------
+   data/gsfx.js 是 23 个 mp3 的 base64（约 87KB gzip），首屏用不到：
+   首次交互 / 空闲 / 进入游戏时再注入；注入完成前 gsfx() 自动走 GSFX_FB 合成兜底。 */
+let audioDataState = 0; // 0=未开始 1=加载中 2=就绪
+const audioDataWaiters = [];
+function ensureAudioData(cb){
+  if(cb) audioDataWaiters.push(cb);
+  if(audioDataState === 2){ audioDataWaiters.splice(0).forEach(f => { try{ f(); }catch(e){} }); return; }
+  if(audioDataState === 1) return;
+  audioDataState = 1;
+  const sc = document.createElement('script');
+  sc.src = 'data/gsfx.js';
+  const done = () => {
+    audioDataState = 2;
+    audioDataWaiters.splice(0).forEach(f => { try{ f(); }catch(e){} });
+  };
+  sc.onload = done; sc.onerror = done;
+  document.head.appendChild(sc);
+}
+function scheduleAudioData(){
+  if('requestIdleCallback' in window) requestIdleCallback(() => ensureAudioData(), { timeout: 3000 });
+  else setTimeout(ensureAudioData, 1500);
+}
+
 /* ---------- 顶栏开关 ---------- */
 let crtOn = true;
 function syncHeader(){
@@ -2030,6 +2065,15 @@ function stopActive(){
   if(state.toy && TOYS[state.toy]){ try{ TOYS[state.toy].destroy(); }catch(e){} }
   state.game = null; state.toy = null;
 }
+/* 内容 tab 首次进入再渲染：首屏只建小游戏/玩具大厅，避免一次性生成 300+ 张隐藏卡片 */
+const TAB_INIT = {};
+function deferTabInit(name, fn){ (TAB_INIT[name] || (TAB_INIT[name] = [])).push(fn); }
+function runTabInit(name){
+  const fns = TAB_INIT[name]; if(!fns) return;
+  delete TAB_INIT[name];
+  fns.forEach(f => { try{ f(); }catch(e){ console.error('[tab init] ' + name, e); } });
+}
+
 function setTab(name){
   if(!VIEWS[name]) return;
   stopActive();
@@ -2042,6 +2086,7 @@ function setTab(name){
   if(name==='poems'){ $('#poemView').classList.add('hidden'); $('#poemLobby').classList.remove('hidden'); ensureTang(() => { syncPoemFavBtn(); renderPoems(); }); }
   if(name==='food'){ $('#foodView').classList.add('hidden'); $('#foodLobby').classList.remove('hidden'); }
   if(name==='notes'){ noteSyncSoon(); }
+  runTabInit(name);
   try{ if(location.hash !== '#'+name) history.replaceState(null, '', '#'+name); }catch(e){}
   sfx.click();
 }
@@ -2050,6 +2095,7 @@ $$('.tab-btn').forEach(b => b.addEventListener('click', () => setTab(b.dataset.t
 /* ---------- 游戏 / 玩具装配 ---------- */
 function mountGame(name){
   stopActive();
+  ensureAudioData();
   state.game = name;
   $('#gameLobby').classList.add('hidden');
   $('#gameView').classList.remove('hidden');
@@ -2071,6 +2117,7 @@ function backToLobby(){
 }
 function mountToy(name){
   stopActive();
+  ensureAudioData();
   state.toy = name;
   $('#toyLobby').classList.add('hidden');
   $('#toyView').classList.remove('hidden');
@@ -3184,7 +3231,7 @@ GAMES.simon = {
   title:'记忆色块',
   mount(mountEl, statsEl){
     mountEl.classList.add('stage');
-    const S = simon = { seq:[], pos:0, playing:false, input:false, level:1, best:store.get('simon.best', 0), mount:mountEl };
+    const S = simon = { seq:[], pos:0, playing:false, input:false, level:1, best:store.get('simon.best', 0), mount:mountEl, timers:[] };
     statsEl.innerHTML =
       '<div class="stat">回合<b id="simLv">1</b></div>' +
       '<div class="stat">最佳<b id="simBest">' + S.best + '</b></div>' +
@@ -3208,13 +3255,23 @@ GAMES.simon = {
     S.msg = msg;
     $('#simStart').addEventListener('click', () => { if(!S.playing) startSimon(S); });
   },
-  destroy(){ simon = null; }
+  destroy(){
+    if(simon){ simon.timers.forEach(clearTimeout); simon.timers = []; simon = null; }
+  }
 };
 function startSimon(S){
   S.seq = []; S.pos = 0; S.playing = true; S.input = false;
   $('#simLv').textContent = 1;
   simonNext(S);
   sfx.click();
+}
+function simonLater(S, fn, ms){
+  const id = setTimeout(() => {
+    const k = S.timers.indexOf(id); if(k >= 0) S.timers.splice(k, 1);
+    fn();
+  }, ms);
+  S.timers.push(id);
+  return id;
 }
 function simonNext(S){
   S.input = false;
@@ -3227,15 +3284,15 @@ function simonNext(S){
     const pad = S.grid.children[idx];
     pad.classList.add('lit');
     tone(SIMON_FREQ[idx], 0.2, 'square', 0.05);
-    setTimeout(() => { pad.classList.remove('lit'); i++; setTimeout(play, 260); }, 420);
+    simonLater(S, () => { pad.classList.remove('lit'); i++; simonLater(S, play, 260); }, 420);
   };
-  setTimeout(play, 650);
+  simonLater(S, play, 650);
 }
 function simonPress(S, i, d){
   if(!S.playing || !S.input) return;
   tone(SIMON_FREQ[i], 0.15, 'square', 0.05);
   d.classList.add('lit');
-  setTimeout(() => d.classList.remove('lit'), 180);
+  simonLater(S, () => d.classList.remove('lit'), 180);
   if(i !== S.seq[S.pos]){ simonLose(S); return; }
   S.pos++;
   if(S.pos >= S.seq.length){
@@ -3244,7 +3301,7 @@ function simonPress(S, i, d){
     if(S.seq.length > S.best){ S.best = S.seq.length; store.set('simon.best', S.best); $('#simBest').textContent = S.best; }
     $('#simLv').textContent = S.level;
     gsfx('ok'); vibK('small');
-    setTimeout(() => simonNext(S), 700);
+    simonLater(S, () => simonNext(S), 700);
   }
 }
 function simonLose(S){
@@ -3883,12 +3940,12 @@ GAMES.dice = {
       sfxDiceStop();
       D.rolls++;
       // 落定收尾：骰子定格 + 结算 + pop
-      let settled=false;
+      D.settled=false;
       const settle=()=>{
-        if(settled) return;
-        settled=true;
-        if(rollInterval){ clearInterval(rollInterval); rollInterval=null; }
-        if(D) D.iv=null;
+        if(D.settled) return;
+        D.settled=true;
+        if(D.iv){ clearInterval(D.iv); D.iv=null; }
+        if(D.cap){ clearInterval(D.cap); D.cap=null; }
         const finalValues=[]; let roundSum=0, sixCount=0;
         for(let i=0;i<5;i++){
           finalValues[i]=1+Math.floor(Math.random()*6);
@@ -3908,24 +3965,32 @@ GAMES.dice = {
         vibStop(); vib(15);  // 掐断滚动震感，落定轻震一下收尾（安卓）
       };
       // 声音有多久动画就有多久：onended（或兜底）触发 settle
-      const a=sfxDice(settle);
+      const a=sfxDice(()=>{ settle(); });
       vib(RATTLE_VIB);  // 滚动全程：哒-哒-哒磙动节奏（安卓；iOS/电脑自动忽略）
-      let frame=0;
-      rollInterval=D.iv=setInterval(()=>{
-        diceValues=[];
-        for(let i=0;i<5;i++){
-          diceValues[i]=1+Math.floor(Math.random()*6);
-          renderDice(this.diceEls[i], diceValues[i]);
-        }
-        frame++;
-        // 静音/无声环境下 1.2s 自动落定
-        if(!a && frame>=24) settle();
-      }, 50);
+    let frame=0;
+    D.settled=false;
+    D.iv=setInterval(()=>{
+      diceValues=[];
+      for(let i=0;i<5;i++){
+        diceValues[i]=1+Math.floor(Math.random()*6);
+        renderDice(this.diceEls[i], diceValues[i]);
+      }
+      frame++;
+      // 静音/无声环境下 1.2s 自动落定
+      if(!a && frame>=24){ clearInterval(D.iv); D.iv=null; if(D.cap){ clearInterval(D.cap); D.cap=null; } settle(); }
+    }, 50);
     };
     btn.addEventListener('click', roll);
     D.roll=roll;
   },
-  destroy(){ if(dice && dice.iv){ clearInterval(dice.iv); dice.iv=null; } sfxDiceStop(); dice=null; }
+  destroy(){
+    if(dice){
+      if(dice.iv){ clearInterval(dice.iv); dice.iv=null; }
+      if(dice.cap){ clearInterval(dice.cap); dice.cap=null; }
+      if(dice.settleT){ clearTimeout(dice.settleT); dice.settleT=null; }
+    }
+    sfxDiceStop(); dice=null;
+  }
 };
 function renderDice(el,val){
   const dots={1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]};
@@ -3938,7 +4003,7 @@ let wheel = null;
 GAMES.wheel = {
   title:'幸运转盘',
   mount(mountEl, statsEl){
-    const W = wheel = { spin:0, count:0 };
+    const W = wheel = { spin:0, count:0, timer:null };
     statsEl.innerHTML = '<div class="stat">转了几次<b id="whC">0</b></div>';
     const box=document.createElement('div'); box.className='wheel-box';
     const wd=document.createElement('div'); wd.className='wheel'; wd.id='whWheel';
@@ -3969,16 +4034,16 @@ GAMES.wheel = {
       wd.style.transition = 'transform 3.2s cubic-bezier(0.12,0.7,0.2,1)';
       wd.style.transform = 'rotate('+rot+'deg)';
       W.count++; $('#whC').textContent=W.count; gsfx('sweep');
-      setTimeout(()=>{
+      clearTimeout(W.timer);
+      W.timer = setTimeout(()=>{
         const deg = ((rot%360)+360)%360;
         const idx = Math.floor((360-deg)/45)%8;
         const res = opts[idx];
         W.result.textContent = '这次是：'+res+'！';
         if(res==='大吉'){ sfx.win(); vibK('win'); } else if(res==='大凶') gsfx('no'); else gsfx('coin');
       }, 3300);
-    });
   },
-  destroy(){ wheel=null; }
+  destroy(){ if(wheel){ clearTimeout(wheel.timer); wheel = null; } }
 };
 
 /* 光速反应 */
@@ -10448,7 +10513,7 @@ function renderSpeakList(){
   }));
   initPager('#speakPager', '#speakGrid .speak-card', 16);
 }
-(function speakInit(){
+deferTabInit('speak', function(){
   const d = new Date();
   const seed = d.getFullYear() * 372 + (d.getMonth() + 1) * 31 + d.getDate();
   spanCur = 0;
@@ -10456,7 +10521,7 @@ function renderSpeakList(){
   syncSpeakHud();
   speakShow(seed % SPEAKS.length);
   renderSpeakList();
-})();
+});
 
 /* ---------- 每日菜谱 ---------- */
 
@@ -10597,7 +10662,7 @@ $$('#foodTagRow .chip').forEach(ch => ch.addEventListener('click', () => {
   $$('#foodTagRow .chip').forEach(c => c.classList.toggle('active', c === ch));
   renderFoodList(); sfx.click();
 }));
-(function foodInit(){
+deferTabInit('food', function(){
   const d = new Date();
   const seed = d.getFullYear() * 372 + (d.getMonth() + 1) * 31 + d.getDate();
   const today = DISHES[seed % DISHES.length];
@@ -10609,7 +10674,7 @@ $$('#foodTagRow .chip').forEach(ch => ch.addEventListener('click', () => {
   });
   foodCur = seed % DISHES.length;
   renderFoodList();
-})();
+});
 
 /* ---------- 睡前故事 ---------- */
 
@@ -10760,14 +10825,14 @@ function renderStoryList(){
   }));
   initPager('#storyPager', '#storyGrid .speak-card', 16);
 }
-(function storyInit(){
+deferTabInit('story', function(){
   const d = new Date();
   const seed = d.getFullYear() * 372 + (d.getMonth() + 1) * 31 + d.getDate();
   syncStoryGn();
   $('#storyText').style.fontSize = storyFsz + 'px';
   storyShow(seed % STORIES.length);
   renderStoryList();
-})();
+});
 
 /* ---------- 每日背单词 ---------- */
 
@@ -10873,12 +10938,12 @@ $('#vocabRevDone').addEventListener('click', () => {
   rb.className = 'px-btn ghost';
   sfx.point();
 });
-(function vocabInit(){
+deferTabInit('vocab', function(){
   vocabRenderToday();
   vocabRenderRev();
   vocabRenderNext();
   vocabStreakShow();
-})();
+});
 
 /* ---------- 每日观影 ---------- */
 let movMood = '', movRg = '', movGn = '', movLn = 0;
@@ -11069,8 +11134,10 @@ $$('#movLen .chip').forEach(c => c.addEventListener('click', () => {
   $$('#movLen .chip').forEach(x => x.classList.toggle('active', x === c));
   renderMovGrid(); sfx.click();
 }));
-$('#movCount').textContent = MOVIES.length;
-renderMovGrid(); syncMovStats();
+deferTabInit('movies', function(){
+  $('#movCount').textContent = MOVIES.length;
+  renderMovGrid(); syncMovStats();
+});
 
 /* ---------- 随手记 ---------- */
 const GIST_MARK='wuliao-notes', GIST_FILE='notes.json';
@@ -11441,7 +11508,9 @@ $('#lifeQuizBody').addEventListener('click', e=>{
   if(e.target.id==='lifeQuizNext'){ lifeQuiz.step++; lifeQuiz.pick=null; renderLifeQuiz(); return; }
   if(e.target.id==='lifeQuizGo'){ lifeQuizStart(); return; }
 });
-renderLifeChips(); renderLifeDaily(); renderLifeList(); renderLifeQuiz(); $('#lifeQuizBest').textContent='🏆 '+lifeBest();
+deferTabInit('life', function(){
+  renderLifeChips(); renderLifeDaily(); renderLifeList(); renderLifeQuiz(); $('#lifeQuizBest').textContent='🏆 '+lifeBest();
+});
 
 /* ============================================================
    v3.6 每日卡片 / 摸鱼计数器 / Konami 彩蛋
@@ -11482,6 +11551,24 @@ function renderDaily(){
   }).join('');
 }
 renderDaily();
+/* 跨天刷新：每日卡片 / 妙招 / 背单词按本地日期重算（后台标签页定时器会被节流，回前台再补一次） */
+let dailyStamp = dailySeed();
+function refreshDailyUi(){
+  try{ renderDaily(); }catch(e){}
+  try{ renderLifeDaily._custom = null; renderLifeDaily(); }catch(e){}
+  try{ vocabRenderToday(); vocabStreakShow(); }catch(e){}
+}
+function scheduleDailyRefresh(){
+  const now = new Date();
+  const next = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 2);
+  setTimeout(() => { dailyStamp = dailySeed(); refreshDailyUi(); scheduleDailyRefresh(); }, Math.max(2000, next - now));
+}
+scheduleDailyRefresh();
+document.addEventListener('visibilitychange', () => {
+  if(document.visibilityState !== 'visible') return;
+  const s = dailySeed();
+  if(s !== dailyStamp){ dailyStamp = s; refreshDailyUi(); }
+});
 
 const slack = {
   sec: store.get('slack.sec', 0),
@@ -11549,7 +11636,10 @@ function konamiFire(){
 
 
 window.__audioReady = false;
-document.addEventListener('pointerdown', () => { window.__audioReady = true; }, { once:true });
+document.addEventListener('pointerdown', () => { window.__audioReady = true; ensureAudioData(); }, { once:true });
+document.addEventListener('keydown', () => ensureAudioData(), { once:true });
+if(document.readyState === 'complete') scheduleAudioData();
+else window.addEventListener('load', scheduleAudioData, { once:true });
 $$('#gameLobby .game-card').forEach(c => c.addEventListener('click', () => mountGame(c.dataset.game)));
 $$('#toyLobby .game-card').forEach(c => c.addEventListener('click', () => mountToy(c.dataset.toy)));
 
@@ -11584,9 +11674,9 @@ function initPager(pagerSel, cardSel, perPage){
 initPager('#gamePager', '#gameLobby .game-card', 16);
 initPager('#toyPager', '#toyLobby .game-card', 16);
 syncHeader();
+deferTabInit('random', renderRandom);
 const initialHash = (location.hash || '').replace('#', '');
 if(VIEWS[initialHash]) setTab(initialHash);
-renderRandom();
 </script>
 </body>
 </html>
