@@ -630,7 +630,7 @@ body.konami-on .wrap{animation:konamiHue .9s steps(6) infinite}
       </svg>
       <div>
         <h1>像素屋</h1>
-        <div class="tagline">PIXEL HOUSE v3.6.0</div>
+        <div class="tagline">PIXEL HOUSE v3.6.1</div>
       </div>
     </div>
     <div class="hdr-actions">
@@ -3942,7 +3942,7 @@ GAMES.dice = {
       // 落定收尾：骰子定格 + 结算 + pop
       D.settled=false;
       const settle=()=>{
-        if(D.settled) return;
+        if(!dice || D.settled) return;  // 离开游戏后音频 ended 仍可能回调，dice 已置空则直接丢弃
         D.settled=true;
         if(D.iv){ clearInterval(D.iv); D.iv=null; }
         if(D.cap){ clearInterval(D.cap); D.cap=null; }
@@ -4042,6 +4042,7 @@ GAMES.wheel = {
         W.result.textContent = '这次是：'+res+'！';
         if(res==='大吉'){ sfx.win(); vibK('win'); } else if(res==='大凶') gsfx('no'); else gsfx('coin');
       }, 3300);
+    });
   },
   destroy(){ if(wheel){ clearTimeout(wheel.timer); wheel = null; } }
 };
