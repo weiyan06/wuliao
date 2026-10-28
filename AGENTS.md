@@ -16,8 +16,9 @@
 
 | 文件               | 体量     | 内容                                                                 | 加载方式                                    |
 | ---------------- | ------ | ------------------------------------------------------------------ | --------------------------------------- |
-| `index.html`     | ~353KB | 全部 HTML + CSS + 逻辑（巨型 `<script>` 在 `<body>` 末尾）                    | 首屏                                      |
-| `data/site.js`   | 117KB  | CONTENT（随机内容）/ SPEAKS(100) / DISHES(60) / STORIES(40) / VOCAB(220) | 首屏同步前载                                  |
+| `index.html`     | ~523KB | 全部 HTML + CSS + 逻辑（巨型 `<script>` 在 `<body>` 末尾）                    | 首屏                                      |
+| `data/site.js`   | 122KB  | CONTENT（随机内容，含歇后语 45 条）/ SPEAKS(100) / DISHES(60) / STORIES(40) / VOCAB(220) | 首屏同步前载                       |
+| `data/daily.js`  | 9.4KB  | ALMANAC_YI(38) / ALMANAC_JI(36) / HISTORY(89 条带日期) / HISTORY_FALLBACK(22) | 首屏同步前载（`renderDaily` 有 `typeof` 守卫） |
 | `data/movies.js` | 30KB   | MOVIES(95部) 片库                                                     | 首屏同步前载                                  |
 | `data/gsfx.js`   | 130KB  | GSFX(23个游戏事件音效 mp3 base64，Kenney CC0 来源)                     | 首屏同步前载                                  |
 | `data/tang.js`   | 1.7MB  | TANG300(320首) + TANG_S2T/TANG_T2S 繁简映射 + TANG_FOLD                 | **懒加载**，首次进诗词 tab 时 `ensureTang(cb)` 注入 |
@@ -27,7 +28,7 @@
 
 ## tab 架构（新增 tab 的五步）
 
-11 个 tab：小游戏(32款) / 互动玩具(32个) / 随机内容 / 唐诗三百首(320) / 每日练嘴(100) / 每日菜谱(60) / 睡前故事(40) / 每日背单词(220词=44天×5) / 电影推荐(95) / 生活妙招(79条) / 随手记(便签+Gist同步)。
+11 个 tab：小游戏(40款) / 互动玩具(36个) / 随机内容(10栏目 + 黄历·历史两张每日卡片) / 唐诗三百首(320) / 每日练嘴(100) / 每日菜谱(60) / 睡前故事(40) / 每日背单词(220词=44天×5) / 电影推荐(95) / 生活妙招(79条) / 随手记(便签+Gist同步)。
 
 1. `<nav class="tabs">` 加 `<button class="tab-btn" data-tab="NAME" type="button">标题</button>`
 2. `const VIEWS = { …, NAME:'view-NAME' }` 加一项
@@ -46,12 +47,16 @@
 - `copyFallback(text, done)`：复制兜底（file:// 下 clipboard API 可能被拒）
 - `initPager(pagerSel, cardSel, perPage)`：分页器；**动态渲染的卡片每次 innerHTML 后要重调一次**
 - `makeCanvas(w, h)`：像素画布工厂（返回 `{cv, ctx}`，自动加 `.pix-canvas`）
-- 每日内容 seed 公式：`new Date()` → `seed = y*372 + (m+1)*31 + day`（poems daily、vocab Day 制同源；词汇 epoch `V_EPOCH = 2026-10-24`）
+- `gsfx(name, throttleMs) / vibK(key)`：真实事件音效（`data/gsfx.js`，缺失时回退 `GSFX_FB` 合成音）+ 手机震动节奏（`VIBS`）；只在关键事件震，乐器类玩具保留合成 `tone()`
+- `dailySeed() / seededPick(arr, seed, n)`：每日卡片（黄历宜忌 / 历史上的今天）的稳定随机；`renderDaily()` 启动时渲染一次，`data/daily.js` 缺失时静默跳过
+- 每日内容 seed 公式：`new Date()` → `seed = y*372 + (m+1)*31 + day`（poems daily、vocab Day 制、黄历/历史同源；词汇 epoch `V_EPOCH = 2026-10-24`）
 
-## localStorage 键位表（**禁止改名，会丢用户数据**；共 56 个）
+## localStorage 键位表（**禁止改名，会丢用户数据**；共 69 个）
 
 - 每日内容：`vocab.count/vocab.marks/vocab.streak/vocab.rev`、`story.stamp/story.count/story.favs/story.fsz`、`food.favs/food.spins`、`speak.favs/speak.streak`、`poem.favs`、`movie.favs/movie.rolls`、`life.favs/life.best`、`notes.list/notes.token/notes.gist/notes.fold`
 - 游戏最佳分：`snake.best`、`g2048.best`、`mine.best`、`tetris.best`、`simon.best`、`breakout.best`、`pong.best`、`flap.best`、`reflex.best`、`guess.best`、`maze.best`、`memory.best`、`rps.best`、`slide.best`、`mole.best`、`jumper.best`、`fishy.best`、`spider…`（`*.best` 后缀为惯例）
+- v3.6 新游戏：`suika.best`、`picross.best`、`jigsaw.best`、`diff.best`、`typing.best`、`hanoi.best`（对象 `{3,4,5}` 按盘数存）、`g24.best`、`reversi.best`
+- v3.6 新玩具/彩蛋：`muyu.count`、`qian.count`、`typewriter.count`、`slack.sec`（累计停留秒）、`slack.visits`（来访次数）
 - 玩具/设置：`muted`、`lamp.on/lamp.hue/lamp.bright/lamp.spread`、`beat.bpm`、`rhythm.best`、`pet.save`（宠物存档：名字/皮肤/三围数值/照顾天数/阶段）
 
 ## 硬性约束
@@ -82,9 +87,11 @@
 - **诗词 tab**：懒加载钩子挂在 `setTab('poems')` 分支（boot 时不渲染）；诗卡类名是 `.poem-card`（不是 `.speak-card`）；按钮 id 是 `poemRnd`（不是 poemRand）
 - **TANG300 收口**是行内的 `"}];`，不是独立行 `];`（拆数据脚本踩过）
 - 控制台输出中文乱码是 PowerShell 显示问题，文件本身没事——用 `grep` 工具核对中文
+- **插入锚点**：8 款新游戏在 `const TOYS = {};` **之前**（GAMES 定义区末尾）、4 个新玩具在「像素宠物 · 果冻进阶版」段**之前**、每日卡片/摸鱼计时/Konami 在「启动」注释**之前**——插错位置会拿不到 `GAMES`/`TOYS` 或抢在初始化前执行
 
 ## 版本历史（摘要）
 
+- **v3.6.0「全都坐上去」大礼包**：小游戏 32→40（合成大西瓜 / 数织 Picross / 像素拼图 / 找不同 / 打字高手 / 汉诺塔 / 24 点 / 黑白棋），互动玩具 32→36（电子木鱼 / 求签筒 / 白噪音 / 打字机），随机 tab 顶部新增「今日黄历（宜 4 忌 4）」+「历史上的今天」两张每日卡片（seed 同源，新增 `data/daily.js`），随机栏目 9→10（歇后语 45 条，`c-xie` 配色），页脚摸鱼计数器（`slack.sec/slack.visits`，按秒累计、10 秒落库、`pagehide` 兜底），隐藏 **Konami 秘技**（`↑↑↓↓←→←→BA` → 90 片彩带 + 全站色相流转 + toast，输入框内不触发）；新键 13 个：8 个游戏 `*.best` + `muyu.count/qian.count/typewriter.count/slack.sec/slack.visits`
 - **v3.5.0 像素宠物「果冻」大扩展**：`pet.save` 存档（起名/6 色皮肤/离线衰减封顶 96h）+ 眼睛跟随指针/摸身体害羞 + 吐槽气泡/随机蹦跳摇头 + 睡觉模式（22:00~8:00 Zzz，喂食吵醒 6s）+ 成长阶段（照顾 5 天大果冻、15 天果冻王戴金冠）+ 清洁度第三数值 + 3 秒搓澡小游戏（点破泡泡加清洁）+ 随机食物喂食（蛋糕/苹果/辣椒 spicy 特效/面包）；新键 `pet.save`
 - v2.7 睡前故事 / v2.8 每日背单词（ECDICT 词库）/ v2.9 数据拆分优化（2.14MB→首屏 102KB）
 - v2.9.1 五子棋落子修复（round→floor）
