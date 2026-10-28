@@ -52,7 +52,7 @@
 - `makeCanvas(w, h)`：像素画布工厂（返回 `{cv, ctx}`，自动加 `.pix-canvas`）
 - `gsfx(name, throttleMs) / vibK(key)`：真实事件音效（`data/gsfx.js` 懒加载，未就绪时自动回退 `GSFX_FB` 合成音）+ 手机震动节奏（`VIBS`）；只在关键事件震，乐器类玩具保留合成 `tone()`
 - `ensureAudioData()`：注入 `data/gsfx.js`（首次交互 / 进游戏 / 空闲时调用，幂等）；`deferTabInit(name, fn) / runTabInit(name)`：内容 tab 首访渲染
-- `ensureNES(cb) / nesBoot(rom) / stopNes()`：复古游戏厅（jsnes）。`ensureNES` 幂等注入 `data/nes.js`；`setTab('nes')` 预先拉取，`setTab` 非 nes 时自动 `stopNes()`（清 rAF + 关 AudioContext）；ROM 对象形如 `{id,name,author,license,desc,b64|bin}`，用户载入的放 `nesUserRoms`（仅内存，不落库）；「载入 ROM」支持 .nes / .zip（zip 用浏览器原生 `DecompressionStream('deflate-raw')` 纯前端解包，零依赖）
+- `ensureNES(cb) / nesBoot(rom) / stopNes()`：复古游戏厅（jsnes）。`ensureNES` 幂等注入 `data/nes.js`；`setTab('nes')` 预先拉取，`setTab` 非 nes 时自动 `stopNes()`（清 rAF + 关 AudioContext）；ROM 对象形如 `{id,name,author,license,desc,b64|bin}`，用户载入的放 `nesUserRoms`；「载入 ROM」支持 .nes / .zip（zip 用浏览器原生 `DecompressionStream('deflate-raw')` 纯前端解包，零依赖）+ **多选批量导入**；**卡带架**（v3.7.2）：导入的 ROM 存本机 IndexedDB `wuliao-nes-carts`（`nesRack*` 函数族），刷新/重启都在，大厅「我的卡带架」卡片可玩/改名/删除；模拟器就绪时 `nesRackLoad()` 自动把卡带架灌回 `nesUserRoms`（rom.id=`rack<key>` 稳定，旧存档可重新挂上）
 - 模拟器要点：画面 `256×240` canvas 直接 `putImageData`（CSS `image-rendering:pixelated` 放大）、rAF 按 `1000/60.0988` 累加限帧、声音走 `onAudioSample` → Float32Array 累积 → `AudioBufferSourceNode` 排程（`A.next` 落后/超前都重对齐），音量跟随全局 `muted`（gain 0/0.3）；存档是 `toJSON()` → gzip(`CompressionStream`) → base64 存 `nes.state`（≈130KB）
 - `dailySeed() / seededPick(arr, seed, n)`：每日卡片（黄历宜忌 / 历史上的今天）的稳定随机；`renderDaily()` 启动时渲染一次，`data/daily.js` 缺失时静默跳过
 - 每日内容 seed 公式：`new Date()` → `seed = y*372 + (m+1)*31 + day`（poems daily、vocab Day 制、黄历/历史同源；词汇 epoch `V_EPOCH = 2026-10-24`）
@@ -73,7 +73,7 @@
 3. **单文件时代风格**：新代码复用既有模式（原生 JS、`$/$$`、`store`、`sfx`、`initPager`），不搞新范式
 4. `index.html` 是 **CRLF 行尾**；多行文本锚点匹配必须用 `\r\n`
 5. 文件全 UTF-8；PowerShell 脚本写盘用 `UTF8Encoding($false)`（无 BOM），含中文的 ps1 用 `-File` 执行时字符串会花——用 `[IO.File]::ReadAllText` + IndexOf 重写法处理
-6. **第三方代码/资源**：只收「许可证明确允许再分发」的（当前：jsnes 1.2.1 Apache-2.0、Falling ROM MIT），一律内联进 `data/*.js` 并在 `licenses/` 留授权原文；**禁止内置任何商业 ROM**，用户的 `.nes` 只能 `FileReader` 本机读、只进内存，不上传不落库
+6. **第三方代码/资源**：只收「许可证明确允许再分发」的（当前：jsnes 1.2.1 Apache-2.0、Falling ROM MIT），一律内联进 `data/*.js` 并在 `licenses/` 留授权原文；**禁止内置任何商业 ROM**，用户的 `.nes`/`.zip` 只能本机读、不上传不进仓库；「卡带架」功能（v3.7.2）可把用户自备 ROM 存进**本机 IndexedDB**（库名 `wuliao-nes-carts`，只存在用户自己设备上，网站/仓库零 ROM 字节）
 
 ## 开发-测试-部署流程（每轮改动照此执行）
 
@@ -103,6 +103,7 @@
 
 ## 版本历史（摘要）
 
+- **v3.7.2 我的卡带架**：复古游戏厅 ROM 本机持久化——导入的 .nes/.zip 存 IndexedDB `wuliao-nes-carts`（只存用户设备，网站/仓库零 ROM 字节）；大厅新卡片「我的卡带架 · N 张」→ 管理视图（玩/改名/删除，`#nesRackView`）；「载入 ROM」支持一次多选批量导入（`nesImportFiles`，大厅导入自动开玩第一张、卡带架内导入只入架）；模拟器就绪时 `nesRackLoad()` 自动回灌 `nesUserRoms`，rom.id 改为稳定 `rack<key>`（本机存档跨会话可挂回）；卡带架不可用（隐私模式/空间不足）自动降级为会话内可玩
 - **v3.7.1 载入 ROM 支持 zip 直载**：文件选择器收 .zip，纯前端解析 zip Central Directory + `DecompressionStream('deflate-raw')` 解包（浏览器原生 API，零依赖），取包内首个 .nes 直接开跑；无 .nes / 不支持的压缩方式 / zip64 等异常给友好提示；ROM 仍只进内存不落库
 
 - **v3.7.0 复古游戏厅（第 12 个 tab）**：内联 jsnes 1.2.1（Apache-2.0）跑 NES/FC 游戏——内置 MIT 开源 ROM **Falling**（tragicmuffin）打开即玩 + 「载入 ROM」本机选 `.nes`（FileReader，不上传、只进内存）；256×240 `pixelated` 画面、rAF 按 NTSC 帧长限帧、Web Audio 采样排程（跟随全局静音）、键盘（方向键/WASD + X=A/Y=B… 实际 Z=B X=A + Enter=Start/Shift=Select）、粗指针设备出虚拟手柄（D-pad + A/B + SELECT/START）、暂停/重置/全屏、**单槽存读档**（`toJSON` → gzip → base64 → `nes.state`）；沉浸模式复用 `body.game-full`，切 tab 自动 `stopNes()` 清 rAF + 关 AudioContext；新增 `data/nes.js`（懒加载）与 `licenses/`（两份授权原文）；新键 `nes.state`（70 个）
