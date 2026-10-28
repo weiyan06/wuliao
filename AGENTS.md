@@ -16,19 +16,21 @@
 
 | 文件               | 体量     | 内容                                                                 | 加载方式                                    |
 | ---------------- | ------ | ------------------------------------------------------------------ | --------------------------------------- |
-| `index.html`     | ~523KB | 全部 HTML + CSS + 逻辑（巨型 `<script>` 在 `<body>` 末尾）                    | 首屏                                      |
+| `index.html`     | ~552KB | 全部 HTML + CSS + 逻辑（巨型 `<script>` 在 `<body>` 末尾）                    | 首屏                                      |
 | `data/site.js`   | 122KB  | CONTENT（随机内容，含歇后语 45 条）/ SPEAKS(100) / DISHES(60) / STORIES(40) / VOCAB(220) | 首屏同步前载                       |
 | `data/daily.js`  | 9.4KB  | ALMANAC_YI(38) / ALMANAC_JI(36) / HISTORY(89 条带日期) / HISTORY_FALLBACK(22) | 首屏同步前载（`renderDaily` 有 `typeof` 守卫） |
 | `data/movies.js` | 30KB   | MOVIES(95部) 片库                                                     | 首屏同步前载                                  |
 | `data/gsfx.js`   | 130KB  | GSFX(23个游戏事件音效 mp3 base64，Kenney CC0 来源)                     | **懒加载**，首次交互 / 进游戏时 `ensureAudioData()` 注入 |
 | `data/tang.js`   | 1.7MB  | TANG300(320首) + TANG_S2T/TANG_T2S 繁简映射 + TANG_FOLD                 | **懒加载**，首次进诗词 tab 时 `ensureTang(cb)` 注入 |
+| `data/nes.js`    | 156KB  | jsnes 1.2.1（NES 模拟器 UMD，Apache-2.0）+ NES_ROMS[1]（Falling，MIT，ROM base64）+ NES_LICENSE | **懒加载**，首次进复古游戏厅时 `ensureNES(cb)` 注入 |
+| `licenses/`      | 12KB   | jsnes Apache-2.0 / Falling MIT 授权原文 + 说明                        | 静态文件，不上页面                            |
 
 巨型 script 的内部分区用 `/* ---------- 标题 ---------- */` 注释分隔，顺序大致是：
 工具函数 → sfx/VIEWS/setTab → 游戏（GAMES.xxx = {…}）→ 各内容 tab 逻辑（poems/speak/food/story/vocab/movies）→ `/* ---------- 启动 ---------- */` 收尾。
 
 ## tab 架构（新增 tab 的五步）
 
-11 个 tab：小游戏(40款) / 互动玩具(36个) / 随机内容(10栏目 + 黄历·历史两张每日卡片) / 唐诗三百首(320) / 每日练嘴(100) / 每日菜谱(60) / 睡前故事(40) / 每日背单词(220词=44天×5) / 电影推荐(95) / 生活妙招(80条) / 随手记(便签+Gist同步)。
+12 个 tab：小游戏(40款) / 互动玩具(36个) / 复古游戏厅(NES 模拟器：内置1款开源 ROM + 本地载入) / 随机内容(10栏目 + 黄历·历史两张每日卡片) / 唐诗三百首(320) / 每日练嘴(100) / 每日菜谱(60) / 睡前故事(40) / 每日背单词(220词=44天×5) / 电影推荐(95) / 生活妙招(80条) / 随手记(便签+Gist同步)。
 
 1. `<nav class="tabs">` 加 `<button class="tab-btn" data-tab="NAME" type="button">标题</button>`
 2. `const VIEWS = { …, NAME:'view-NAME' }` 加一项
@@ -50,16 +52,19 @@
 - `makeCanvas(w, h)`：像素画布工厂（返回 `{cv, ctx}`，自动加 `.pix-canvas`）
 - `gsfx(name, throttleMs) / vibK(key)`：真实事件音效（`data/gsfx.js` 懒加载，未就绪时自动回退 `GSFX_FB` 合成音）+ 手机震动节奏（`VIBS`）；只在关键事件震，乐器类玩具保留合成 `tone()`
 - `ensureAudioData()`：注入 `data/gsfx.js`（首次交互 / 进游戏 / 空闲时调用，幂等）；`deferTabInit(name, fn) / runTabInit(name)`：内容 tab 首访渲染
+- `ensureNES(cb) / nesBoot(rom) / stopNes()`：复古游戏厅（jsnes）。`ensureNES` 幂等注入 `data/nes.js`；`setTab('nes')` 预先拉取，`setTab` 非 nes 时自动 `stopNes()`（清 rAF + 关 AudioContext）；ROM 对象形如 `{id,name,author,license,desc,b64|bin}`，用户载入的放 `nesUserRoms`（仅内存，不落库）
+- 模拟器要点：画面 `256×240` canvas 直接 `putImageData`（CSS `image-rendering:pixelated` 放大）、rAF 按 `1000/60.0988` 累加限帧、声音走 `onAudioSample` → Float32Array 累积 → `AudioBufferSourceNode` 排程（`A.next` 落后/超前都重对齐），音量跟随全局 `muted`（gain 0/0.3）；存档是 `toJSON()` → gzip(`CompressionStream`) → base64 存 `nes.state`（≈130KB）
 - `dailySeed() / seededPick(arr, seed, n)`：每日卡片（黄历宜忌 / 历史上的今天）的稳定随机；`renderDaily()` 启动时渲染一次，`data/daily.js` 缺失时静默跳过
 - 每日内容 seed 公式：`new Date()` → `seed = y*372 + (m+1)*31 + day`（poems daily、vocab Day 制、黄历/历史同源；词汇 epoch `V_EPOCH = 2026-10-24`）
 
-## localStorage 键位表（**禁止改名，会丢用户数据**；共 69 个）
+## localStorage 键位表（**禁止改名，会丢用户数据**；共 70 个）
 
 - 每日内容：`vocab.count/vocab.marks/vocab.streak/vocab.rev`、`story.stamp/story.count/story.favs/story.fsz`、`food.favs/food.spins`、`speak.favs/speak.streak`、`poem.favs`、`movie.favs/movie.rolls`、`life.favs/life.best`、`notes.list/notes.token/notes.gist/notes.fold`
 - 游戏最佳分：`snake.best`、`g2048.best`、`mine.best`、`tetris.best`、`simon.best`、`breakout.best`、`pong.best`、`flap.best`、`reflex.best`、`guess.best`、`maze.best`、`memory.best`、`rps.best`、`slide.best`、`mole.best`、`jumper.best`、`fishy.best`、`spider…`（`*.best` 后缀为惯例）
 - v3.6 新游戏：`suika.best`、`picross.best`、`jigsaw.best`、`diff.best`、`typing.best`、`hanoi.best`（对象 `{3,4,5}` 按盘数存）、`g24.best`、`reversi.best`
 - v3.6 新玩具/彩蛋：`muyu.count`、`qian.count`、`typewriter.count`、`slack.sec`（累计停留秒）、`slack.visits`（来访次数）
 - 玩具/设置：`muted`、`lamp.on/lamp.hue/lamp.bright/lamp.spread`、`beat.bpm`、`rhythm.best`、`pet.save`（宠物存档：名字/皮肤/三围数值/照顾天数/阶段）
+- v3.7 复古游戏厅：`nes.state`（单个模拟器存档 `{rom,name,at,data:'gz:…'}`，gzip 后 base64，容量不足时静默失败并提示）
 
 ## 硬性约束
 
@@ -68,6 +73,7 @@
 3. **单文件时代风格**：新代码复用既有模式（原生 JS、`$/$$`、`store`、`sfx`、`initPager`），不搞新范式
 4. `index.html` 是 **CRLF 行尾**；多行文本锚点匹配必须用 `\r\n`
 5. 文件全 UTF-8；PowerShell 脚本写盘用 `UTF8Encoding($false)`（无 BOM），含中文的 ps1 用 `-File` 执行时字符串会花——用 `[IO.File]::ReadAllText` + IndexOf 重写法处理
+6. **第三方代码/资源**：只收「许可证明确允许再分发」的（当前：jsnes 1.2.1 Apache-2.0、Falling ROM MIT），一律内联进 `data/*.js` 并在 `licenses/` 留授权原文；**禁止内置任何商业 ROM**，用户的 `.nes` 只能 `FileReader` 本机读、只进内存，不上传不落库
 
 ## 开发-测试-部署流程（每轮改动照此执行）
 
@@ -90,9 +96,14 @@
 - **TANG300 收口**是行内的 `"}];`，不是独立行 `];`（拆数据脚本踩过）
 - 控制台输出中文乱码是 PowerShell 显示问题，文件本身没事——用 `grep` 工具核对中文
 - **插入锚点**：8 款新游戏在 `const TOYS = {};` **之前**（GAMES 定义区末尾）、4 个新玩具在「像素宠物 · 果冻进阶版」段**之前**、每日卡片/摸鱼计时/Konami 在「启动」注释**之前**——插错位置会拿不到 `GAMES`/`TOYS` 或抢在初始化前执行
+- **jsnes 1.2.1 的 `nes.reset()` 是坑**：reset 后状态不干净，实测能把 ROM 跑到非法操作码、CPU 死循环（页面卡死）。「重置」一律**重建 `new jsnes.NES()` + loadROM**（见 `nesNewEmu`）
+- **jsnes 崩溃会走 `this.nes.stop()`**：1.2.1 里 `NES.prototype.stop` 不存在 → 每帧抛 `this.nes.stop is not a function` 刷屏。所以 `nesLoop` 里 `frame()` 必须 try/catch，出错就暂停并提示「点重置」
+- **存档别直接存 `toJSON()`**：原始 JSON ≈1.9MB（ppu 的 vramMem/buffer/bgbuffer 全是 3 万级普通数组），必须 `CompressionStream('gzip')`+base64（≈130KB）再进 localStorage；`DecompressionStream` 兜底走 `raw:` 前缀
+- **模拟器数据必须懒加载**：`data/nes.js` 156KB，`setTab('nes')` 才注入；否则首屏 gzip 直接 +34KB
 
 ## 版本历史（摘要）
 
+- **v3.7.0 复古游戏厅（第 12 个 tab）**：内联 jsnes 1.2.1（Apache-2.0）跑 NES/FC 游戏——内置 MIT 开源 ROM **Falling**（tragicmuffin）打开即玩 + 「载入 ROM」本机选 `.nes`（FileReader，不上传、只进内存）；256×240 `pixelated` 画面、rAF 按 NTSC 帧长限帧、Web Audio 采样排程（跟随全局静音）、键盘（方向键/WASD + X=A/Y=B… 实际 Z=B X=A + Enter=Start/Shift=Select）、粗指针设备出虚拟手柄（D-pad + A/B + SELECT/START）、暂停/重置/全屏、**单槽存读档**（`toJSON` → gzip → base64 → `nes.state`）；沉浸模式复用 `body.game-full`，切 tab 自动 `stopNes()` 清 rAF + 关 AudioContext；新增 `data/nes.js`（懒加载）与 `licenses/`（两份授权原文）；新键 `nes.state`（70 个）
 - **v3.6.1 性能与稳定性补丁**：`data/gsfx.js` 改为懒加载（`ensureAudioData`，首次交互/进游戏/空闲注入，音效未就绪自动合成兜底）；内容 tab（speak/food/story/vocab/movies/life/random）改为首访渲染（`deferTabInit`）；每日卡片/背单词/妙招跨天自动刷新（`refreshDailyUi` + 零点定时器 + `visibilitychange` 补刷）；记忆色块/转盘/掷骰子的定时器在 `destroy` 里清理；修幸运转盘 `destroy` 前丢失的 `});` 造成的**全站脚本语法错误**（线上白屏级事故）；修掷骰子离场后音频 `ended` 回调写已销毁 DOM 的报错；字体 CSS 改 `media=print` 异步加载；补 SEO/OG meta
 - **v3.6.0「全都坐上去」大礼包**：小游戏 32→40（合成大西瓜 / 数织 Picross / 像素拼图 / 找不同 / 打字高手 / 汉诺塔 / 24 点 / 黑白棋），互动玩具 32→36（电子木鱼 / 求签筒 / 白噪音 / 打字机），随机 tab 顶部新增「今日黄历（宜 4 忌 4）」+「历史上的今天」两张每日卡片（seed 同源，新增 `data/daily.js`），随机栏目 9→10（歇后语 45 条，`c-xie` 配色），页脚摸鱼计数器（`slack.sec/slack.visits`，按秒累计、10 秒落库、`pagehide` 兜底），隐藏 **Konami 秘技**（`↑↑↓↓←→←→BA` → 90 片彩带 + 全站色相流转 + toast，输入框内不触发）；新键 13 个：8 个游戏 `*.best` + `muyu.count/qian.count/typewriter.count/slack.sec/slack.visits`
 - **v3.5.0 像素宠物「果冻」大扩展**：`pet.save` 存档（起名/6 色皮肤/离线衰减封顶 96h）+ 眼睛跟随指针/摸身体害羞 + 吐槽气泡/随机蹦跳摇头 + 睡觉模式（22:00~8:00 Zzz，喂食吵醒 6s）+ 成长阶段（照顾 5 天大果冻、15 天果冻王戴金冠）+ 清洁度第三数值 + 3 秒搓澡小游戏（点破泡泡加清洁）+ 随机食物喂食（蛋糕/苹果/辣椒 spicy 特效/面包）；新键 `pet.save`

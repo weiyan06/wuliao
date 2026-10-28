@@ -4,13 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>像素屋 · 打发无聊神器</title>
-<meta name="description" content="复古像素风的无聊终结器：40 款小游戏、36 个互动玩具、随机内容与每日栏目，一个网页全搞定。">
+<meta name="description" content="复古像素风的无聊终结器：40 款小游戏、36 个互动玩具、一台能玩 NES 的复古游戏机、随机内容与每日栏目，一个网页全搞定。">
 <meta name="theme-color" content="#171826">
 <link rel="canonical" href="https://weiyan06.github.io/wuliao/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="像素屋 · PIXEL HOUSE">
 <meta property="og:title" content="像素屋 · 打发无聊神器">
-<meta property="og:description" content="40 款小游戏 + 36 个互动玩具 + 每日内容，纯原生零依赖的像素风摸鱼站。">
+<meta property="og:description" content="40 款小游戏 + 36 个互动玩具 + 能玩 NES 的复古游戏厅 + 每日内容，纯原生零依赖的像素风摸鱼站。">
 <meta property="og:url" content="https://weiyan06.github.io/wuliao/">
 <meta name="twitter:card" content="summary">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23171826'/%3E%3Cg transform='translate(4,6) scale(4)' fill='%23ff3d5a'%3E%3Crect x='1' y='0' width='1' height='1'/%3E%3Crect x='4' y='0' width='1' height='1'/%3E%3Crect x='0' y='1' width='6' height='1'/%3E%3Crect x='0' y='2' width='6' height='1'/%3E%3Crect x='1' y='3' width='4' height='1'/%3E%3Crect x='2' y='4' width='2' height='1'/%3E%3C/g%3E%3C/svg%3E">
@@ -599,6 +599,35 @@ html.game-lock{overflow:hidden !important}
 .tw-tools{display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:12px}
 .tw-count{font-size:12px; color:var(--muted); margin-top:8px}
 
+/* ============ v3.7 复古游戏厅（NES 模拟器） ============ */
+.nes-stage{max-width:520px; margin:0 auto; position:relative; background:#000; border:4px solid var(--line); box-shadow:6px 6px 0 rgba(0,0,0,.5); line-height:0}
+.nes-screen{display:block; width:100%; height:auto; image-rendering:pixelated; background:#000}
+.nes-stage.nes-paused::after{content:'已暂停'; position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-family:'Press Start 2P','DotGothic16',monospace; font-size:14px; letter-spacing:2px; color:var(--yellow); background:rgba(11,12,24,.6)}
+.nes-stage:fullscreen{max-width:none; border:0; box-shadow:none; display:flex; align-items:center; justify-content:center}
+.nes-stage:fullscreen .nes-screen{width:100%; height:100%; object-fit:contain}
+.nes-tools{display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin-top:14px}
+.nes-tools .px-btn{font-size:11px; padding:9px 12px}
+.nes-hint{text-align:center; color:var(--muted); font-size:12px; line-height:1.8; margin-top:10px; min-height:18px}
+.nes-pad{display:none; justify-content:space-between; align-items:flex-end; gap:14px; max-width:430px; margin:16px auto 0; user-select:none; -webkit-user-select:none}
+@media (pointer: coarse){ .nes-pad{display:flex} .nes-hint{display:none} }
+.nes-dpad{display:grid; grid-template-columns:repeat(3,52px); grid-template-rows:repeat(3,48px); gap:6px}
+.nes-dpad .px-btn{padding:0; font-size:15px; touch-action:none}
+.nes-dpad-gap{width:52px; height:48px}
+.nes-pad-side{display:flex; flex-direction:column; align-items:center; gap:10px}
+.nes-ab{display:flex; gap:12px; align-items:center}
+.nes-ab .px-btn{width:60px; height:60px; border-radius:50%; padding:0; font-family:'Press Start 2P',monospace; font-size:15px; touch-action:none}
+.nes-se{display:flex; gap:8px}
+.nes-se .px-btn{font-family:'Press Start 2P',monospace; font-size:8px; padding:8px 9px; touch-action:none}
+.nes-pad .px-btn.on{transform:translate(2px,2px); box-shadow:1px 1px 0 rgba(0,0,0,.5); filter:brightness(1.25)}
+.nes-file{display:none}
+.nes-status{font-size:12px; color:var(--muted); margin:12px 2px 0; min-height:18px; line-height:1.7}
+.nes-about{margin-top:16px; background:var(--panel); border:3px solid var(--line); box-shadow:4px 4px 0 rgba(0,0,0,.4); padding:12px 14px}
+.nes-about summary{cursor:pointer; font-size:13px; color:var(--ink)}
+.nes-about-body{font-size:12.5px; color:var(--muted); line-height:1.9; margin-top:10px}
+.nes-about-body p{margin:0 0 8px}
+.nes-about-body p:last-child{margin-bottom:0}
+.nes-about .kbd{font-family:'Press Start 2P',monospace; font-size:9px; background:var(--panel2); border:2px solid var(--line); padding:2px 5px; color:var(--yellow); display:inline-block}
+
 /* ============ v3.6 Konami 彩蛋 ============ */
 .konami-layer{position:fixed; inset:0; pointer-events:none; z-index:9999; overflow:hidden}
 .konami-bit{position:absolute; top:-24px; width:10px; height:10px; animation:konamiFall linear forwards}
@@ -630,7 +659,7 @@ body.konami-on .wrap{animation:konamiHue .9s steps(6) infinite}
       </svg>
       <div>
         <h1>像素屋</h1>
-        <div class="tagline">PIXEL HOUSE v3.6.1</div>
+        <div class="tagline">PIXEL HOUSE v3.7.0</div>
       </div>
     </div>
     <div class="hdr-actions">
@@ -643,6 +672,7 @@ body.konami-on .wrap{animation:konamiHue .9s steps(6) infinite}
   <nav class="tabs" aria-label="功能切换">
     <button class="tab-btn active" data-tab="games" type="button">小游戏</button>
     <button class="tab-btn" data-tab="toys" type="button">互动玩具</button>
+    <button class="tab-btn" data-tab="nes" type="button">复古游戏厅</button>
     <button class="tab-btn" data-tab="random" type="button">随机内容</button>
     <button class="tab-btn" data-tab="poems" type="button">唐诗三百首</button>
     <button class="tab-btn" data-tab="speak" type="button">每日练嘴</button>
@@ -1940,6 +1970,33 @@ body.konami-on .wrap{animation:konamiHue .9s steps(6) infinite}
       </div>
     </section>
 
+    <!-- ===== 视图：复古游戏厅 ===== -->
+    <section id="view-nes" class="view">
+      <div id="nesLobby" class="lobby">
+        <p class="view-tip">一台长在网页里的 8-bit 游戏机：内置开源自制游戏，也可以载入你自己的 <b>.nes</b> 文件（只在本机读取，不上传）。</p>
+        <div class="card-grid" id="nesGrid"></div>
+        <input type="file" id="nesFile" class="nes-file" accept=".nes,application/octet-stream">
+        <p class="nes-status" id="nesStatus"></p>
+        <details class="nes-about">
+          <summary>怎么玩 / 按键 / 版权说明</summary>
+          <div class="nes-about-body">
+            <p><b>键盘</b>：方向键（或 WASD）移动 · <span class="kbd">X</span> = A 键 · <span class="kbd">Z</span> = B 键 · <span class="kbd">Enter</span> = Start · <span class="kbd">Shift</span> = Select。</p>
+            <p><b>手机</b>：进入游戏后屏幕下方会出现虚拟手柄，横屏更好按。</p>
+            <p><b>存档</b>：游戏面板里的「存档」把当前进度存进本机浏览器，换设备/清缓存就没了；它和游戏自带的电池存档是两回事。</p>
+            <p><b>版权</b>：内置的 <b>Falling</b> 由 tragicmuffin 以 MIT 协议开源（Copyright © 2018 tragicmuffin），模拟器 jsnes 1.2.1 为 Apache-2.0。本站不含任何商业 ROM；你载入的 ROM 由你自己提供，只在浏览器内存里跑，不上传。</p>
+          </div>
+        </details>
+      </div>
+      <div id="nesView" class="game-view hidden">
+        <div class="game-topbar">
+          <button id="nesBack" class="px-btn ghost" type="button">← 返回</button>
+          <h2 id="nesTitle">Falling</h2>
+          <div id="nesStats" class="game-stats"></div>
+        </div>
+        <div id="nesMount"></div>
+      </div>
+    </section>
+
   </main>
 
   <footer class="site-footer">
@@ -2057,7 +2114,7 @@ $('#crtBtn').addEventListener('click', ()=>{ crtOn=!crtOn; syncHeader(); sfx.cli
 $('#muteBtn').addEventListener('click', ()=>{ muted=!muted; store.set('muted', muted); syncHeader(); if(!muted) sfx.click(); else if(typeof stopRain === 'function' && rain) stopRain(); });
 
 /* ---------- 标签页切换（支持 hash） ---------- */
-const VIEWS = { games:'view-games', random:'view-random', poems:'view-poems', speak:'view-speak', food:'view-food', story:'view-story', vocab:'view-vocab', movies:'view-movies', life:'view-life', notes:'view-notes', toys:'view-toys' };
+const VIEWS = { games:'view-games', random:'view-random', poems:'view-poems', speak:'view-speak', food:'view-food', story:'view-story', vocab:'view-vocab', movies:'view-movies', life:'view-life', notes:'view-notes', toys:'view-toys', nes:'view-nes' };
 const state = { tab:'games', game:null, toy:null };
 
 function stopActive(){
@@ -2086,6 +2143,8 @@ function setTab(name){
   if(name==='poems'){ $('#poemView').classList.add('hidden'); $('#poemLobby').classList.remove('hidden'); ensureTang(() => { syncPoemFavBtn(); renderPoems(); }); }
   if(name==='food'){ $('#foodView').classList.add('hidden'); $('#foodLobby').classList.remove('hidden'); }
   if(name==='notes'){ noteSyncSoon(); }
+  if(name!=='nes') stopNes();
+  if(name==='nes'){ stopNes(); $('#nesView').classList.add('hidden'); $('#nesLobby').classList.remove('hidden'); ensureNES(syncNesLobby); }
   runTabInit(name);
   try{ if(location.hash !== '#'+name) history.replaceState(null, '', '#'+name); }catch(e){}
   sfx.click();
@@ -11632,6 +11691,486 @@ function konamiFire(){
   setTimeout(() => document.body.classList.remove('konami-on'), 5400);
   setTimeout(() => { layer.remove(); toast.remove(); }, 5600);
 }
+
+/* ---------- 复古游戏厅（内置 jsnes 模拟器） ----------
+   data/nes.js 懒加载：jsnes 1.2.1（Apache-2.0）+ 开源 ROM Falling（MIT）。
+   只内置可再分发的自制游戏；用户自己的 .nes 由 <input type=file> 本机读入，不上传、不落库。 */
+const NES_W = 256, NES_H = 240, NES_PX = NES_W * NES_H;
+const NES_STEP = 1000 / 60.0988;                 // NTSC 一帧 16.639ms
+const NES_HINT = '方向键 / WASD 移动 · X = A · Z = B · Enter = Start · Shift = Select';
+const NES_KEYMAP = {
+  ArrowUp:'UP', ArrowDown:'DOWN', ArrowLeft:'LEFT', ArrowRight:'RIGHT',
+  KeyW:'UP', KeyS:'DOWN', KeyA:'LEFT', KeyD:'RIGHT',
+  KeyX:'A', KeyJ:'A', KeyZ:'B', KeyK:'B',
+  Enter:'START', NumpadEnter:'START', ShiftRight:'SELECT', ShiftLeft:'SELECT', KeyC:'SELECT'
+};
+const NES_CART_SVG = '<svg width="40" height="40" viewBox="0 0 32 32">'
+  + '<rect x="4" y="3" width="24" height="26" fill="#2b2f45"/><rect x="6" y="5" width="20" height="12" fill="#4a5170"/>'
+  + '<rect x="8" y="19" width="16" height="8" fill="#1b1d2b"/>'
+  + '<rect x="10" y="21" width="2" height="4" fill="#ffc53d"/><rect x="15" y="21" width="2" height="4" fill="#ffc53d"/><rect x="20" y="21" width="2" height="4" fill="#ffc53d"/>'
+  + '</svg>';
+const NES_LOAD_SVG = '<svg width="40" height="40" viewBox="0 0 32 32">'
+  + '<rect x="4" y="4" width="24" height="24" fill="#2b2f45"/><rect x="10" y="7" width="12" height="6" fill="#3ddc84"/>'
+  + '<path d="M16 14v8M12 18l4 4 4-4" stroke="#ffc53d" stroke-width="2.5" fill="none"/></svg>';
+
+let nesLibState = 0;                              // 0=未开始 1=加载中 2=就绪 3=失败
+const nesLibWaiters = [];
+const nesUserRoms = [];                           // 本次会话载入的 ROM（不落库）
+let nesSession = null;
+let nesToastT = null;
+
+function ensureNES(cb){
+  if(cb) nesLibWaiters.push(cb);
+  const flush = () => nesLibWaiters.splice(0).forEach(f => { try{ f(); }catch(e){ console.error('[nes]', e); } });
+  if(nesLibState === 2 || nesLibState === 3){ flush(); return; }
+  if(nesLibState === 1) return;
+  nesLibState = 1;
+  nesStatusLine('模拟器加载中……');
+  const sc = document.createElement('script');
+  sc.src = 'data/nes.js';
+  sc.onload = () => {
+    nesLibState = (window.jsnes && window.jsnes.NES && window.NES_ROMS) ? 2 : 3;
+    flush(); syncNesLobby();
+  };
+  sc.onerror = () => { nesLibState = 3; flush(); syncNesLobby(); };
+  document.head.appendChild(sc);
+}
+
+/* ---- 小工具 ---- */
+function nesBytesToB64(u8){
+  let s = '';
+  for(let i = 0; i < u8.length; i += 0x4000) s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x4000));
+  return btoa(s);
+}
+function nesB64ToBytes(b64){
+  const s = atob(b64), u = new Uint8Array(s.length);
+  for(let i = 0; i < s.length; i++) u[i] = s.charCodeAt(i);
+  return u;
+}
+function nesRoms(){
+  const list = (window.NES_ROMS || []).map(r => r);
+  return list.concat(nesUserRoms);
+}
+function nesStatusLine(msg){
+  const el = $('#nesStatus');
+  if(el) el.textContent = msg;
+}
+function nesToast(msg){
+  const lobby = $('#nesLobby');
+  if(lobby && !lobby.classList.contains('hidden')){ nesStatusLine(msg); return; }
+  const h = $('#nesHint');
+  if(!h) return;
+  h.textContent = msg;
+  clearTimeout(nesToastT);
+  nesToastT = setTimeout(() => { if(h.isConnected) h.textContent = NES_HINT; }, 2800);
+}
+
+/* ---- 大厅 ---- */
+function renderNesLobby(){
+  const grid = $('#nesGrid'); if(!grid) return;
+  const list = nesRoms();
+  let html = '';
+  for(let i = 0; i < list.length; i++){
+    const r = list[i];
+    html += '<button class="game-card" data-nrom="' + i + '" type="button">'
+      + '<span class="card-icon" aria-hidden="true">' + NES_CART_SVG + '</span>'
+      + '<span class="card-name">' + escHtml(r.name) + '</span>'
+      + '<span class="card-desc">' + escHtml(r.desc || ((r.author || '') + (r.license ? ' · ' + r.license : ''))) + '</span>'
+      + '</button>';
+  }
+  html += '<button class="game-card" id="nesLoadCard" type="button">'
+    + '<span class="card-icon" aria-hidden="true">' + NES_LOAD_SVG + '</span>'
+    + '<span class="card-name">载入 ROM</span>'
+    + '<span class="card-desc">选一个 .nes 文件，本机运行、不上传</span>'
+    + '</button>';
+  grid.innerHTML = html;
+}
+function syncNesLobby(){
+  renderNesLobby();
+  if(nesLibState === 2){
+    const n = (window.NES_ROMS || []).length;
+    nesStatusLine('模拟器就绪 · 内置 ' + n + ' 款可自由分发的开源游戏' + (nesUserRoms.length ? ' · 已载入 ' + nesUserRoms.length + ' 个自己的 ROM' : ''));
+  } else if(nesLibState === 3){
+    nesStatusLine('⚠ 模拟器加载失败：检查网络后刷新页面重试（data/nes.js 没能下下来）');
+  } else if(nesLibState === 1){
+    nesStatusLine('模拟器加载中……首次进这个 tab 才会下载，约 160KB');
+  }
+}
+
+/* ---- 音频：onAudioSample 累积 → AudioBuffer 排程 ---- */
+function nesAudioInit(S){
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if(!AC) return;
+  try{
+    const ctx = new AC();
+    const gain = ctx.createGain();
+    gain.gain.value = muted ? 0 : 0.3;
+    gain.connect(ctx.destination);
+    S.audio.ctx = ctx; S.audio.gain = gain; S.audio.next = 0; S.audio.n = 0;
+    if(ctx.state === 'suspended'){ ctx.resume().catch(() => {}); }
+  }catch(e){ S.audio.ctx = null; }
+}
+function nesSample(S, l, r){
+  const A = S.audio;
+  if(!A.ctx || A.n >= A.L.length) return;
+  A.L[A.n] = l; A.R[A.n] = r; A.n++;
+}
+function nesAudioFlush(S){
+  const A = S.audio;
+  if(!A.ctx || A.n < 400) return;
+  const ctx = A.ctx;
+  try{
+    if(ctx.state === 'suspended') ctx.resume().catch(() => {});
+    const n = A.n;
+    const buf = ctx.createBuffer(2, n, 44100);
+    buf.copyToChannel(A.L.subarray(0, n), 0);
+    buf.copyToChannel(A.R.subarray(0, n), 1);
+    const src = ctx.createBufferSource();
+    src.buffer = buf; src.connect(A.gain);
+    const now = ctx.currentTime;
+    if(A.next < now + 0.005 || A.next - now > 0.4) A.next = now + 0.05;   // 掉队/超前都重新对齐，防堆积爆音
+    src.start(A.next);
+    A.next += n / 44100;
+    A.gain.gain.value = muted ? 0 : 0.3;
+  }catch(e){}
+  A.n = 0;
+}
+
+/* ---- 画面 ---- */
+function nesFrame(S, buf){
+  const d = S.u32;
+  for(let i = 0; i < NES_PX; i++){
+    const v = buf[i];
+    d[i] = 0xFF000000 | ((v & 0xFF) << 16) | (v & 0xFF00) | ((v >>> 16) & 0xFF);
+  }
+  S.ctx.putImageData(S.img, 0, 0);
+}
+
+/* ---- 主循环 ---- */
+function nesLoop(ts){
+  const S = nesSession;
+  if(!S || !S.running) return;
+  S.raf = requestAnimationFrame(nesLoop);
+  if(!S.last) S.last = ts;
+  let dt = ts - S.last; S.last = ts;
+  if(dt > 120) dt = 120;                       // 切后台回来别一次性追帧
+  if(!S.paused){
+    S.acc += dt;
+    let n = 0;
+    try{
+      while(S.acc >= NES_STEP && n < 4){ S.nes.frame(); S.acc -= NES_STEP; n++; S.frames++; }
+    }catch(err){
+      S.paused = true; S.acc = 0; nesPauseUi(S);
+      nesToast('模拟器卡住了（' + (err && err.message ? err.message : '执行出错') + '），点「重置」重来');
+      return;
+    }
+    if(n >= 4) S.acc = 0;
+  }
+  nesAudioFlush(S);
+  if(ts - S.fpsT > 600){
+    const fps = Math.round(S.frames * 1000 / (ts - S.fpsT));
+    S.frames = 0; S.fpsT = ts;
+    const el = $('#nesFps'); if(el) el.textContent = fps || '—';
+  }
+}
+
+/* ---- 输入 ---- */
+function nesBtnCode(k){
+  const C = window.jsnes && window.jsnes.Controller;
+  if(!C) return -1;
+  const map = { A:C.BUTTON_A, B:C.BUTTON_B, SELECT:C.BUTTON_SELECT, START:C.BUTTON_START,
+    UP:C.BUTTON_UP, DOWN:C.BUTTON_DOWN, LEFT:C.BUTTON_LEFT, RIGHT:C.BUTTON_RIGHT };
+  return map[k] == null ? -1 : map[k];
+}
+function nesPress(k, down){
+  const S = nesSession;
+  if(!S || !S.nes) return;
+  const code = nesBtnCode(k);
+  if(code < 0) return;
+  if(down){
+    if(S.down[k]) return;
+    S.down[k] = 1; S.nes.buttonDown(1, code);
+  } else {
+    if(!S.down[k]) return;
+    delete S.down[k]; S.nes.buttonUp(1, code);
+  }
+}
+function nesKeyEvent(e, down){
+  const S = nesSession;
+  if(!S || !S.nes) return;
+  const t = e.target;
+  if(t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable)) return;
+  const k = NES_KEYMAP[e.code] || NES_KEYMAP[e.key];
+  if(!k) return;
+  e.preventDefault();
+  nesPress(k, down);
+}
+document.addEventListener('keydown', e => nesKeyEvent(e, true));
+document.addEventListener('keyup', e => nesKeyEvent(e, false));
+/* iOS / 部分浏览器：AudioContext 不在手势里创建会一直 suspended，任何一次点击都试着唤醒 */
+document.addEventListener('pointerdown', () => {
+  const S = nesSession;
+  if(S && S.audio.ctx && S.audio.ctx.state === 'suspended') S.audio.ctx.resume().catch(() => {});
+}, true);
+window.addEventListener('blur', () => {
+  const S = nesSession; if(!S) return;
+  Object.keys(S.down).forEach(k => nesPress(k, false));
+});
+/* 键盘焦点在 canvas 外也生效，但点输入框不算 */
+
+/* ---- 虚拟手柄 ---- */
+function nesBuildPad(){
+  const pad = document.createElement('div');
+  pad.className = 'nes-pad';
+  pad.innerHTML = ''
+    + '<div class="nes-dpad">'
+    +   '<span class="nes-dpad-gap"></span><button class="px-btn" data-k="UP" type="button" aria-label="上">▲</button><span class="nes-dpad-gap"></span>'
+    +   '<button class="px-btn" data-k="LEFT" type="button" aria-label="左">◀</button><span class="nes-dpad-gap"></span><button class="px-btn" data-k="RIGHT" type="button" aria-label="右">▶</button>'
+    +   '<span class="nes-dpad-gap"></span><button class="px-btn" data-k="DOWN" type="button" aria-label="下">▼</button><span class="nes-dpad-gap"></span>'
+    + '</div>'
+    + '<div class="nes-pad-side">'
+    +   '<div class="nes-ab">'
+    +     '<button class="px-btn red" data-k="B" type="button" aria-label="B 键">B</button>'
+    +     '<button class="px-btn red" data-k="A" type="button" aria-label="A 键">A</button>'
+    +   '</div>'
+    +   '<div class="nes-se">'
+    +     '<button class="px-btn ghost" data-k="SELECT" type="button">SELECT</button>'
+    +     '<button class="px-btn ghost" data-k="START" type="button">START</button>'
+    +   '</div>'
+    + '</div>';
+  pad.querySelectorAll('[data-k]').forEach(b => {
+    const on = e => { e.preventDefault(); nesPress(b.dataset.k, true); b.classList.add('on'); };
+    const off = () => { nesPress(b.dataset.k, false); b.classList.remove('on'); };
+    b.addEventListener('pointerdown', on);
+    b.addEventListener('pointerup', off);
+    b.addEventListener('pointerleave', off);
+    b.addEventListener('pointercancel', off);
+    b.addEventListener('contextmenu', e => e.preventDefault());
+  });
+  return pad;
+}
+
+/* ---- 存档（toJSON → gzip → base64，单槽） ---- */
+async function nesPackState(str){
+  if(window.CompressionStream){
+    try{
+      const w = new Blob([str]).stream().pipeThrough(new CompressionStream('gzip'));
+      const ab = await new Response(w).arrayBuffer();
+      return 'gz:' + nesBytesToB64(new Uint8Array(ab));
+    }catch(e){}
+  }
+  return 'raw:' + str;
+}
+async function nesUnpackState(s){
+  if(s.slice(0, 3) === 'gz:' && window.DecompressionStream){
+    const bytes = nesB64ToBytes(s.slice(3));
+    const w = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
+    return await new Response(w).text();
+  }
+  return s.slice(4);
+}
+async function nesSaveState(){
+  const S = nesSession; if(!S) return;
+  try{
+    const packed = await nesPackState(JSON.stringify(S.nes.toJSON()));
+    if(packed.length > 3000000){ nesToast('存档太大，这个浏览器存不下'); return; }
+    const rec = { rom: S.rom.id, name: S.rom.name, at: Date.now(), data: packed };
+    store.set('nes.state', rec);
+    const back = store.get('nes.state', null);
+    if(!back || !back.data){ nesToast('存档失败：浏览器存储空间不够了'); return; }
+    nesToast('已存档 · ' + S.rom.name + ' · ' + Math.round(packed.length / 1024) + 'KB');
+    sfx.point();
+  }catch(e){ nesToast('存档失败：' + (e && e.message ? e.message : '未知错误')); }
+}
+async function nesLoadState(){
+  const S = nesSession; if(!S) return;
+  const st = store.get('nes.state', null);
+  if(!st || !st.data){ nesToast('还没有存档，先玩一会儿再点「存档」'); return; }
+  try{
+    S.nes.fromJSON(JSON.parse(await nesUnpackState(st.data)));
+    S.paused = false; nesPauseUi(S);
+    const when = st.at ? new Date(st.at).toLocaleString() : '';
+    nesToast('已读档 · ' + (st.name || '') + (st.rom !== S.rom.id ? '（来自其它 ROM，可能不兼容）' : '') + ' · ' + when);
+    sfx.point();
+  }catch(e){ nesToast('读档失败：存档可能已损坏'); }
+}
+
+/* ---- 起停 ---- */
+function nesNewEmu(S){
+  return new window.jsnes.NES({
+    onFrame: buf => nesFrame(S, buf),
+    onAudioSample: (l, r) => nesSample(S, l, r),
+    sampleRate: 44100,
+    emulateSound: true
+  });
+}
+function nesPauseUi(S){
+  const stage = $('#nesMount .nes-stage');
+  if(stage) stage.classList.toggle('nes-paused', !!S.paused);
+  const b = $('#nesPauseBtn');
+  if(b) b.textContent = S.paused ? '继续' : '暂停';
+}
+function stopNes(){
+  const S = nesSession;
+  if(!S) return;
+  nesSession = null;
+  S.running = false;
+  if(S.raf) cancelAnimationFrame(S.raf);
+  Object.keys(S.down).forEach(k => { const c = nesBtnCode(k); if(c >= 0){ try{ S.nes.buttonUp(1, c); }catch(e){} } });
+  S.down = {};
+  try{ if(S.audio.ctx) S.audio.ctx.close(); }catch(e){}
+  S.audio.ctx = null;
+  clearTimeout(nesToastT);
+}
+function nesBackToLobby(){
+  stopNes();
+  document.body.classList.remove('game-full');
+  document.documentElement.classList.remove('game-lock');
+  $('#nesMount').innerHTML = '';
+  $('#nesView').classList.add('hidden');
+  $('#nesLobby').classList.remove('hidden');
+  window.scrollTo(0, 0);
+  syncNesLobby();
+  sfx.click();
+}
+function nesBoot(rom){
+  stopNes();
+  if(!window.jsnes || !window.jsnes.NES){ nesToast('模拟器还没加载好，等两秒再点'); return; }
+  let bin = rom.bin;
+  if(bin == null){ try{ bin = rom.bin = atob(rom.b64); }catch(e){ nesToast('ROM 数据损坏'); return; } }
+
+  const cv = document.createElement('canvas');
+  cv.width = NES_W; cv.height = NES_H; cv.className = 'nes-screen';
+  cv.setAttribute('aria-label', rom.name + ' 游戏画面');
+  const ctx2d = cv.getContext('2d');
+  const img = ctx2d.createImageData(NES_W, NES_H);
+  const S = nesSession = {
+    rom, running:true, paused:false, raf:0, last:0, acc:0, frames:0, fpsT:0,
+    down:{}, ctx:ctx2d, img, u32:new Uint32Array(img.data.buffer),
+    audio:{ ctx:null, gain:null, next:0, L:new Float32Array(4096), R:new Float32Array(4096), n:0 }
+  };
+  S.nes = nesNewEmu(S);
+  try{ S.nes.loadROM(bin); }
+  catch(err){
+    nesSession = null;
+    nesToast('这个 ROM 跑不起来（可能是特殊 mapper）：' + (err && err.message ? err.message : ''));
+    return;
+  }
+
+  $('#nesLobby').classList.add('hidden');
+  $('#nesView').classList.remove('hidden');
+  $('#nesTitle').textContent = rom.name;
+  $('#nesStats').innerHTML = '<div class="stat">' + escHtml(rom.license || 'ROM') + '</div>'
+    + '<div class="stat">FPS <b id="nesFps">—</b></div>';
+
+  const host = $('#nesMount');
+  host.innerHTML = '';
+  const stage = document.createElement('div');
+  stage.className = 'nes-stage';
+  stage.appendChild(cv);
+  host.appendChild(stage);
+
+  const tools = document.createElement('div');
+  tools.className = 'nes-tools';
+  const mk = (id, text, cls) => {
+    const b = document.createElement('button');
+    b.className = 'px-btn ' + (cls || 'ghost'); b.id = id; b.type = 'button'; b.textContent = text;
+    tools.appendChild(b); return b;
+  };
+  mk('nesPauseBtn', '暂停', 'yellow').addEventListener('click', () => {
+    const s = nesSession; if(!s) return;
+    s.paused = !s.paused; s.last = 0; s.acc = 0; nesPauseUi(s); sfx.click();
+  });
+  mk('nesResetBtn', '重置').addEventListener('click', () => {
+    const s = nesSession; if(!s) return;
+    // jsnes 1.2.1 的 reset() 会留下脏状态（实测能把 ROM 跑飞），重建实例最稳
+    try{
+      s.nes = nesNewEmu(s);
+      s.nes.loadROM(s.rom.bin);
+      s.paused = false; s.last = 0; s.acc = 0; s.down = {};
+      nesPauseUi(s); nesToast('已重置'); sfx.click();
+    }catch(e){ nesToast('重置失败：' + (e && e.message ? e.message : '出错了')); }
+  });
+  mk('nesSaveBtn', '存档').addEventListener('click', () => { nesSaveState(); });
+  mk('nesLoadBtn', '读档').addEventListener('click', () => { nesLoadState(); });
+  mk('nesFullBtn', '全屏').addEventListener('click', () => {
+    const fsEl = document.fullscreenElement || document.webkitFullscreenElement;
+    if(fsEl){
+      const exit = document.exitFullscreen || document.webkitExitFullscreen;
+      if(exit) exit.call(document).catch(() => {});
+      return;
+    }
+    const req = stage.requestFullscreen || stage.webkitRequestFullscreen;
+    if(req){ try{ const p = req.call(stage); if(p && p.catch) p.catch(() => nesToast('这个浏览器不让全屏')); }catch(e){ nesToast('这个浏览器不让全屏'); } }
+    else nesToast('这个浏览器不支持全屏');
+  });
+  host.appendChild(tools);
+
+  const hint = document.createElement('p');
+  hint.className = 'nes-hint'; hint.id = 'nesHint'; hint.textContent = NES_HINT;
+  host.appendChild(hint);
+  host.appendChild(nesBuildPad());
+
+  document.body.classList.add('game-full');
+  document.documentElement.classList.add('game-lock');
+  window.scrollTo(0, 0);
+
+  nesAudioInit(S);
+  S.fpsT = performance.now();
+  S.raf = requestAnimationFrame(nesLoop);
+  sfx.click();
+}
+function nesStartRom(rom){
+  ensureNES(() => {
+    if(nesLibState !== 2){ nesToast('模拟器加载失败，刷新页面重试'); return; }
+    nesBoot(rom);
+  });
+}
+function nesReadFile(file){
+  if(!file) return;
+  if(file.size < 16){ nesToast('文件太小，不是有效的 NES ROM'); return; }
+  if(file.size > 8 * 1024 * 1024){ nesToast('文件太大（超过 8MB），NES ROM 一般不到 4MB'); return; }
+  const fr = new FileReader();
+  fr.onload = () => {
+    const u8 = new Uint8Array(fr.result);
+    if(!(u8[0] === 0x4E && u8[1] === 0x45 && u8[2] === 0x53 && u8[3] === 0x1A)){
+      nesToast('这不是 .nes 文件（文件头不是 NES\\x1A）'); return;
+    }
+    let bin = '';
+    for(let i = 0; i < u8.length; i += 0x4000) bin += String.fromCharCode.apply(null, u8.subarray(i, i + 0x4000));
+    const rom = {
+      id: 'user' + nesUserRoms.length + '-' + u8.length,
+      name: file.name.replace(/\.nes$/i, '').slice(0, 40) || '我的 ROM',
+      author: '本机载入', license: '本地 ROM',
+      desc: '本机载入 · ' + Math.round(file.size / 1024) + 'KB',
+      bin, user: true
+    };
+    nesUserRoms.push(rom);
+    syncNesLobby();
+    nesStartRom(rom);
+  };
+  fr.onerror = () => nesToast('读取失败，换个文件试试');
+  fr.readAsArrayBuffer(file);
+}
+
+$('#nesGrid').addEventListener('click', e => {
+  const card = e.target.closest('.game-card');
+  if(!card) return;
+  if(card.id === 'nesLoadCard'){
+    if(nesLibState === 3){ nesStatusLine('模拟器没加载成功，刷新页面再试'); return; }
+    $('#nesFile').click();
+    return;
+  }
+  const i = Number(card.dataset.nrom);
+  const rom = nesRoms()[i];
+  if(rom) nesStartRom(rom);
+});
+$('#nesFile').addEventListener('change', e => {
+  const f = e.target.files && e.target.files[0];
+  e.target.value = '';
+  nesReadFile(f);
+});
+$('#nesBack').addEventListener('click', nesBackToLobby);
 
 /* ---------- 启动 ---------- */
 
