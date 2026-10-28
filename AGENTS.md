@@ -52,14 +52,15 @@
 - `makeCanvas(w, h)`：像素画布工厂（返回 `{cv, ctx}`，自动加 `.pix-canvas`）
 - `gsfx(name, throttleMs) / vibK(key)`：真实事件音效（`data/gsfx.js` 懒加载，未就绪时自动回退 `GSFX_FB` 合成音）+ 手机震动节奏（`VIBS`）；只在关键事件震，乐器类玩具保留合成 `tone()`
 - `ensureAudioData()`：注入 `data/gsfx.js`（首次交互 / 进游戏 / 空闲时调用，幂等）；`deferTabInit(name, fn) / runTabInit(name)`：内容 tab 首访渲染
-- `ensureNES(cb) / nesBoot(rom) / stopNes()`：复古游戏厅（jsnes）。`ensureNES` 幂等注入 `data/nes.js`；`setTab('nes')` 预先拉取，`setTab` 非 nes 时自动 `stopNes()`（清 rAF + 关 AudioContext）；ROM 对象形如 `{id,name,author,license,desc,b64|bin}`，用户载入的放 `nesUserRoms`；「载入 ROM」支持 .nes / .zip（zip 用浏览器原生 `DecompressionStream('deflate-raw')` 纯前端解包，零依赖）+ **多选批量导入**；**卡带架**（v3.7.2）：导入的 ROM 存本机 IndexedDB `wuliao-nes-carts`（`nesRack*` 函数族），刷新/重启都在，大厅「我的卡带架」卡片可玩/改名/删除；模拟器就绪时 `nesRackLoad()` 自动把卡带架灌回 `nesUserRoms`（rom.id=`rack<key>` 稳定，旧存档可重新挂上）
+- `ensureNES(cb) / nesBoot(rom) / stopNes()`：复古游戏厅（jsnes）。`ensureNES` 幂等注入 `data/nes.js`；`setTab('nes')` 预先拉取，`setTab` 非 nes 时自动 `stopNes()`（清 rAF + 关 AudioContext）；ROM 对象形如 `{id,name,author,license,desc,b64|bin}`，用户载入的放 `nesUserRoms`；「载入 ROM」支持 .nes / .zip（zip 用浏览器原生 `DecompressionStream('deflate-raw')` 纯前端解包，零依赖）+ **多选批量导入**；命名规则：**有 zip 用 zip 文件名，没有 zip 用 .nes 文件名**（过一遍 `nesPrettyName`：点号→空格、剥结尾地区/语言标记）；**卡带架**（v3.7.2）：导入的 ROM 存本机 IndexedDB `wuliao-nes-carts`（`nesRack*` 函数族），刷新/重启都在，大厅「我的卡带架」卡片可玩/改名/删除/清空；模拟器就绪时 `nesRackLoad()` 自动把卡带架灌回 `nesUserRoms`（rom.id=`rack<key>` 稳定，旧存档可重新挂上）；**按键**（v3.7.4）：`nesKeys`（localStorage `nes.keys`）可自定义双人键位，P1 默认 方向键+Z/X+Enter/右Shift、P2 默认 WASD+K/J+U/I，大厅「按键设置」卡片和游戏内「按键」按钮（自动暂停）进 `#nesKeysView` 改键（点框按键即绑、抢占式去重、Esc 取消），虚拟手柄固定玩家1
 - 模拟器要点：画面 `256×240` canvas 直接 `putImageData`（CSS `image-rendering:pixelated` 放大）、rAF 按 `1000/60.0988` 累加限帧、声音走 `onAudioSample` → Float32Array 累积 → `AudioBufferSourceNode` 排程（`A.next` 落后/超前都重对齐），音量跟随全局 `muted`（gain 0/0.3）；存档是 `toJSON()` → gzip(`CompressionStream`) → base64 存 `nes.state`（≈130KB）
 - `dailySeed() / seededPick(arr, seed, n)`：每日卡片（黄历宜忌 / 历史上的今天）的稳定随机；`renderDaily()` 启动时渲染一次，`data/daily.js` 缺失时静默跳过
 - 每日内容 seed 公式：`new Date()` → `seed = y*372 + (m+1)*31 + day`（poems daily、vocab Day 制、黄历/历史同源；词汇 epoch `V_EPOCH = 2026-10-24`）
 
-## localStorage 键位表（**禁止改名，会丢用户数据**；共 70 个）
+## localStorage 键位表（**禁止改名，会丢用户数据**；共 71 个）
 
 - 每日内容：`vocab.count/vocab.marks/vocab.streak/vocab.rev`、`story.stamp/story.count/story.favs/story.fsz`、`food.favs/food.spins`、`speak.favs/speak.streak`、`poem.favs`、`movie.favs/movie.rolls`、`life.favs/life.best`、`notes.list/notes.token/notes.gist/notes.fold`
+- 复古游戏厅：`nes.keys`（自定义按键映射 {p1:{UP…},p2:{…}}，值为 e.code）
 - 游戏最佳分：`snake.best`、`g2048.best`、`mine.best`、`tetris.best`、`simon.best`、`breakout.best`、`pong.best`、`flap.best`、`reflex.best`、`guess.best`、`maze.best`、`memory.best`、`rps.best`、`slide.best`、`mole.best`、`jumper.best`、`fishy.best`、`spider…`（`*.best` 后缀为惯例）
 - v3.6 新游戏：`suika.best`、`picross.best`、`jigsaw.best`、`diff.best`、`typing.best`、`hanoi.best`（对象 `{3,4,5}` 按盘数存）、`g24.best`、`reversi.best`
 - v3.6 新玩具/彩蛋：`muyu.count`、`qian.count`、`typewriter.count`、`slack.sec`（累计停留秒）、`slack.visits`（来访次数）
@@ -103,6 +104,7 @@
 
 ## 版本历史（摘要）
 
+- **v3.7.4 双人可自定义按键 + 卡带架清空**：`nesKeys` 键位映射（localStorage `nes.keys`，值=e.code），P1 默认 方向键+Z(B)/X(A)+Enter/右Shift、P2 默认 WASD+K(A)/J(B)+I(START)/U(SELECT)（4399 双人风格，双人分坐键盘两边）；大厅「按键设置 · 双人」卡片 + 游戏内「按键」按钮（自动暂停）进 `#nesKeysView`：点框→按键即绑（抢占式去重、Esc 取消、恢复默认），jsnes 双打 `buttonDown(2,…)` 接通，`S.down` 改为 `p:btn` 键；导入命名统一走 `nesPrettyName`（zip 文件名优先，点号→空格、剥 (J)(JU)(Chs) 等尾巴）；卡带架新增「🗑 清空卡带架」（确认后批量删 IndexedDB）
 - **v3.7.3 zip 导入用 zip 文件名**：卡带架导入 .zip 时 ROM 名优先取 zip 文件名（去 .zip），整理过中文名的 zip 包直接在卡带架显示中文名
 - **v3.7.2 我的卡带架**：复古游戏厅 ROM 本机持久化——导入的 .nes/.zip 存 IndexedDB `wuliao-nes-carts`（只存用户设备，网站/仓库零 ROM 字节）；大厅新卡片「我的卡带架 · N 张」→ 管理视图（玩/改名/删除，`#nesRackView`）；「载入 ROM」支持一次多选批量导入（`nesImportFiles`，大厅导入自动开玩第一张、卡带架内导入只入架）；模拟器就绪时 `nesRackLoad()` 自动回灌 `nesUserRoms`，rom.id 改为稳定 `rack<key>`（本机存档跨会话可挂回）；卡带架不可用（隐私模式/空间不足）自动降级为会话内可玩
 - **v3.7.1 载入 ROM 支持 zip 直载**：文件选择器收 .zip，纯前端解析 zip Central Directory + `DecompressionStream('deflate-raw')` 解包（浏览器原生 API，零依赖），取包内首个 .nes 直接开跑；无 .nes / 不支持的压缩方式 / zip64 等异常给友好提示；ROM 仍只进内存不落库
