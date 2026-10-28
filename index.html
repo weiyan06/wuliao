@@ -659,7 +659,7 @@ body.konami-on .wrap{animation:konamiHue .9s steps(6) infinite}
       </svg>
       <div>
         <h1>像素屋</h1>
-        <div class="tagline">PIXEL HOUSE v3.7.0</div>
+        <div class="tagline">PIXEL HOUSE v3.7.1</div>
       </div>
     </div>
     <div class="hdr-actions">
@@ -1975,7 +1975,7 @@ body.konami-on .wrap{animation:konamiHue .9s steps(6) infinite}
       <div id="nesLobby" class="lobby">
         <p class="view-tip">一台长在网页里的 8-bit 游戏机：内置开源自制游戏，也可以载入你自己的 <b>.nes</b> 文件（只在本机读取，不上传）。</p>
         <div class="card-grid" id="nesGrid"></div>
-        <input type="file" id="nesFile" class="nes-file" accept=".nes,application/octet-stream">
+        <input type="file" id="nesFile" class="nes-file" accept=".nes,.zip,application/octet-stream">
         <p class="nes-status" id="nesStatus"></p>
         <details class="nes-about">
           <summary>怎么玩 / 按键 / 版权说明</summary>
@@ -11781,7 +11781,7 @@ function renderNesLobby(){
   html += '<button class="game-card" id="nesLoadCard" type="button">'
     + '<span class="card-icon" aria-hidden="true">' + NES_LOAD_SVG + '</span>'
     + '<span class="card-name">载入 ROM</span>'
-    + '<span class="card-desc">选一个 .nes 文件，本机运行、不上传</span>'
+    + '<span class="card-desc">选 .nes / .zip 文件，本机运行、不上传</span>'
     + '</button>';
   grid.innerHTML = html;
 }
@@ -12126,31 +12126,79 @@ function nesStartRom(rom){
     nesBoot(rom);
   });
 }
+function nesLoadBytes(u8, name, sizeLabel){
+  if(!(u8[0] === 0x4E && u8[1] === 0x45 && u8[2] === 0x53 && u8[3] === 0x1A)){
+    nesToast('这不是 .nes 文件（文件头不是 NES\\x1A）'); return;
+  }
+  let bin = '';
+  for(let i = 0; i < u8.length; i += 0x4000) bin += String.fromCharCode.apply(null, u8.subarray(i, i + 0x4000));
+  const rom = {
+    id: 'user' + nesUserRoms.length + '-' + u8.length,
+    name: (name || '').replace(/\.nes$/i, '').slice(0, 40) || '我的 ROM',
+    author: '本机载入', license: '本地 ROM',
+    desc: '本机载入 · ' + sizeLabel,
+    bin, user: true
+  };
+  nesUserRoms.push(rom);
+  syncNesLobby();
+  nesStartRom(rom);
+}
 function nesReadFile(file){
   if(!file) return;
+  if(/\.zip$/i.test(file.name)){ nesReadZip(file); return; }
   if(file.size < 16){ nesToast('文件太小，不是有效的 NES ROM'); return; }
   if(file.size > 8 * 1024 * 1024){ nesToast('文件太大（超过 8MB），NES ROM 一般不到 4MB'); return; }
   const fr = new FileReader();
-  fr.onload = () => {
-    const u8 = new Uint8Array(fr.result);
-    if(!(u8[0] === 0x4E && u8[1] === 0x45 && u8[2] === 0x53 && u8[3] === 0x1A)){
-      nesToast('这不是 .nes 文件（文件头不是 NES\\x1A）'); return;
-    }
-    let bin = '';
-    for(let i = 0; i < u8.length; i += 0x4000) bin += String.fromCharCode.apply(null, u8.subarray(i, i + 0x4000));
-    const rom = {
-      id: 'user' + nesUserRoms.length + '-' + u8.length,
-      name: file.name.replace(/\.nes$/i, '').slice(0, 40) || '我的 ROM',
-      author: '本机载入', license: '本地 ROM',
-      desc: '本机载入 · ' + Math.round(file.size / 1024) + 'KB',
-      bin, user: true
-    };
-    nesUserRoms.push(rom);
-    syncNesLobby();
-    nesStartRom(rom);
-  };
+  fr.onload = () => { nesLoadBytes(new Uint8Array(fr.result), file.name, Math.round(file.size / 1024) + 'KB'); };
   fr.onerror = () => nesToast('读取失败，换个文件试试');
   fr.readAsArrayBuffer(file);
+}
+/* zip 直载：纯前端解包（DecompressionStream 原生 API，零依赖），ROM 只进内存不落库 */
+function nesReadZip(file){
+  if(typeof DecompressionStream === 'undefined'){ nesToast('这个浏览器不支持在线解压，请先解压出 .nes 再载入'); return; }
+  if(file.size > 8 * 1024 * 1024){ nesToast('zip 太大（超过 8MB），一次装一个游戏的 zip 就好'); return; }
+  file.arrayBuffer().then(buf => {
+    const dv = new DataView(buf), u8 = new Uint8Array(buf);
+    let eocd = -1;
+    for(let i = buf.byteLength - 22; i >= 0 && i > buf.byteLength - 22 - 65558; i--){
+      if(dv.getUint32(i, true) === 0x06054b50){ eocd = i; break; }
+    }
+    if(eocd < 0) throw new Error('不是有效的 zip 文件');
+    const td = new TextDecoder();
+    let p = dv.getUint32(eocd + 16, true);
+    const n = dv.getUint16(eocd + 10, true);
+    let pick = null;
+    for(let k = 0; k < n; k++){
+      if(p + 46 > eocd || dv.getUint32(p, true) !== 0x02014b50) break;
+      const nameLen = dv.getUint16(p + 28, true), extraLen = dv.getUint16(p + 30, true), cmtLen = dv.getUint16(p + 32, true);
+      const name = td.decode(u8.subarray(p + 46, p + 46 + nameLen));
+      if(/\.nes$/i.test(name) && !pick){
+        pick = {
+          name: name.replace(/^.*[\\/]/, ''),
+          method: dv.getUint16(p + 10, true),
+          csize: dv.getUint32(p + 20, true),
+          lho: dv.getUint32(p + 42, true)
+        };
+      }
+      p += 46 + nameLen + extraLen + cmtLen;
+    }
+    if(!pick) throw new Error('zip 里没有找到 .nes 文件');
+    if(!pick.csize || pick.csize === 0xFFFFFFFF) throw new Error('这个 zip 的打包方式太特殊，请先解压再载入 .nes');
+    if(dv.getUint32(pick.lho, true) !== 0x04034b50) throw new Error('zip 数据损坏，重新打包再试');
+    const dataStart = pick.lho + 30 + dv.getUint16(pick.lho + 26, true) + dv.getUint16(pick.lho + 28, true);
+    const raw = u8.subarray(dataStart, dataStart + pick.csize);
+    if(pick.method === 0){
+      nesLoadBytes(raw.slice(), pick.name, Math.round(raw.length / 1024) + 'KB（zip 解包）');
+    } else if(pick.method === 8){
+      new Response(new Blob([raw]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer().then(out => {
+        const outU8 = new Uint8Array(out);
+        if(outU8.length > 8 * 1024 * 1024){ nesToast('解包后超过 8MB，不像单个 NES ROM'); return; }
+        nesLoadBytes(outU8, pick.name, Math.round(outU8.length / 1024) + 'KB（zip 解包）');
+      }).catch(() => nesToast('zip 解压失败，文件可能损坏'));
+    } else {
+      throw new Error('这个 zip 的压缩方式不支持（method ' + pick.method + '），请先解压再载入');
+    }
+  }).catch(err => nesToast((err && err.message) || 'zip 解析失败，换个文件试试'));
 }
 
 $('#nesGrid').addEventListener('click', e => {

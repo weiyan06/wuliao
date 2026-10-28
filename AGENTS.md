@@ -52,7 +52,7 @@
 - `makeCanvas(w, h)`：像素画布工厂（返回 `{cv, ctx}`，自动加 `.pix-canvas`）
 - `gsfx(name, throttleMs) / vibK(key)`：真实事件音效（`data/gsfx.js` 懒加载，未就绪时自动回退 `GSFX_FB` 合成音）+ 手机震动节奏（`VIBS`）；只在关键事件震，乐器类玩具保留合成 `tone()`
 - `ensureAudioData()`：注入 `data/gsfx.js`（首次交互 / 进游戏 / 空闲时调用，幂等）；`deferTabInit(name, fn) / runTabInit(name)`：内容 tab 首访渲染
-- `ensureNES(cb) / nesBoot(rom) / stopNes()`：复古游戏厅（jsnes）。`ensureNES` 幂等注入 `data/nes.js`；`setTab('nes')` 预先拉取，`setTab` 非 nes 时自动 `stopNes()`（清 rAF + 关 AudioContext）；ROM 对象形如 `{id,name,author,license,desc,b64|bin}`，用户载入的放 `nesUserRoms`（仅内存，不落库）
+- `ensureNES(cb) / nesBoot(rom) / stopNes()`：复古游戏厅（jsnes）。`ensureNES` 幂等注入 `data/nes.js`；`setTab('nes')` 预先拉取，`setTab` 非 nes 时自动 `stopNes()`（清 rAF + 关 AudioContext）；ROM 对象形如 `{id,name,author,license,desc,b64|bin}`，用户载入的放 `nesUserRoms`（仅内存，不落库）；「载入 ROM」支持 .nes / .zip（zip 用浏览器原生 `DecompressionStream('deflate-raw')` 纯前端解包，零依赖）
 - 模拟器要点：画面 `256×240` canvas 直接 `putImageData`（CSS `image-rendering:pixelated` 放大）、rAF 按 `1000/60.0988` 累加限帧、声音走 `onAudioSample` → Float32Array 累积 → `AudioBufferSourceNode` 排程（`A.next` 落后/超前都重对齐），音量跟随全局 `muted`（gain 0/0.3）；存档是 `toJSON()` → gzip(`CompressionStream`) → base64 存 `nes.state`（≈130KB）
 - `dailySeed() / seededPick(arr, seed, n)`：每日卡片（黄历宜忌 / 历史上的今天）的稳定随机；`renderDaily()` 启动时渲染一次，`data/daily.js` 缺失时静默跳过
 - 每日内容 seed 公式：`new Date()` → `seed = y*372 + (m+1)*31 + day`（poems daily、vocab Day 制、黄历/历史同源；词汇 epoch `V_EPOCH = 2026-10-24`）
@@ -102,6 +102,8 @@
 - **模拟器数据必须懒加载**：`data/nes.js` 156KB，`setTab('nes')` 才注入；否则首屏 gzip 直接 +34KB
 
 ## 版本历史（摘要）
+
+- **v3.7.1 载入 ROM 支持 zip 直载**：文件选择器收 .zip，纯前端解析 zip Central Directory + `DecompressionStream('deflate-raw')` 解包（浏览器原生 API，零依赖），取包内首个 .nes 直接开跑；无 .nes / 不支持的压缩方式 / zip64 等异常给友好提示；ROM 仍只进内存不落库
 
 - **v3.7.0 复古游戏厅（第 12 个 tab）**：内联 jsnes 1.2.1（Apache-2.0）跑 NES/FC 游戏——内置 MIT 开源 ROM **Falling**（tragicmuffin）打开即玩 + 「载入 ROM」本机选 `.nes`（FileReader，不上传、只进内存）；256×240 `pixelated` 画面、rAF 按 NTSC 帧长限帧、Web Audio 采样排程（跟随全局静音）、键盘（方向键/WASD + X=A/Y=B… 实际 Z=B X=A + Enter=Start/Shift=Select）、粗指针设备出虚拟手柄（D-pad + A/B + SELECT/START）、暂停/重置/全屏、**单槽存读档**（`toJSON` → gzip → base64 → `nes.state`）；沉浸模式复用 `body.game-full`，切 tab 自动 `stopNes()` 清 rAF + 关 AudioContext；新增 `data/nes.js`（懒加载）与 `licenses/`（两份授权原文）；新键 `nes.state`（70 个）
 - **v3.6.1 性能与稳定性补丁**：`data/gsfx.js` 改为懒加载（`ensureAudioData`，首次交互/进游戏/空闲注入，音效未就绪自动合成兜底）；内容 tab（speak/food/story/vocab/movies/life/random）改为首访渲染（`deferTabInit`）；每日卡片/背单词/妙招跨天自动刷新（`refreshDailyUi` + 零点定时器 + `visibilitychange` 补刷）；记忆色块/转盘/掷骰子的定时器在 `destroy` 里清理；修幸运转盘 `destroy` 前丢失的 `});` 造成的**全站脚本语法错误**（线上白屏级事故）；修掷骰子离场后音频 `ended` 回调写已销毁 DOM 的报错；字体 CSS 改 `media=print` 异步加载；补 SEO/OG meta
