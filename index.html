@@ -674,7 +674,7 @@ body.konami-on .wrap{animation:konamiHue .9s steps(6) infinite}
       </svg>
       <div>
         <h1>像素屋</h1>
-        <div class="tagline">PIXEL HOUSE v3.7.7</div>
+        <div class="tagline">PIXEL HOUSE v3.7.8</div>
       </div>
     </div>
     <div class="hdr-actions">
@@ -12151,12 +12151,16 @@ async function nesLoadState(){
 
 /* ---- 起停 ---- */
 function nesNewEmu(S){
-  return new window.jsnes.NES({
+  const nes = new window.jsnes.NES({
     onFrame: buf => nesFrame(S, buf),
     onAudioSample: (l, r) => nesSample(S, l, r),
     sampleRate: 44100,
     emulateSound: true
   });
+  // jsnes 默认 clipToTvSize=true：endFrame() 会把上/下/左/右各 8px 整列抹黑（TV 过扫描裁边），
+  // 实测就是「状态栏右边被截掉一块」。关掉后才是完整的 256×240。
+  nes.ppu.clipToTvSize = false;
+  return nes;
 }
 function nesPauseUi(S){
   const stage = $('#nesMount .nes-stage');

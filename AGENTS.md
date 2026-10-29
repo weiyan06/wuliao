@@ -101,10 +101,13 @@
 - **jsnes 崩溃会走 `this.nes.stop()`**：1.2.1 里 `NES.prototype.stop` 不存在 → 每帧抛 `this.nes.stop is not a function` 刷屏。所以 `nesLoop` 里 `frame()` 必须 try/catch，出错就暂停并提示「点重置」
 - **存档别直接存 `toJSON()`**：原始 JSON ≈1.9MB（ppu 的 vramMem/buffer/bgbuffer 全是 3 万级普通数组），必须 `CompressionStream('gzip')`+base64（≈130KB）再进 localStorage；`DecompressionStream` 兜底走 `raw:` 前缀
 - **模拟器数据必须懒加载**：`data/nes.js` 156KB，`setTab('nes')` 才注入；否则首屏 gzip 直接 +34KB
+- **jsnes 画面四边默认被裁**：`ppu.clipToTvSize` 初值 `true`，`endFrame()` 把上下左右各 8px 清零（TV 过扫描）。症状是「状态栏右边少一块」，**但不报错、其余画面看着全对** —— 排查画面缺角先查它，别去怀疑 mapper / 滚动 / 镜像；已在 `nesNewEmu` 置 `false`，改模拟器时别改回去
+
 
 ## 版本历史（摘要）
 
-- **v3.7.7 修 jsnes MMC3 IRQ（天神之剑能跑了）**：按 jsnes 官方 issue #595 + nesdev 标准修 `data/nes.js` Mapper4 三处——$C000=锁存/$C001=触发重装（原版写反）、`clockIrqCounter` 重写为「counter==0 或 reload 标志 → 从锁存重装，否则递减；减到 0 且使能才发 IRQ」（重装拍**不**递减，周期=latch+1 拍；初版把重装和递减写成逗号链导致提前 1 拍触发，忍者龙剑传3(汉) 会崩）、`irqReload` 进 toJSON/fromJSON 存档。实测：天神之剑/水晶战记（美版 Crystalis）✓、快打旋风 ✓、精选 27 款 MMC3 中 24 款 ✓ 无回归；超级马里奥兄弟3、忍者神龟3 新旧代码都崩（jsnes 固有缺陷，之前只验过 mapper 头从未真跑）；精选文件夹 68→71（+快打旋风、天神之剑（水晶战记）[美版 mapper4]、用户自加天神之剑（汉化）[mapper195 不支持]），游戏清单.txt 补真机试跑备注
+- **v3.7.8 兼容 mapper 195 + 修画面四边被裁**：① `data/nes.js` 注册 `h[195]=h[4]` —— iNES 195 = Waixing FS303，本质是 MMC3 克隆（PRG/CHR/镜像/IRQ 寄存器与 MMC3 一致，多一块「按 PPU 写 CHR 地址选 CHR-RAM」的 GAL），直接复用 MMC3 实现即可；「天神之剑（汉化）」（flags6=0x32 / flags7=0xC0 → mapper195，PRG 32×16K + CHR 32×8K，电池存档）从 `loadROM` 抛「mapper not supported by JSNES」变为正常进游戏。② 修**画面不全**：jsnes 1.2.1 `ppu.clipToTvSize` 初值 `true`，`endFrame()` 会把最上/下/左/右各 8px **整列清零**（TV 过扫描裁边），症状是「状态栏右边像被截了一块」；`nesNewEmu` 里置 `false` 后，状态栏 y=224~239 十六行恢复 256 全宽（右 8 列亮像素 0→128，走默认值时整条为 0）。实测：汉化版 标题 → 过场 → 带状态栏的游玩画面渲染正常、FPS 60；12 个 tab 回归全过、控制台零报错。仍属 jsnes Apache-2.0 改动版，`licenses/` 不变，ROM 字节不进仓库。
+- **v3.7.7 修 jsnes MMC3 IRQ（天神之剑能跑了）**：按 jsnes 官方 issue #595 + nesdev 标准修 `data/nes.js` Mapper4 三处——$C000=锁存/$C001=触发重装（原版写反）、`clockIrqCounter` 重写为「counter==0 或 reload 标志 → 从锁存重装，否则递减；减到 0 且使能才发 IRQ」（重装拍**不**递减，周期=latch+1 拍；初版把重装和递减写成逗号链导致提前 1 拍触发，忍者龙剑传3(汉) 会崩）、`irqReload` 进 toJSON/fromJSON 存档。实测：天神之剑/水晶战记（美版 Crystalis）✓、快打旋风 ✓、精选 27 款 MMC3 中 24 款 ✓ 无回归；超级马里奥兄弟3、忍者神龟3 新旧代码都崩（jsnes 固有缺陷，之前只验过 mapper 头从未真跑）；精选文件夹 68→71（+快打旋风、天神之剑（水晶战记）[美版 mapper4]、用户自加天神之剑（汉化）[mapper195 不支持，v3.7.8 已支持]），游戏清单.txt 补真机试跑备注
 
 - **v3.7.6 修模拟器画面红蓝反色**：jsnes 帧缓冲实际输出 `0x00BBGGRR`（调色板 $16 红=0x0019BC 实证：低位字节才是 R），`nesFrame` 原来按 `0x00RRGGBB` 又交换了一次导致红蓝对调（游戏画面整体偏蓝/粉）；修复为直接透传 `0xFF000000 | v`（小端 u32 补 alpha 即 RGBA），并用 NES 标准调色板 64 色合成帧截图验证
 - **v3.7.5 默认键位按用户习惯重设 + 真连发**：P1 = WASD 移动 · J=B(攻击) · K=A(跳跃) · U=连发攻击 · I=连发跳跃 · 数字1=确定 · 数字3=选择；P2 = 方向键 · 小键盘1(B)/2(A)/4(TB)/5(TA) · 小键盘Enter=确定 · 右Shift=选择；连发键为软件实现（按住时主循环每 55ms 翻转底层 A/B ≈18 次/秒，暂停/失焦/停止自动释放防卡键）；`nesKeysLoad` 检测 v3.7.4 旧结构（缺 TA/TB）整体换新默认，新结构只补缺失项（自定义保留）
