@@ -14,16 +14,16 @@
 
 ## 文件布局
 
-| 文件               | 体量     | 内容                                                                 | 加载方式                                    |
-| ---------------- | ------ | ------------------------------------------------------------------ | --------------------------------------- |
-| `index.html`     | ~552KB | 全部 HTML + CSS + 逻辑（巨型 `<script>` 在 `<body>` 末尾）                    | 首屏                                      |
-| `data/site.js`   | 122KB  | CONTENT（随机内容，含歇后语 45 条）/ SPEAKS(100) / DISHES(60) / STORIES(40) / VOCAB(220) | 首屏同步前载                       |
-| `data/daily.js`  | 9.4KB  | ALMANAC_YI(38) / ALMANAC_JI(36) / HISTORY(89 条带日期) / HISTORY_FALLBACK(22) | 首屏同步前载（`renderDaily` 有 `typeof` 守卫） |
-| `data/movies.js` | 30KB   | MOVIES(95部) 片库                                                     | 首屏同步前载                                  |
-| `data/gsfx.js`   | 130KB  | GSFX(23个游戏事件音效 mp3 base64，Kenney CC0 来源)                     | **懒加载**，首次交互 / 进游戏时 `ensureAudioData()` 注入 |
-| `data/tang.js`   | 1.7MB  | TANG300(320首) + TANG_S2T/TANG_T2S 繁简映射 + TANG_FOLD                 | **懒加载**，首次进诗词 tab 时 `ensureTang(cb)` 注入 |
-| `data/nes.js`    | 156KB  | jsnes 1.2.1（NES 模拟器 UMD，Apache-2.0）+ NES_ROMS[1]（Falling，MIT，ROM base64）+ NES_LICENSE | **懒加载**，首次进复古游戏厅时 `ensureNES(cb)` 注入 |
-| `licenses/`      | 12KB   | jsnes Apache-2.0 / Falling MIT 授权原文 + 说明                        | 静态文件，不上页面                            |
+| 文件               | 体量     | 内容                                                                                    | 加载方式                                       |
+| ---------------- | ------ | ------------------------------------------------------------------------------------- | ------------------------------------------ |
+| `index.html`     | ~552KB | 全部 HTML + CSS + 逻辑（巨型 `<script>` 在 `<body>` 末尾）                                       | 首屏                                         |
+| `data/site.js`   | 122KB  | CONTENT（随机内容，含歇后语 45 条）/ SPEAKS(100) / DISHES(60) / STORIES(40) / VOCAB(220)          | 首屏同步前载                                     |
+| `data/daily.js`  | 9.4KB  | ALMANAC_YI(38) / ALMANAC_JI(36) / HISTORY(89 条带日期) / HISTORY_FALLBACK(22)             | 首屏同步前载（`renderDaily` 有 `typeof` 守卫）        |
+| `data/movies.js` | 30KB   | MOVIES(95部) 片库                                                                        | 首屏同步前载                                     |
+| `data/gsfx.js`   | 130KB  | GSFX(23个游戏事件音效 mp3 base64，Kenney CC0 来源)                                              | **懒加载**，首次交互 / 进游戏时 `ensureAudioData()` 注入 |
+| `data/tang.js`   | 1.7MB  | TANG300(320首) + TANG_S2T/TANG_T2S 繁简映射 + TANG_FOLD                                    | **懒加载**，首次进诗词 tab 时 `ensureTang(cb)` 注入    |
+| `data/nes.js`    | 156KB  | jsnes 1.2.1（NES 模拟器 UMD，Apache-2.0）+ NES_ROMS[1]（Falling，MIT，ROM base64）+ NES_LICENSE | **懒加载**，首次进复古游戏厅时 `ensureNES(cb)` 注入       |
+| `licenses/`      | 12KB   | jsnes Apache-2.0 / Falling MIT 授权原文 + 说明                                              | 静态文件，不上页面                                  |
 
 巨型 script 的内部分区用 `/* ---------- 标题 ---------- */` 注释分隔，顺序大致是：
 工具函数 → sfx/VIEWS/setTab → 游戏（GAMES.xxx = {…}）→ 各内容 tab 逻辑（poems/speak/food/story/vocab/movies）→ `/* ---------- 启动 ---------- */` 收尾。
@@ -102,46 +102,81 @@
 - **存档别直接存 `toJSON()`**：原始 JSON ≈1.9MB（ppu 的 vramMem/buffer/bgbuffer 全是 3 万级普通数组），必须 `CompressionStream('gzip')`+base64（≈130KB）再进 localStorage；`DecompressionStream` 兜底走 `raw:` 前缀
 - **模拟器数据必须懒加载**：`data/nes.js` 156KB，`setTab('nes')` 才注入；否则首屏 gzip 直接 +34KB
 - **jsnes 画面四边默认被裁**：`ppu.clipToTvSize` 初值 `true`，`endFrame()` 把上下左右各 8px 清零（TV 过扫描）。症状是「状态栏右边少一块」，**但不报错、其余画面看着全对** —— 排查画面缺角先查它，别去怀疑 mapper / 滚动 / 镜像；已在 `nesNewEmu` 置 `false`，改模拟器时别改回去
-
+- **jsnes `nmiCounter` 太小 → 游戏卡在等 vblank、整屏灰**：`endScanline` case 261 置 vblank 标志后，要等 `nmiCounter` 个 PPU dot 才触发 NMI；原值 9 ≈3 CPU 周期，比游戏主循环 `LDA $2002 / BPL` 一轮 7 周期还短，NMI 处理程序每帧抢先把 $80 读走 → 游戏永远等不到 vblank → PPU 一个字节都没初始化（调色板/nametable/CHR 全 0）→ **整屏灰**（NES 调色板 $00 就是灰，所以是灰不是黑）。辨识特征：`cpu.REG_PC` 连续几百帧钉死在同一地址 + `ppu.vramMem[0x3F00..0x3F1F]` 全 0。已改 `60`；这是**全局 NMI 时序**，再动它必须连带回归 MMC3 分屏游戏
 
 ## 版本历史（摘要）
 
+- **v3.7.9 修 jsnes NMI 时序（赤色要塞开局整屏灰）**：`endScanline` case 261 置 vblank 标志后靠 `nmiCounter` 延时才触发 NMI，原值 `9` dot ≈3 CPU 周期，比游戏主循环 `LDA $2002 / BPL` 一轮 7 周期还短 → 每帧 NMI 处理程序（向量 $C292 一进来就 `LDA $2002`）抢先把 $80 吃掉，主循环 83900 次读取全拿到 $00 → 卡在 `$D0E0` 死等、PPU 从未被写过 → 调色板/nametable/CHR-RAM 全 0，整屏只剩 NES 调色板 $00 的灰。改 `nmiCounter=60` dot（最坏情况 24+9+12=45，扫参 24 能过但太脆）。「赤色要塞」（mapper 2 UxROM + CHR-RAM，即 Jackal）PC 脱困到 $C28F、调色板 0→30、CHR-RAM 0→4766、nametable 0→486。回归：mapper 0/1/2/3/4/195 各选代表（超级马里奥兄弟 / 塞尔达传说 / 魂斗罗 / 冒险岛 / 天神之剑（水晶战记）/ 快打旋风 / 吞食天地II / 天神之剑（汉化））+ 内置 Falling 全部正常渲染；天神之剑（汉化）状态栏 y=224~239 仍是 16 行 × 256 全宽、右 8 列 128 个亮像素（MMC3 IRQ 分屏未受 NMI 改动影响）；12 个 tab 回归全过、控制台零报错。**已知遗留（与本次无关）**：mapper 5 的「恶魔城传说 / 三国志II霸王的大陆 / 大航海时代」开机即抛 `papu.exWrite is not a function` / `this.SetBank_CPU is not a function` —— `h[5]` 是个残缺 MMC5 桩，`exWrite/ClearIRQ/SetBank_CPU/SetBank_PPU/SetBank_SRAM` 只有调用没有定义，自 v3.7.0 内联 jsnes 起就如此
 - **v3.7.8 兼容 mapper 195 + 修画面四边被裁**：① `data/nes.js` 注册 `h[195]=h[4]` —— iNES 195 = Waixing FS303，本质是 MMC3 克隆（PRG/CHR/镜像/IRQ 寄存器与 MMC3 一致，多一块「按 PPU 写 CHR 地址选 CHR-RAM」的 GAL），直接复用 MMC3 实现即可；「天神之剑（汉化）」（flags6=0x32 / flags7=0xC0 → mapper195，PRG 32×16K + CHR 32×8K，电池存档）从 `loadROM` 抛「mapper not supported by JSNES」变为正常进游戏。② 修**画面不全**：jsnes 1.2.1 `ppu.clipToTvSize` 初值 `true`，`endFrame()` 会把最上/下/左/右各 8px **整列清零**（TV 过扫描裁边），症状是「状态栏右边像被截了一块」；`nesNewEmu` 里置 `false` 后，状态栏 y=224~239 十六行恢复 256 全宽（右 8 列亮像素 0→128，走默认值时整条为 0）。实测：汉化版 标题 → 过场 → 带状态栏的游玩画面渲染正常、FPS 60；12 个 tab 回归全过、控制台零报错。仍属 jsnes Apache-2.0 改动版，`licenses/` 不变，ROM 字节不进仓库。
+
 - **v3.7.7 修 jsnes MMC3 IRQ（天神之剑能跑了）**：按 jsnes 官方 issue #595 + nesdev 标准修 `data/nes.js` Mapper4 三处——$C000=锁存/$C001=触发重装（原版写反）、`clockIrqCounter` 重写为「counter==0 或 reload 标志 → 从锁存重装，否则递减；减到 0 且使能才发 IRQ」（重装拍**不**递减，周期=latch+1 拍；初版把重装和递减写成逗号链导致提前 1 拍触发，忍者龙剑传3(汉) 会崩）、`irqReload` 进 toJSON/fromJSON 存档。实测：天神之剑/水晶战记（美版 Crystalis）✓、快打旋风 ✓、精选 27 款 MMC3 中 24 款 ✓ 无回归；超级马里奥兄弟3、忍者神龟3 新旧代码都崩（jsnes 固有缺陷，之前只验过 mapper 头从未真跑）；精选文件夹 68→71（+快打旋风、天神之剑（水晶战记）[美版 mapper4]、用户自加天神之剑（汉化）[mapper195 不支持，v3.7.8 已支持]），游戏清单.txt 补真机试跑备注
 
 - **v3.7.6 修模拟器画面红蓝反色**：jsnes 帧缓冲实际输出 `0x00BBGGRR`（调色板 $16 红=0x0019BC 实证：低位字节才是 R），`nesFrame` 原来按 `0x00RRGGBB` 又交换了一次导致红蓝对调（游戏画面整体偏蓝/粉）；修复为直接透传 `0xFF000000 | v`（小端 u32 补 alpha 即 RGBA），并用 NES 标准调色板 64 色合成帧截图验证
+
 - **v3.7.5 默认键位按用户习惯重设 + 真连发**：P1 = WASD 移动 · J=B(攻击) · K=A(跳跃) · U=连发攻击 · I=连发跳跃 · 数字1=确定 · 数字3=选择；P2 = 方向键 · 小键盘1(B)/2(A)/4(TB)/5(TA) · 小键盘Enter=确定 · 右Shift=选择；连发键为软件实现（按住时主循环每 55ms 翻转底层 A/B ≈18 次/秒，暂停/失焦/停止自动释放防卡键）；`nesKeysLoad` 检测 v3.7.4 旧结构（缺 TA/TB）整体换新默认，新结构只补缺失项（自定义保留）
+
 - **v3.7.4 双人可自定义按键 + 卡带架清空**：`nesKeys` 键位映射（localStorage `nes.keys`，值=e.code），P1 默认 方向键+Z(B)/X(A)+Enter/右Shift、P2 默认 WASD+K(A)/J(B)+I(START)/U(SELECT)（4399 双人风格，双人分坐键盘两边）；大厅「按键设置 · 双人」卡片 + 游戏内「按键」按钮（自动暂停）进 `#nesKeysView`：点框→按键即绑（抢占式去重、Esc 取消、恢复默认），jsnes 双打 `buttonDown(2,…)` 接通，`S.down` 改为 `p:btn` 键；导入命名统一走 `nesPrettyName`（zip 文件名优先，点号→空格、剥 (J)(JU)(Chs) 等尾巴）；卡带架新增「🗑 清空卡带架」（确认后批量删 IndexedDB）
+
 - **v3.7.3 zip 导入用 zip 文件名**：卡带架导入 .zip 时 ROM 名优先取 zip 文件名（去 .zip），整理过中文名的 zip 包直接在卡带架显示中文名
+
 - **v3.7.2 我的卡带架**：复古游戏厅 ROM 本机持久化——导入的 .nes/.zip 存 IndexedDB `wuliao-nes-carts`（只存用户设备，网站/仓库零 ROM 字节）；大厅新卡片「我的卡带架 · N 张」→ 管理视图（玩/改名/删除，`#nesRackView`）；「载入 ROM」支持一次多选批量导入（`nesImportFiles`，大厅导入自动开玩第一张、卡带架内导入只入架）；模拟器就绪时 `nesRackLoad()` 自动回灌 `nesUserRoms`，rom.id 改为稳定 `rack<key>`（本机存档跨会话可挂回）；卡带架不可用（隐私模式/空间不足）自动降级为会话内可玩
+
 - **v3.7.1 载入 ROM 支持 zip 直载**：文件选择器收 .zip，纯前端解析 zip Central Directory + `DecompressionStream('deflate-raw')` 解包（浏览器原生 API，零依赖），取包内首个 .nes 直接开跑；无 .nes / 不支持的压缩方式 / zip64 等异常给友好提示；ROM 仍只进内存不落库
 
 - **v3.7.0 复古游戏厅（第 12 个 tab）**：内联 jsnes 1.2.1（Apache-2.0）跑 NES/FC 游戏——内置 MIT 开源 ROM **Falling**（tragicmuffin）打开即玩 + 「载入 ROM」本机选 `.nes`（FileReader，不上传、只进内存）；256×240 `pixelated` 画面、rAF 按 NTSC 帧长限帧、Web Audio 采样排程（跟随全局静音）、键盘（方向键/WASD + X=A/Y=B… 实际 Z=B X=A + Enter=Start/Shift=Select）、粗指针设备出虚拟手柄（D-pad + A/B + SELECT/START）、暂停/重置/全屏、**单槽存读档**（`toJSON` → gzip → base64 → `nes.state`）；沉浸模式复用 `body.game-full`，切 tab 自动 `stopNes()` 清 rAF + 关 AudioContext；新增 `data/nes.js`（懒加载）与 `licenses/`（两份授权原文）；新键 `nes.state`（70 个）
+
 - **v3.6.1 性能与稳定性补丁**：`data/gsfx.js` 改为懒加载（`ensureAudioData`，首次交互/进游戏/空闲注入，音效未就绪自动合成兜底）；内容 tab（speak/food/story/vocab/movies/life/random）改为首访渲染（`deferTabInit`）；每日卡片/背单词/妙招跨天自动刷新（`refreshDailyUi` + 零点定时器 + `visibilitychange` 补刷）；记忆色块/转盘/掷骰子的定时器在 `destroy` 里清理；修幸运转盘 `destroy` 前丢失的 `});` 造成的**全站脚本语法错误**（线上白屏级事故）；修掷骰子离场后音频 `ended` 回调写已销毁 DOM 的报错；字体 CSS 改 `media=print` 异步加载；补 SEO/OG meta
+
 - **v3.6.0「全都坐上去」大礼包**：小游戏 32→40（合成大西瓜 / 数织 Picross / 像素拼图 / 找不同 / 打字高手 / 汉诺塔 / 24 点 / 黑白棋），互动玩具 32→36（电子木鱼 / 求签筒 / 白噪音 / 打字机），随机 tab 顶部新增「今日黄历（宜 4 忌 4）」+「历史上的今天」两张每日卡片（seed 同源，新增 `data/daily.js`），随机栏目 9→10（歇后语 45 条，`c-xie` 配色），页脚摸鱼计数器（`slack.sec/slack.visits`，按秒累计、10 秒落库、`pagehide` 兜底），隐藏 **Konami 秘技**（`↑↑↓↓←→←→BA` → 90 片彩带 + 全站色相流转 + toast，输入框内不触发）；新键 13 个：8 个游戏 `*.best` + `muyu.count/qian.count/typewriter.count/slack.sec/slack.visits`
+
 - **v3.5.0 像素宠物「果冻」大扩展**：`pet.save` 存档（起名/6 色皮肤/离线衰减封顶 96h）+ 眼睛跟随指针/摸身体害羞 + 吐槽气泡/随机蹦跳摇头 + 睡觉模式（22:00~8:00 Zzz，喂食吵醒 6s）+ 成长阶段（照顾 5 天大果冻、15 天果冻王戴金冠）+ 清洁度第三数值 + 3 秒搓澡小游戏（点破泡泡加清洁）+ 随机食物喂食（蛋糕/苹果/辣椒 spicy 特效/面包）；新键 `pet.save`
+
 - v2.7 睡前故事 / v2.8 每日背单词（ECDICT 词库）/ v2.9 数据拆分优化（2.14MB→首屏 102KB）
+
 - v2.9.1 五子棋落子修复（round→floor）
+
 - v3.0 电影推荐 tab（95 部片库 + 掷骰荐片机）
+
 - v3.0.1 掷骰子改 5 颗 + 闪烁动画 + 「最大」总和统计；destroy 清定时器修复
+
 - v3.0.2 骰子 3+2 两排 + 真实骰子配色（1/4 红点）
+
 - v3.0.3 修 1 点大红点偏位（box-shadow 外扩不碰布局）
+
 - v3.1.1 修复 Gist 连接 422（noteGh 漏传 body + Content-Type 头）
+
 - **v3.1.2 Gist 同步自愈：缓存 gist 404 时自动清缓存→重新发现→认领现存 gist（防分叉）**
+
 - v3.1.3 token 体验：本机 token 回显输入框（明文可复制）+ `?t=` URL 一次点击配新设备（吸收后清地址栏）
+
 - v3.1.4 内置混淆 token：新设备零配置自动连接+开机自动同步；断开用 `notes.token='!off'` 记忆
+
 - v3.1.5 同步设置面板可折叠：默认收起（有 token 时），`notes.fold` 记忆手动展开/收起
+
 - v3.1.6 全站改名：像素快乐星球/BOREDOM KILLER → **像素屋 / PIXEL HOUSE**（存储键 wuliao.* 与仓库地址不变）
+
 - **v3.2.0 生活妙招 tab（79 条小常识：每日主推 + 分类浏览/收藏/搜索 + 真假 5 连测）**
+
 - v3.2.1 掷骰子接入真实骰子音效：`data/dsfx.js`（34KB mp3 → base64 内联，不新增网络请求），受静音开关控制
+
 - **v3.2.2 骰子声画同步：声音是节拍器——`sfxDice(onEnd)` 用 mp3 的 `ended` 事件驱动回合落定（声音放多久动画摇多久）；静音/无声退回 1.2s 兜底；连掷中途重掷截断上一个声音（5s 硬截止兜底）**
+
 - v3.2.3 掷骰子「摇一摇」：`devicemotion` 重力传感器触发（阈值 delta≥20+1.2s 冷却防连掷）；iOS 走 `requestPermission()`（需 https+手势授权，拒绝给设置指引），安卓 Chrome 默认已授权；开关仅触摸设备显示，状态记内存不落库
+
 - v3.2.4 掷骰子手机振动：掷出 `[30,60,30]` 短节奏 + 落定 `15ms` 轻震，走全局 `vib(p)`（iOS/电脑无 `navigator.vibrate` 自动静默）；与音效开关独立
+
 - v3.2.5 骰子滚动全程震感（`RATTLE_VIB` 25ms/70ms 磙动节奏 ≈2.4s，settle 掐断 + 15ms 轻震收尾）；掷骰子卡片挪到小游戏第一位
+
 - v3.2.6 掷骰子沉浸模式：进入时隐藏顶栏+tab 导航、`html.dice-lock` 锁滚动；返回/切 tab 自动恢复；其他游戏不受影响
+
 - v3.2.7 沉浸模式推广到全部 32 个小游戏（`body.game-full` + `html.game-lock`，mountGame 挂/backToLobby·setTab 摘）；互动玩具当时未启用
+
 - v3.4.2 图案库扩到 100 款：新增 50 款卡通人物/动物（`DOODLE_ART2`：火柴人/忍者/海盗/太空人/圣诞老人/狐狸/企鹅/恐龙/鲸鱼/独角兽/摩天轮…），`randDoodle` 合并两库抽取
+
 - v3.4.1 像素涂鸦加「随机画一张」：50 款 16×16 字符画（`DOODLE_ART`，爱心/星星/猫脸/火箭…）居中画进 24×24 画布，`gsfx('sweep')`+提示名，相邻不重样（排除上一张）
+
 - **v3.4.0 互动玩具沉浸模式 + 全玩具事件音效/震动**：`mountToy`/`backToToyLobby` 挂/摘 `body.game-full`+`html.game-lock`（含 scrollTo(0,0) 防返回按钮出视窗）；~20 个事件型玩具换 `gsfx`/`vibK`（捏泡泡/捏捏/史莱姆=squish、宠物喂食=chomp、烟花/气球爆/吹爆/雷=boom、摘星=coin 等），钢琴/鼓/鼓机/竖琴/指尖陀螺等乐器类玩具保留合成音
+
 - v3.3.1 修沉浸模式滚动残留 bug：手机上在大厅深处点开游戏，隐藏顶栏/tab 后内容上移而滚动位置不变，返回按钮被顶出视窗且滚动锁死看不到 → 进入与退出时 `window.scrollTo(0,0)` 重置滚动
+
 - **v3.3.0 全部 32 款小游戏接入真实音效 + 手机震动**：`data/gsfx.js`（23 个 Kenney CC0 ogg→mp3 base64，≈98KB 原始）+ `gsfx(名, 节流ms)` 引擎（含 `GSFX_FB` 合成兜底映射、`GSFX_TH` 节流、`gsfxPool` 防泄漏）+ `vibK(k)` 震动节奏库（`VIBS = {die:[60], boom:[80], win:[30,50,60], hurt:[40], tick:10, small:20}`，只在死亡/爆炸/大事件震）；win/lose 保留原 sfx 合成喇叭；掷骰子保持自带 sfxDice 链不重复接入
