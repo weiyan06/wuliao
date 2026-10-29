@@ -691,7 +691,7 @@ body.konami-on .wrap{animation:konamiHue .9s steps(6) infinite}
       </svg>
       <div>
         <h1>像素屋</h1>
-        <div class="tagline">PIXEL HOUSE v3.8.3</div>
+        <div class="tagline">PIXEL HOUSE v3.9.0</div>
       </div>
     </div>
     <div class="hdr-actions">
@@ -11833,6 +11833,21 @@ function ensureNES(cb){
   document.head.appendChild(sc);
 }
 
+/* ---- @nesjs/core 增强模拟器（备用引擎，懒加载，首次玩增强引擎才下载）---- */
+let nesCoreLibState = 0, nesCoreWaiters = [];
+function ensureNESCore(cb){
+  if(cb) nesCoreWaiters.push(cb);
+  const flush = () => nesCoreWaiters.splice(0).forEach(f => { try{ f(); }catch(e){ console.error('[nescore]', e); } });
+  if(nesCoreLibState === 2 || nesCoreLibState === 3){ flush(); return; }
+  if(nesCoreLibState === 1) return;
+  nesCoreLibState = 1;
+  const sc = document.createElement('script');
+  sc.src = 'data/nesjs-core.js';
+  sc.onload = () => { nesCoreLibState = window.NESCore ? 2 : 3; flush(); };
+  sc.onerror = () => { nesCoreLibState = 3; flush(); };
+  document.head.appendChild(sc);
+}
+
 /* ---- 小工具 ---- */
 function nesBytesToB64(u8){
   let s = '';
@@ -11965,7 +11980,10 @@ function nesLoop(ts){
     S.acc += dt;
     let n = 0;
     try{
-      while(S.acc >= NES_STEP && n < 4){ S.nes.frame(); S.acc -= NES_STEP; n++; S.frames++; }
+      while(S.acc >= NES_STEP && n < 4){
+        if(S.engine === 'nescore') S.core.runFrame(); else S.nes.frame();
+        S.acc -= NES_STEP; n++; S.frames++;
+      }
     }catch(err){
       S.paused = true; S.acc = 0; nesPauseUi(S);
       nesToast('模拟器卡住了（' + (err && err.message ? err.message : '执行出错') + '），点「重置」重来');
@@ -11973,6 +11991,7 @@ function nesLoop(ts){
     }
     if(n >= 4) S.acc = 0;
     nesTurboTick(S, ts);
+    if(S.engine === 'nescore') nesCoreDetect(S);
   }
   nesAudioFlush(S);
   if(ts - S.fpsT > 600){
@@ -11992,16 +12011,16 @@ function nesBtnCode(k){
 }
 function nesPress(p, k, down){
   const S = nesSession;
-  if(!S || !S.nes) return;
+  if(!S || (!S.nes && !S.core)) return;
   const code = nesBtnCode(k);
   if(code < 0) return;
   const key = p + ':' + k;
   if(down){
     if(S.down[key]) return;
-    S.down[key] = 1; S.nes.buttonDown(p, code);
+    S.down[key] = 1; nesBtnDown(p, code);
   } else {
     if(!S.down[key]) return;
-    delete S.down[key]; S.nes.buttonUp(p, code);
+    delete S.down[key]; nesBtnUp(p, code);
   }
 }
 function nesKeyHit(code){
@@ -12019,7 +12038,7 @@ const NES_TURBO_MS = 55;
 function nesTurboBtn(btn){ return btn === 'TA' ? 'A' : 'B'; }
 function nesTurbo(p, k, down){
   const S = nesSession;
-  if(!S || !S.nes) return;
+  if(!S || (!S.nes && !S.core)) return;
   const key = p + ':' + k;
   if(down){
     if(S.turbo[key]) return;
@@ -12027,7 +12046,7 @@ function nesTurbo(p, k, down){
   } else {
     const t = S.turbo[key];
     if(!t) return;
-    if(t.on){ const code = nesBtnCode(nesTurboBtn(k)); if(code >= 0){ try{ S.nes.buttonUp(p, code); }catch(e){} } }
+    if(t.on){ const code = nesBtnCode(nesTurboBtn(k)); if(code >= 0){ try{ nesBtnUp(p, code); }catch(e){} } }
     delete S.turbo[key];
   }
 }
@@ -12039,7 +12058,7 @@ function nesTurboTick(S, ts){
     t.t = ts; t.on = !t.on;
     const code = nesBtnCode(nesTurboBtn(k));
     if(code < 0) return;
-    try{ S.nes[t.on ? 'buttonDown' : 'buttonUp'](p, code); }catch(e){}
+    try{ if(t.on) nesBtnDown(p, code); else nesBtnUp(p, code); }catch(e){}
   });
 }
 function nesTurboRelease(S){
@@ -12047,7 +12066,7 @@ function nesTurboRelease(S){
   Object.keys(S.turbo || {}).forEach(key => {
     const i = key.indexOf(':'), p = Number(key.slice(0, i)), k = key.slice(i + 1);
     const t = S.turbo[key];
-    if(t && t.on){ const code = nesBtnCode(nesTurboBtn(k)); if(code >= 0){ try{ S.nes.buttonUp(p, code); }catch(e){} } }
+    if(t && t.on){ const code = nesBtnCode(nesTurboBtn(k)); if(code >= 0){ try{ nesBtnUp(p, code); }catch(e){} } }
   });
   S.turbo = {};
 }
@@ -12066,7 +12085,7 @@ function nesKeyEvent(e, down){
     return;
   }
   const S = nesSession;
-  if(!S || !S.nes) return;
+  if(!S || (!S.nes && !S.core)) return;
   const t = e.target;
   if(t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable)) return;
   const hit = nesKeyHit(e.code);
@@ -12170,7 +12189,15 @@ async function nesUnpackState(s){
 async function nesSaveState(){
   const S = nesSession; if(!S) return;
   try{
-    const packed = await nesPackState(JSON.stringify(S.nes.toJSON()));
+    let packed;
+    if(S.engine === 'nescore'){
+      const u8 = S.core.createBinarySaveState();
+      let raw = '';
+      for(let i = 0; i < u8.length; i += 0x4000) raw += String.fromCharCode.apply(null, u8.subarray(i, i + 0x4000));
+      packed = await nesPackState(raw);
+    } else {
+      packed = await nesPackState(JSON.stringify(S.nes.toJSON()));
+    }
     if(packed.length > 3000000){ nesToast('存档太大，这个浏览器存不下'); return; }
     const rec = { rom: S.rom.id, name: S.rom.name, at: Date.now(), data: packed };
     store.set('nes.state', rec);
@@ -12185,12 +12212,78 @@ async function nesLoadState(){
   const st = store.get('nes.state', null);
   if(!st || !st.data){ nesToast('还没有存档，先玩一会儿再点「存档」'); return; }
   try{
-    S.nes.fromJSON(JSON.parse(await nesUnpackState(st.data)));
+    const raw = await nesUnpackState(st.data);
+    if(S.engine === 'nescore'){
+      const u8 = new Uint8Array(raw.length);
+      for(let i = 0; i < raw.length; i++) u8[i] = raw.charCodeAt(i);
+      S.core.loadBinarySaveState(u8);
+    } else {
+      S.nes.fromJSON(JSON.parse(raw));
+    }
     S.paused = false; nesPauseUi(S);
     const when = st.at ? new Date(st.at).toLocaleString() : '';
     nesToast('已读档 · ' + (st.name || '') + (st.rom !== S.rom.id ? '（来自其它 ROM，可能不兼容）' : '') + ' · ' + when);
     sfx.point();
   }catch(e){ nesToast('读档失败：存档可能已损坏'); }
+}
+
+/* ---- 双引擎：mapper 探测 / @nesjs/core 实例 / 黑屏回退 ---- */
+function nesReadMapper(bin){
+  if(!bin || bin.length < 16) return -1;
+  const c6 = bin.charCodeAt(6), c7 = bin.charCodeAt(7);
+  return ((c6 >> 4) & 0x0F) | (((c7 >> 4) & 0x0F) << 4);
+}
+function nesPickEngine(mapper){
+  if(mapper === 25 || mapper === 74 || mapper === 162 || mapper === 246) return 'nescore';
+  return 'jsnes';
+}
+function nesRomU8(rom){
+  if(rom.u8) return rom.u8;
+  const b64 = rom.b64 != null ? rom.b64 : nesBytesToB64(rom.bin);
+  return rom.u8 = nesB64ToBytes(b64);
+}
+function nesNewCore(S, rom){
+  const core = new window.NESCore.NES({ audioSampleRate: 44100, audioBufferSize: 1024 });
+  core.setRenderer({ renderFrame: data => { try{ if(data && data.length){ S.img.data.set(data); S.ctx.putImageData(S.img, 0, 0); } }catch(e){} } });
+  core.setAudioInterface({
+    outputSample: s => { try{ if(S.audio.ctx) nesSample(S, s, s); }catch(e){} },
+    flushFrame: () => {}
+  });
+  S.core = core;
+  return core;
+}
+function nesHasNonBlack(S){
+  const d = S.img.data;
+  for(let i = 0; i < d.length; i += 4){
+    if(d[i] || d[i + 1] || d[i + 2]) return true;
+  }
+  return false;
+}
+function nesCoreDetect(S){
+  if(!S.detect) return;
+  if(!S.hasImg && nesHasNonBlack(S)) S.hasImg = true;
+  S.detect.n++;
+  if(S.detect.n >= S.detect.limit && !S.hasImg){ S.detect = null; nesCoreFallback(S); }
+}
+function nesCoreFallback(S){
+  if(S.engine !== 'nescore') return;
+  try{ if(S.audio.ctx) S.audio.ctx.close(); }catch(e){}
+  S.audio.ctx = null; S.audio.n = 0; S.audio.next = 0;
+  S.engine = 'jsnes'; S.detect = null; S.hasImg = null; S.core = null;
+  S.nes = nesNewEmu(S);
+  try{ S.nes.loadROM(S.rom.bin); }
+  catch(err){ S.paused = true; S.acc = 0; nesPauseUi(S); nesToast('这个 ROM 两种引擎都跑不起来'); return; }
+  S.paused = false; S.last = 0; S.acc = 0;
+  nesAudioInit(S);
+  nesToast('画面异常，已自动切换兼容引擎');
+}
+function nesBtnDown(p, code){
+  const S = nesSession; if(!S || !S.running) return;
+  try{ if(S.engine === 'nescore') S.core.getGamepad(p).setButton(code, 1); else S.nes.buttonDown(p, code); }catch(e){}
+}
+function nesBtnUp(p, code){
+  const S = nesSession; if(!S || !S.running) return;
+  try{ if(S.engine === 'nescore') S.core.getGamepad(p).setButton(code, 0); else S.nes.buttonUp(p, code); }catch(e){}
 }
 
 /* ---- 起停 ---- */
@@ -12223,7 +12316,7 @@ function stopNes(){
   Object.keys(S.down).forEach(key => {
     const i = key.indexOf(':'), p = Number(key.slice(0, i)), k = key.slice(i + 1);
     const c = nesBtnCode(k);
-    if(c >= 0){ try{ S.nes.buttonUp(p, c); }catch(e){} }
+    if(c >= 0){ try{ if(S.engine === 'nescore') S.core.getGamepad(p).setButton(c, 0); else S.nes.buttonUp(p, c); }catch(e){} }
   });
   S.down = {};
   try{ if(S.audio.ctx) S.audio.ctx.close(); }catch(e){}
@@ -12246,6 +12339,11 @@ function nesBoot(rom){
   if(!window.jsnes || !window.jsnes.NES){ nesToast('模拟器还没加载好，等两秒再点'); return; }
   let bin = rom.bin;
   if(bin == null){ try{ bin = rom.bin = atob(rom.b64); }catch(e){ nesToast('ROM 数据损坏'); return; } }
+  const engine = nesPickEngine(nesReadMapper(bin));
+  if(engine === 'nescore' && !window.NESCore){
+    ensureNESCore(() => { if(window.NESCore) nesBoot(rom); else nesToast('增强模拟器加载失败，刷新重试'); });
+    return;
+  }
 
   const cv = document.createElement('canvas');
   cv.width = NES_W; cv.height = NES_H; cv.className = 'nes-screen';
@@ -12253,16 +12351,17 @@ function nesBoot(rom){
   const ctx2d = cv.getContext('2d');
   const img = ctx2d.createImageData(NES_W, NES_H);
   const S = nesSession = {
-    rom, running:true, paused:false, raf:0, last:0, acc:0, frames:0, fpsT:0,
+    rom, engine, running:true, paused:false, raf:0, last:0, acc:0, frames:0, fpsT:0,
     down:{}, turbo:{}, ctx:ctx2d, img, u32:new Uint32Array(img.data.buffer),
     audio:{ ctx:null, gain:null, next:0, L:new Float32Array(4096), R:new Float32Array(4096), n:0 }
   };
-  S.nes = nesNewEmu(S);
-  try{ S.nes.loadROM(bin); }
-  catch(err){
-    nesSession = null;
-    nesToast('这个 ROM 跑不起来（可能是特殊 mapper）：' + (err && err.message ? err.message : ''));
-    return;
+  let jsnesOk = false;
+  if(engine === 'jsnes'){
+    S.nes = nesNewEmu(S);
+    try{ S.nes.loadROM(bin); jsnesOk = true; }
+    catch(err){ if(window.NESCore){ S.engine = 'nescore'; S.nes = null; } else { nesSession = null; nesToast('这个 ROM 跑不起来（可能是特殊 mapper）：' + (err && err.message ? err.message : '')); return; } }
+  } else {
+    S.detect = { n:0, limit:100 }; S.hasImg = false;
   }
 
   $('#nesLobby').classList.add('hidden');
@@ -12291,12 +12390,22 @@ function nesBoot(rom){
   });
   mk('nesResetBtn', '重置').addEventListener('click', () => {
     const s = nesSession; if(!s) return;
-    // jsnes 1.2.1 的 reset() 会留下脏状态（实测能把 ROM 跑飞），重建实例最稳
+    // jsnes 1.2.1 的 reset() 会留下脏状态（实测能把 ROM 跑飞），重建实例最稳；nescore 同理
     try{
-      s.nes = nesNewEmu(s);
-      s.nes.loadROM(s.rom.bin);
-      s.paused = false; s.last = 0; s.acc = 0; s.down = {}; s.turbo = {};
-      nesPauseUi(s); nesToast('已重置'); sfx.click();
+      if(s.engine === 'nescore'){
+        nesNewCore(s, s.rom);
+        s.detect = { n:0, limit:100 }; s.hasImg = false;
+        s.core.loadROM(nesRomU8(s.rom)).then(() => {
+          if(nesSession !== s) return;
+          s.paused = false; s.last = 0; s.acc = 0; s.down = {}; s.turbo = {};
+          nesPauseUi(s); nesToast('已重置'); sfx.click();
+        }).catch(() => { s.paused = true; nesPauseUi(s); nesToast('重置失败'); });
+      } else {
+        s.nes = nesNewEmu(s);
+        s.nes.loadROM(s.rom.bin);
+        s.paused = false; s.last = 0; s.acc = 0; s.down = {}; s.turbo = {};
+        nesPauseUi(s); nesToast('已重置'); sfx.click();
+      }
     }catch(e){ nesToast('重置失败：' + (e && e.message ? e.message : '出错了')); }
   });
   mk('nesSaveBtn', '存档').addEventListener('click', () => { nesSaveState(); });
@@ -12326,7 +12435,20 @@ function nesBoot(rom){
 
   nesAudioInit(S);
   S.fpsT = performance.now();
-  S.raf = requestAnimationFrame(nesLoop);
+  const kickoff = () => { if(nesSession !== S) return; S.paused = false; S.raf = requestAnimationFrame(nesLoop); };
+  if(S.engine === 'nescore'){
+    nesNewCore(S, rom);
+    S.detect = S.detect || { n:0, limit:100 };
+    S.core.loadROM(nesRomU8(rom)).then(kickoff).catch(err => {
+      if(nesSession !== S) return;
+      S.core = null; S.detect = null;
+      S.engine = 'jsnes'; S.nes = nesNewEmu(S);
+      try{ S.nes.loadROM(S.rom.bin); kickoff(); }
+      catch(e2){ nesSession = null; nesToast('这个 ROM 跑不起来（可能是特殊 mapper）'); }
+    });
+  } else {
+    kickoff();
+  }
   sfx.click();
 }
 function nesStartRom(rom){
