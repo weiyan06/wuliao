@@ -22,7 +22,7 @@
 | `data/movies.js` | 30KB   | MOVIES(95部) 片库                                                                        | 首屏同步前载                                     |
 | `data/gsfx.js`   | 130KB  | GSFX(23个游戏事件音效 mp3 base64，Kenney CC0 来源)                                              | **懒加载**，首次交互 / 进游戏时 `ensureAudioData()` 注入 |
 | `data/tang.js`   | 1.7MB  | TANG300(320首) + TANG_S2T/TANG_T2S 繁简映射 + TANG_FOLD                                    | **懒加载**，首次进诗词 tab 时 `ensureTang(cb)` 注入    |
-| `data/nes.js`    | 156KB  | jsnes 1.2.1（NES 模拟器 UMD，Apache-2.0）+ NES_ROMS[1]（Falling，MIT，ROM base64）+ NES_LICENSE | **懒加载**，首次进复古游戏厅时 `ensureNES(cb)` 注入       |
+| `data/nes.js`    | 165KB  | jsnes 1.2.1（NES 模拟器 UMD，Apache-2.0）+ NES_ROMS[1]（Falling，MIT，ROM base64）+ NES_LICENSE | **懒加载**，首次进复古游戏厅时 `ensureNES(cb)` 注入       |
 | `licenses/`      | 12KB   | jsnes Apache-2.0 / Falling MIT 授权原文 + 说明                                              | 静态文件，不上页面                                  |
 
 巨型 script 的内部分区用 `/* ---------- 标题 ---------- */` 注释分隔，顺序大致是：
@@ -100,11 +100,24 @@
 - **jsnes 1.2.1 的 `nes.reset()` 是坑**：reset 后状态不干净，实测能把 ROM 跑到非法操作码、CPU 死循环（页面卡死）。「重置」一律**重建 `new jsnes.NES()` + loadROM**（见 `nesNewEmu`）
 - **jsnes 崩溃会走 `this.nes.stop()`**：1.2.1 里 `NES.prototype.stop` 不存在 → 每帧抛 `this.nes.stop is not a function` 刷屏。所以 `nesLoop` 里 `frame()` 必须 try/catch，出错就暂停并提示「点重置」
 - **存档别直接存 `toJSON()`**：原始 JSON ≈1.9MB（ppu 的 vramMem/buffer/bgbuffer 全是 3 万级普通数组），必须 `CompressionStream('gzip')`+base64（≈130KB）再进 localStorage；`DecompressionStream` 兜底走 `raw:` 前缀
-- **模拟器数据必须懒加载**：`data/nes.js` 156KB，`setTab('nes')` 才注入；否则首屏 gzip 直接 +34KB
+- **模拟器数据必须懒加载**：`data/nes.js` 165KB，`setTab('nes')` 才注入；否则首屏 gzip 直接 +34KB
 - **jsnes 画面四边默认被裁**：`ppu.clipToTvSize` 初值 `true`，`endFrame()` 把上下左右各 8px 清零（TV 过扫描）。症状是「状态栏右边少一块」，**但不报错、其余画面看着全对** —— 排查画面缺角先查它，别去怀疑 mapper / 滚动 / 镜像；已在 `nesNewEmu` 置 `false`，改模拟器时别改回去
 - **jsnes `nmiCounter` 太小 → 游戏卡在等 vblank、整屏灰**：`endScanline` case 261 置 vblank 标志后，要等 `nmiCounter` 个 PPU dot 才触发 NMI；原值 9 ≈3 CPU 周期，比游戏主循环 `LDA $2002 / BPL` 一轮 7 周期还短，NMI 处理程序每帧抢先把 $80 读走 → 游戏永远等不到 vblank → PPU 一个字节都没初始化（调色板/nametable/CHR 全 0）→ **整屏灰**（NES 调色板 $00 就是灰，所以是灰不是黑）。辨识特征：`cpu.REG_PC` 连续几百帧钉死在同一地址 + `ppu.vramMem[0x3F00..0x3F1F]` 全 0。已改 `60`；这是**全局 NMI 时序**，再动它必须连带回归 MMC3 分屏游戏
 
+- **`evaluate` 里别拿页面自身的进度计数当循环条件**（如 `while(nesSession.frames<k) nes.frame()`）：暂停/未跑起来时该计数不增长 → **死循环焊死主线程**，刷新的 load 事件都排队发不出去，只能关标签重开。长任务一律**固定次数 + 分步**，跑之前先想清楚退出条件
+- **jsnes `Tile.opaque` 是「每行」标志，不是每像素**：`setScanline` 只在该行有透明像素时写 `false`，默认是 `undefined` —— 拿它统计「tile 有没有图形」会得到全 0 的错误结论（误判成图案表全空、画面该黑屏）。要看图形用 `tile.pix`
+- **CHR-RAM 游戏（`vromCount===0`）别自己从 `rom.vrom` 拷银行**：`load1kVromBank` 在 `vromCount===0` 时直接 return，游戏是通过 `$2007` 写 `ptTile` 的；mapper 里再拷一次会把游戏写好的图形抹掉
+- **MMC5 的 PRG 模式切换有前置依赖**：`m5prgApply` 里用 `prg_set[]` 门住「本槽由哪个寄存器控制」，**该寄存器还没被写过就保留 loadROM 开机映射**；否则游戏一写 `$5100`，还没写过的槽会被切成全 0 的 RAM → 代码区变 BRK，3 帧内 CPU 跑飞到 $0007 崩（症状：`pc` 钉在低地址 + 非法操作码）
+- **MMC5 `$5204` 的 in-frame（bit6）必须现算**：用常驻 `in_frame` 标志它整帧不清，游戏 `BIT $5204 / BVC` 的等待瞬间通过、时序全错；按 jsnes 扫描线编号用 `scanline∈[20,260]` + `$2001` 渲染开关判定（`clockIrqCounter` 只在 20~260 被调，261→-1 是 vblank 起点）
+- **`data/nes.js` 是 CRLF 单行巨文件**：多行替换先把 `
+` 归一化成 `
+` 再写回；**替换串里不要再手写 `
+`**，会被写回逻辑二次转义成 `
+`（`node --check` 照过，但字节脏了）。mapper 实例就是 `nes.mmap`（原型上挂 `m5*` 方法），没有 `.m` / `.mapper`
+
 ## 版本历史（摘要）
+
+- **v3.8.0 补齐 MMC5（mapper 5）：恶魔城传说 / 三国志II霸王的大陆 / 大航海时代 从「一开机就抛异常」变可玩**：`data/nes.js` 的 `h[5]` 从残缺桩（`exWrite/ClearIRQ/SetBank_CPU/SetBank_PPU/SetBank_SRAM` 只有调用没定义）换成完整实现（约 +150 行）。① **PRG 四模式**（`$5100` 0=32KB 用 `$5117` 通吃 / 1=16K×2 / 2=16+8+8 / 3=8KB×4，bank 对齐掩码 `&124/&126/&127`）+ `$5114-$5117` **bit7=1 选 ROM、0 选 RAM**、`$5117` 恒为 ROM（Pretendo mapper 005 文档原文核对）。② **开机 `$5100=3`（8KB×4）**：三国志II/大航海时代 从不写 `$5100`，却按 8KB 粒度写 `$5114/15/16`（0xE0/E1/F2/F9/FE/FF 都是 8KB 银行号），只有模式 3 让三个寄存器同时生效；Pretendo 也记着「Romance of the 3 Kingdoms 2 seems to expect $5100 = $03」。开机四窗全映射到末 8KB（对应「游戏预期 `$5117=$FF`」）。③ **CHR**：A 组 `$5120-$5127` / B 组 `$5128-$512F`（镜像 `$512C-$512F`）+ `$5130` 高 2 位；8x16 精灵下硬件是「背景吃 B 组、精灵吃 A 组」→ 在 `renderBgScanline` / `renderSpritesPartially` 开头调 `m5chrBg()/m5chrSpr()` 按阶段换银行，且**走私有装填 `m5chrLoad1k`**（`load1kVromBank` 会 `triggerRendering()`，渲染中换银行再触发渲染会跟精灵钩子互相打架甚至递归，实测把主线程跑满）。④ **`$5105` nametable 映射**：2bit 值 0/1/2/3 恰好等于 jsnes `nameTable` 下标 → 直接写 `ntable1[i]`，**复用闲置的 `nameTable[2]` 当 ExRAM nametable、`[3]` 当 Fill**，不扩数组、不破存档兼容；ExRAM 四种模式先只存不裁（避免 vblank 写入被清零）。⑤ **PRG-RAM**：`$5113` 选 8KB 页给 `$6000-$7FFF`，`$8000+` 落在 RAM 银行也回写 `prgRam`。⑥ **乘法 `$5205/$5206`、扫描线 IRQ**（挂 jsnes 每条可见线调一次的 `clockIrqCounter`：`scanline=20` 重置、21 起计数，恶魔城的 `$5203=8/14` 能触发）、`$5204` bit7=pending（读清零）、**bit6=in-frame 用扫描线区间现算**。⑦ `toJSON/fromJSON` 带完整 m5 状态。**实测**：恶魔城传说 进标题画面（`prg_size=2` 是它自己写的 `$5100`）、三国志II 主循环正常 + 按 START 切菜单（画面逐帧变化）、大航海时代 跑出剧情文本（nametable 里是「SAIL FOR THE COAST OF WEST AFRICA」，960 格逐格与帧缓冲比对 960:9 一致）。**已知缺口**：扩展音频 `$5000-$5015` 只存寄存器不发声（三款开机各只写一次 `$5010/$5015`，无音轨数据写入）；分屏 `$5200` 只存状态、未接 PPU 滚动（三款都写 `$5200=0` 即关闭）。回归：mapper 0/1/2/3/4/195 代表款（超级马里奥兄弟 / 塞尔达传说 / 魂斗罗 / 赤色要塞 / 冒险岛 / 天神之剑（水晶战记）/ 快打旋风 / 吞食天地II / 天神之剑（汉化））全部正常渲染，天神之剑（汉化）状态栏 y=224~239 仍是 16 行 × 256 全宽、右 8 列 128 个亮像素，12 个 tab 回归全过、控制台零报错
 
 - **v3.7.9 修 jsnes NMI 时序（赤色要塞开局整屏灰）**：`endScanline` case 261 置 vblank 标志后靠 `nmiCounter` 延时才触发 NMI，原值 `9` dot ≈3 CPU 周期，比游戏主循环 `LDA $2002 / BPL` 一轮 7 周期还短 → 每帧 NMI 处理程序（向量 $C292 一进来就 `LDA $2002`）抢先把 $80 吃掉，主循环 83900 次读取全拿到 $00 → 卡在 `$D0E0` 死等、PPU 从未被写过 → 调色板/nametable/CHR-RAM 全 0，整屏只剩 NES 调色板 $00 的灰。改 `nmiCounter=60` dot（最坏情况 24+9+12=45，扫参 24 能过但太脆）。「赤色要塞」（mapper 2 UxROM + CHR-RAM，即 Jackal）PC 脱困到 $C28F、调色板 0→30、CHR-RAM 0→4766、nametable 0→486。回归：mapper 0/1/2/3/4/195 各选代表（超级马里奥兄弟 / 塞尔达传说 / 魂斗罗 / 冒险岛 / 天神之剑（水晶战记）/ 快打旋风 / 吞食天地II / 天神之剑（汉化））+ 内置 Falling 全部正常渲染；天神之剑（汉化）状态栏 y=224~239 仍是 16 行 × 256 全宽、右 8 列 128 个亮像素（MMC3 IRQ 分屏未受 NMI 改动影响）；12 个 tab 回归全过、控制台零报错。**已知遗留（与本次无关）**：mapper 5 的「恶魔城传说 / 三国志II霸王的大陆 / 大航海时代」开机即抛 `papu.exWrite is not a function` / `this.SetBank_CPU is not a function` —— `h[5]` 是个残缺 MMC5 桩，`exWrite/ClearIRQ/SetBank_CPU/SetBank_PPU/SetBank_SRAM` 只有调用没有定义，自 v3.7.0 内联 jsnes 起就如此
 - **v3.7.8 兼容 mapper 195 + 修画面四边被裁**：① `data/nes.js` 注册 `h[195]=h[4]` —— iNES 195 = Waixing FS303，本质是 MMC3 克隆（PRG/CHR/镜像/IRQ 寄存器与 MMC3 一致，多一块「按 PPU 写 CHR 地址选 CHR-RAM」的 GAL），直接复用 MMC3 实现即可；「天神之剑（汉化）」（flags6=0x32 / flags7=0xC0 → mapper195，PRG 32×16K + CHR 32×8K，电池存档）从 `loadROM` 抛「mapper not supported by JSNES」变为正常进游戏。② 修**画面不全**：jsnes 1.2.1 `ppu.clipToTvSize` 初值 `true`，`endFrame()` 会把最上/下/左/右各 8px **整列清零**（TV 过扫描裁边），症状是「状态栏右边像被截了一块」；`nesNewEmu` 里置 `false` 后，状态栏 y=224~239 十六行恢复 256 全宽（右 8 列亮像素 0→128，走默认值时整条为 0）。实测：汉化版 标题 → 过场 → 带状态栏的游玩画面渲染正常、FPS 60；12 个 tab 回归全过、控制台零报错。仍属 jsnes Apache-2.0 改动版，`licenses/` 不变，ROM 字节不进仓库。
