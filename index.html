@@ -618,7 +618,24 @@ html.game-lock{overflow:hidden !important}
 .nes-ab .px-btn{width:60px; height:60px; border-radius:50%; padding:0; font-family:'Press Start 2P',monospace; font-size:15px; touch-action:none}
 .nes-se{display:flex; gap:8px}
 .nes-se .px-btn{font-family:'Press Start 2P',monospace; font-size:8px; padding:8px 9px; touch-action:none}
+.nes-combo{display:flex; gap:8px; align-items:center}
+.nes-combo .px-btn{font-family:'Press Start 2P',monospace; font-size:9px; padding:7px 8px; touch-action:none}
+.nes-combo .px-btn.on{background:var(--yellow); color:var(--line)}
 .nes-pad .px-btn.on{transform:translate(2px,2px); box-shadow:1px 1px 0 rgba(0,0,0,.5); filter:brightness(1.25)}
+/* 手机触摸·竖屏：复古游戏厅画面置顶 + 虚拟手柄上移到屏幕中下（避开底部地址栏） */
+@media (pointer: coarse) and (orientation: portrait){
+  body.game-full #nesView.game-view:not(.hidden){
+    height:100vh; height:100dvh; box-sizing:border-box;
+    display:flex; flex-direction:column;
+    padding:env(safe-area-inset-top,0) 8px 0
+  }
+  #nesView.game-view .game-topbar{flex:none; margin-bottom:6px}
+  #nesView.game-view #nesMount{flex:1; min-height:0; display:flex; flex-direction:column}
+  #nesMount .nes-stage{width:100%; max-width:520px; margin:0 auto; flex:none}
+  #nesMount .nes-tools{flex:none; margin-top:8px}
+  #nesMount .nes-hint{flex:none}
+  #nesMount .nes-pad{flex:none; width:100%; max-width:430px; margin:auto 0 clamp(16dvh,24dvh,200px)}
+}
 .nes-file{display:none}
 .nes-status{font-size:12px; color:var(--muted); margin:12px 2px 0; min-height:18px; line-height:1.7}
 .rack-row{display:flex; align-items:stretch; gap:10px; margin-bottom:10px}
@@ -674,7 +691,7 @@ body.konami-on .wrap{animation:konamiHue .9s steps(6) infinite}
       </svg>
       <div>
         <h1>像素屋</h1>
-        <div class="tagline">PIXEL HOUSE v3.8.0</div>
+        <div class="tagline">PIXEL HOUSE v3.8.1</div>
       </div>
     </div>
     <div class="hdr-actions">
@@ -12087,19 +12104,46 @@ function nesBuildPad(){
     +     '<button class="px-btn red" data-k="B" type="button" aria-label="B 键">B</button>'
     +     '<button class="px-btn red" data-k="A" type="button" aria-label="A 键">A</button>'
     +   '</div>'
+    +   '<div class="nes-combo">'
+    +     '<button class="px-btn ghost" data-k="TURBO" type="button" aria-label="连发开关">连发</button>'
+    +     '<button class="px-btn yellow" data-k="COMBO" type="button" aria-label="A+B 组合键">A+B</button>'
+    +   '</div>'
     +   '<div class="nes-se">'
     +     '<button class="px-btn ghost" data-k="SELECT" type="button">SELECT</button>'
     +     '<button class="px-btn ghost" data-k="START" type="button">START</button>'
     +   '</div>'
     + '</div>';
+  let vturbo = false;
+  const turboBtn = pad.querySelector('[data-k="TURBO"]');
   pad.querySelectorAll('[data-k]').forEach(b => {
-    const on = e => { e.preventDefault(); nesPress(1, b.dataset.k, true); b.classList.add('on'); };
-    const off = () => { nesPress(1, b.dataset.k, false); b.classList.remove('on'); };
+    const k = b.dataset.k;
+    if(k === 'TURBO') return;
+    const on = e => {
+      e.preventDefault();
+      if(k === 'COMBO'){ nesPress(1, 'B', true); nesPress(1, 'A', true); }
+      else if((k === 'A' || k === 'B') && vturbo){ nesTurbo(1, k === 'A' ? 'TA' : 'TB', true); }
+      else nesPress(1, k, true);
+      b.classList.add('on');
+    };
+    const off = () => {
+      if(k === 'COMBO'){ nesPress(1, 'B', false); nesPress(1, 'A', false); }
+      else if((k === 'A' || k === 'B') && vturbo){ nesTurbo(1, k === 'A' ? 'TA' : 'TB', false); }
+      else nesPress(1, k, false);
+      b.classList.remove('on');
+    };
     b.addEventListener('pointerdown', on);
     b.addEventListener('pointerup', off);
     b.addEventListener('pointerleave', off);
     b.addEventListener('pointercancel', off);
     b.addEventListener('contextmenu', e => e.preventDefault());
+  });
+  turboBtn.addEventListener('click', e => {
+    e.preventDefault();
+    vturbo = !vturbo;
+    turboBtn.classList.toggle('on', vturbo);
+    turboBtn.setAttribute('aria-pressed', vturbo);
+    if(!vturbo && nesSession) nesTurboRelease(nesSession);   // 关闭连发时释放残留连发
+    sfx.click();
   });
   return pad;
 }
