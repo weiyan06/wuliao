@@ -630,6 +630,10 @@ html.game-lock{overflow:hidden !important}
 .nes-mousepad{display:none; position:absolute; top:0; bottom:0; left:calc(50% + 264px); right:calc((100% - 100vw) / 2); flex-direction:column; align-items:center; justify-content:center; gap:16px; user-select:none; -webkit-user-select:none}
 .nes-mousepad .px-btn{width:76px; height:76px; border-radius:50%; padding:0; font-family:'Press Start 2P',monospace; font-size:18px; touch-action:none; cursor:pointer}
 .nes-mousepad .px-btn.on{transform:translate(2px,2px); box-shadow:1px 1px 0 rgba(0,0,0,.5); filter:brightness(1.25)}
+/* v3.9.8 上下两半：上半=连发区（B 灯）、下半=普通区（A 灯+提示），虚线分界 */
+.nes-mp-hz{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px}
+.nes-mp-hz:first-child{border-bottom:2px dashed rgba(157,166,255,.22)}
+.nes-mp-tag{font-size:11px; color:var(--yellow); letter-spacing:1px; user-select:none; -webkit-user-select:none}
 .nes-mousepad-tip{font-size:11px; color:var(--muted); text-align:center; line-height:1.8; user-select:none; -webkit-user-select:none}
 @media (min-width:700px) and (pointer:fine){ .nes-mousepad{display:flex} }
 /* 手机触摸·竖屏：复古游戏厅画面置顶 + 虚拟手柄上移到屏幕中下（避开底部地址栏） */
@@ -701,7 +705,7 @@ body.konami-on .wrap{animation:konamiHue .9s steps(6) infinite}
       </svg>
       <div>
         <h1>像素屋</h1>
-        <div class="tagline">PIXEL HOUSE v3.9.7</div>
+        <div class="tagline">PIXEL HOUSE v3.9.8</div>
       </div>
     </div>
     <div class="hdr-actions">
@@ -12179,14 +12183,19 @@ function nesBuildPad(){
   return pad;
 }
 
-/* v3.9.4 桌面鼠标按键区：右手区悬停即可操作——左键=B(攻击)、右键=A(跳跃)、齐按=组合键、按住=持续按下；
-   圆钮只是指示灯（亮=按下中），事件全在感应区上统一处理，走 nesPress(1,k,…) 双引擎通吃 */
+/* v3.9.8 桌面鼠标感应区：上下两半——上半区按住=连发（55ms 翻转，同键盘 U/I 手感）、下半区按住=持续按下；
+   左键=B(攻击)、右键=A(跳跃)、齐按=组合键不变；圆钮只是指示灯（连发时跟着连打闪烁），走 nesPress 双引擎通吃 */
 function nesBuildMousepad(){
   const box = document.createElement('div');
   box.className = 'nes-mousepad';
-  box.innerHTML = '<button class="px-btn red" data-k="B" type="button" tabindex="-1" aria-label="鼠标左键：攻击（B 键）">B</button>'
-    + '<button class="px-btn red" data-k="A" type="button" tabindex="-1" aria-label="鼠标右键：跳跃（A 键）">A</button>'
-    + '<span class="nes-mousepad-tip">左键攻击 · 右键跳跃<br>齐按=组合键 · 按住=持续</span>';
+  box.innerHTML = '<div class="nes-mp-hz">'
+      + '<span class="nes-mp-tag">连发区 · 按住连打</span>'
+      + '<button class="px-btn red" data-k="B" type="button" tabindex="-1" aria-label="鼠标左键：攻击 B（上半区按住连发）">B</button>'
+    + '</div>'
+    + '<div class="nes-mp-hz">'
+      + '<button class="px-btn red" data-k="A" type="button" tabindex="-1" aria-label="鼠标右键：跳跃 A">A</button>'
+      + '<span class="nes-mousepad-tip">普通区 · 按住=持续<br>左键攻击 · 右键跳跃<br>齐按=组合键</span>'
+    + '</div>';
   const bk = box.querySelector('[data-k="B"]'), ak = box.querySelector('[data-k="A"]');
   const sync = () => {   // 指示灯以真实按键状态为准（blur/切走后的残亮靠 hover 回来自愈）
     const S = nesSession;
@@ -12194,31 +12203,56 @@ function nesBuildMousepad(){
     ak.classList.toggle('on', !!(S && S.down && S.down['1:A']));
   };
   /* 鼠标是单指针：按住左键再按右键不会发第二次 pointerdown，只能靠 e.buttons 位掩码（1=左 2=右）
-     在 down/move/up 里持续校准——否则第二只键注册不上、先松的那只还会卡键 */
-  const cur = { B: false, A: false };
-  const apply = mask => {
-    const b = !!(mask & 1), a = !!(mask & 2);
-    if(b !== cur.B){ cur.B = b; nesPress(1, 'B', b); }
-    if(a !== cur.A){ cur.A = a; nesPress(1, 'A', a); }
+     在 down/move/up 里持续校准；连发不在 nesTurbo 上做（它不记 S.down、指示灯会瞎），
+     本地 setInterval 经 nesPress 翻转——S.down 跟着闪，指示灯自动变成连发指示 */
+  const cur = { B: false, A: false }, turbo = { B: false, A: false }, flipT = { B: 0, A: 0 };
+  const isMouse = e => e.pointerType !== 'touch';   // 感应区只面向鼠标/触笔，触屏设备用下方触摸手柄
+  const isTop = e => { const r = box.getBoundingClientRect(); return e.clientY - r.top < r.height / 2; };
+  const flip = k => {
+    const S = nesSession;
+    if(!S || document.visibilityState !== 'visible') return;   // 切走页面不翻（blur 已统一松键），回来自愈
+    nesPress(1, k, !S.down['1:' + k]); sync();
+  };
+  const engage = (k, tz) => {
+    clearInterval(flipT[k]);
+    cur[k] = true; turbo[k] = tz;
+    nesPress(1, k, true);
+    if(tz) flipT[k] = setInterval(() => flip(k), 55);
     sync();
   };
-  const isMouse = e => e.pointerType !== 'touch';   // 感应区只面向鼠标/触笔，触屏设备用下方触摸手柄
+  const disengage = k => {
+    clearInterval(flipT[k]); flipT[k] = 0;
+    if(cur[k]) nesPress(1, k, false);
+    cur[k] = false; sync();
+  };
+  const apply = (mask, e) => {
+    const top = isTop(e);
+    const want = { B: !!(mask & 1), A: !!(mask & 2) };
+    ['B', 'A'].forEach(k => {
+      if(want[k] && !cur[k]) engage(k, top);
+      else if(want[k] && cur[k] && turbo[k] !== top){ disengage(k); engage(k, top); }   // 按住跨区：切换连发/普通
+      else if(!want[k] && cur[k]) disengage(k);
+    });
+  };
   box.addEventListener('pointerdown', e => {
     if(!isMouse(e)) return;
     e.preventDefault();   // 不让焦点跑进按钮，键盘 WASD 不受影响
     try{ box.setPointerCapture(e.pointerId); }catch(err){}   // 按住拖出感应区也能收到 move/up
-    apply(e.buttons);
+    apply(e.buttons, e);
   });
   box.addEventListener('pointermove', e => {
-    if(!isMouse(e) || (!cur.B && !cur.A)) return;   // 按住期间每次移动都校准（第二只按下/先松那只都走这里）
-    apply(e.buttons);
+    if(!isMouse(e) || (!cur.B && !cur.A)) return;   // 按住期间每次移动都校准（第二只按下/先松那只/跨区都走这里）
+    apply(e.buttons, e);
   });
-  box.addEventListener('pointerup', e => { if(isMouse(e)) apply(e.buttons); });
-  box.addEventListener('pointercancel', e => { if(isMouse(e)) apply(0); });
-  box.addEventListener('pointerleave', e => { if(isMouse(e)) apply(0); });   // 漏网兜底
-  box.addEventListener('pointerenter', () => {   // 残亮/状态漂移自愈：进来时若无真实按键，清跟踪态
+  box.addEventListener('pointerup', e => { if(isMouse(e)) apply(e.buttons, e); });
+  box.addEventListener('pointercancel', e => { if(isMouse(e)){ disengage('B'); disengage('A'); } });
+  box.addEventListener('pointerleave', e => { if(isMouse(e)){ disengage('B'); disengage('A'); } });   // 漏网兜底
+  box.addEventListener('pointerenter', () => {   // 残亮/状态漂移自愈：进来时若无真实按键，清跟踪态+停连发
     const S = nesSession;
-    if(!(S && S.down && (S.down['1:B'] || S.down['1:A']))){ cur.B = false; cur.A = false; }
+    if(!(S && S.down && (S.down['1:B'] || S.down['1:A']))){
+      clearInterval(flipT.B); clearInterval(flipT.A); flipT.B = 0; flipT.A = 0;
+      cur.B = false; cur.A = false;
+    }
     sync();
   });
   box.addEventListener('contextmenu', e => e.preventDefault());

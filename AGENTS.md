@@ -118,6 +118,7 @@
 
 ## 版本历史（摘要）
 
+- **v3.9.8 感应区上下分半：上半连发 / 下半普通**：用户草图指定——右侧感应区按高度对半分，**上半区长按（左键B/右键A）= 连发**、下半区长按 = 持续按下（原行为），左/右键与齐按组合键不变；虚线分界 + 「连发区/普通区」小标签，B 灯移上半区、A 灯+提示在下半区。连发不走 `nesTurbo`（它不记 `S.down`，指示灯会瞎），本地 `setInterval(55ms)` 经 `nesPress` 翻转——`S.down` 跟着闪、指示灯自动变连发指示；按住跨区（move 客户端 Y 过中线）自动 disengage→engage 换模式；翻转守卫 `document.visibilityState!=='visible'` 跳过（hasFocus 在无头环境不保证，blur 时全局松键后回来靠 enter/move 对账自愈）。无头 CDP 实测 9 断言全过：上半连发四采样不全等、拖到下半变恒 down、跨区换模式、双连发、leave 无泄漏；12 tab 零报错
 - **v3.9.7 感应区右缘顶到窗口边**：页面整体装在 `.wrap`（max-width 1000px 居中栏）里，感应区 `right:0` 只能贴到栏右缘，宽屏下窗口右缘和栏缘之间那条空白够不着（用户红框指出）。改 `right:calc((100% - 100vw) / 2)`——用栏宽与视口宽差的一半往外推，正好补齐 (窗口−栏宽)/2 顶到窗口边（沉浸模式 game-lock 无滚动条，100vw 不走样；body overflow-x:hidden 兜底防溢出）。无头 CDP 实测：1280 窗口下 zone 右缘距窗口 0px、左缘贴画面右缘、7 断言 + 12 tab 零报错
 - **v3.9.6 修感应区左右键不能齐按**：鼠标是**单指针设备**——按住左键再按右键，浏览器**不发第二次 pointerdown**（只发带新 `buttons` 掩码的 pointermove），pointerup 也在最后一只松开时才发 → 按 pointerdown/up 逐键注册的写法第二只键注册不上、先松的键还会卡住。改为 `e.buttons` 位掩码（1=左 2=右）在 pointerdown/move/up 里经 `apply(mask)` 增量校准（按住期间 pointermove 持续对账，cur 标志去重不重发）；pointerenter 只在无真实按键时清跟踪态防残亮；`pointerType!=='touch'` 才响应（触屏仍走触摸手柄）。无头 CDP 按真实鼠标事件序列（第二键走 move 掩码）7 断言全过
 - **v3.9.5 感应区改全右侧 + 画面还原**：v3.9.4 用 flex 行包 stage 把画面挤小了（flex item 收缩到 canvas 固有宽），用户要求还原。改回 stage 独立居中块（布局与 v3.9.3 完全一致），感应区改**绝对定位铺满画面右侧整条区域**（`#nesMount` relative + `left:calc(50% + 264px)` 即画面右缘、上下全高、延伸到窗口右缘）——不用精确瞄准小按钮，右边任意位置左键=B/右键=A/齐按=组合键；B/A 圆钮+提示在感应区垂直居中，交互逻辑不变
