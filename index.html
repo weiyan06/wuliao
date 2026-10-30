@@ -691,7 +691,7 @@ body.konami-on .wrap{animation:konamiHue .9s steps(6) infinite}
       </svg>
       <div>
         <h1>像素屋</h1>
-        <div class="tagline">PIXEL HOUSE v3.9.2</div>
+        <div class="tagline">PIXEL HOUSE v3.9.3</div>
       </div>
     </div>
     <div class="hdr-actions">
@@ -12241,8 +12241,16 @@ function nesPickEngine(mapper){
 }
 function nesRomU8(rom){
   if(rom.u8) return rom.u8;
-  const b64 = rom.b64 != null ? rom.b64 : nesBytesToB64(rom.bin);
-  return rom.u8 = nesB64ToBytes(b64);
+  if(rom.b64 != null) return rom.u8 = nesB64ToBytes(rom.b64);
+  const b = rom.bin;
+  if(b == null) return rom.u8 = new Uint8Array(0);
+  // rom.bin 通常是二进制字符串（nesLoadBytes 为兼容 jsnes 用 fromCharCode 拼串），nescore 需要 Uint8Array
+  if(typeof b === 'string'){
+    const u = new Uint8Array(b.length);
+    for(let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i) & 0xFF;
+    return rom.u8 = u;
+  }
+  return rom.u8 = (b.byteLength != null) ? b : new Uint8Array(b);
 }
 function nesNewCore(S, rom){
   const core = new window.NESCore.NES({ audioSampleRate: 44100, audioBufferSize: 1024 });
