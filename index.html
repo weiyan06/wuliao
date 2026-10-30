@@ -699,7 +699,7 @@ body.konami-on .wrap{animation:konamiHue .9s steps(6) infinite}
       </svg>
       <div>
         <h1>像素屋</h1>
-        <div class="tagline">PIXEL HOUSE v3.9.5</div>
+        <div class="tagline">PIXEL HOUSE v3.9.6</div>
       </div>
     </div>
     <div class="hdr-actions">
@@ -12191,23 +12191,34 @@ function nesBuildMousepad(){
     bk.classList.toggle('on', !!(S && S.down && S.down['1:B']));
     ak.classList.toggle('on', !!(S && S.down && S.down['1:A']));
   };
-  const hit = e => e.button === 0 ? 'B' : (e.button === 2 ? 'A' : null);
-  box.addEventListener('pointerdown', e => {
-    const k = hit(e); if(!k) return;
-    e.preventDefault();   // 不让焦点跑进按钮，键盘 WASD 不受影响
-    try{ box.setPointerCapture(e.pointerId); }catch(err){}   // 按住拖出感应区也能收到 up
-    nesPress(1, k, true);
-    sync();
-  });
-  const release = e => {
-    const k = hit(e); if(!k) return;
-    nesPress(1, k, false);
+  /* 鼠标是单指针：按住左键再按右键不会发第二次 pointerdown，只能靠 e.buttons 位掩码（1=左 2=右）
+     在 down/move/up 里持续校准——否则第二只键注册不上、先松的那只还会卡键 */
+  const cur = { B: false, A: false };
+  const apply = mask => {
+    const b = !!(mask & 1), a = !!(mask & 2);
+    if(b !== cur.B){ cur.B = b; nesPress(1, 'B', b); }
+    if(a !== cur.A){ cur.A = a; nesPress(1, 'A', a); }
     sync();
   };
-  box.addEventListener('pointerup', release);
-  box.addEventListener('pointercancel', release);
-  box.addEventListener('pointerleave', () => { nesPress(1, 'B', false); nesPress(1, 'A', false); sync(); });   // 漏网兜底
-  box.addEventListener('pointerenter', sync);
+  const isMouse = e => e.pointerType !== 'touch';   // 感应区只面向鼠标/触笔，触屏设备用下方触摸手柄
+  box.addEventListener('pointerdown', e => {
+    if(!isMouse(e)) return;
+    e.preventDefault();   // 不让焦点跑进按钮，键盘 WASD 不受影响
+    try{ box.setPointerCapture(e.pointerId); }catch(err){}   // 按住拖出感应区也能收到 move/up
+    apply(e.buttons);
+  });
+  box.addEventListener('pointermove', e => {
+    if(!isMouse(e) || (!cur.B && !cur.A)) return;   // 按住期间每次移动都校准（第二只按下/先松那只都走这里）
+    apply(e.buttons);
+  });
+  box.addEventListener('pointerup', e => { if(isMouse(e)) apply(e.buttons); });
+  box.addEventListener('pointercancel', e => { if(isMouse(e)) apply(0); });
+  box.addEventListener('pointerleave', e => { if(isMouse(e)) apply(0); });   // 漏网兜底
+  box.addEventListener('pointerenter', () => {   // 残亮/状态漂移自愈：进来时若无真实按键，清跟踪态
+    const S = nesSession;
+    if(!(S && S.down && (S.down['1:B'] || S.down['1:A']))){ cur.B = false; cur.A = false; }
+    sync();
+  });
   box.addEventListener('contextmenu', e => e.preventDefault());
   return box;
 }
