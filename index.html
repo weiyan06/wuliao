@@ -691,7 +691,7 @@ body.konami-on .wrap{animation:konamiHue .9s steps(6) infinite}
       </svg>
       <div>
         <h1>像素屋</h1>
-        <div class="tagline">PIXEL HOUSE v3.9.0</div>
+        <div class="tagline">PIXEL HOUSE v3.9.1</div>
       </div>
     </div>
     <div class="hdr-actions">
@@ -11985,7 +11985,9 @@ function nesLoop(ts){
         S.acc -= NES_STEP; n++; S.frames++;
       }
     }catch(err){
-      S.paused = true; S.acc = 0; nesPauseUi(S);
+      S.acc = 0;
+      if(S.engine === 'nescore'){ nesToast('增强引擎异常，切换兼容引擎…'); nesCoreFallback(S); return; }
+      S.paused = true; nesPauseUi(S);
       nesToast('模拟器卡住了（' + (err && err.message ? err.message : '执行出错') + '），点「重置」重来');
       return;
     }
@@ -12275,6 +12277,7 @@ function nesCoreFallback(S){
   catch(err){ S.paused = true; S.acc = 0; nesPauseUi(S); nesToast('这个 ROM 两种引擎都跑不起来'); return; }
   S.paused = false; S.last = 0; S.acc = 0;
   nesAudioInit(S);
+  if(!S.raf){ S.fpsT = performance.now(); S.raf = requestAnimationFrame(nesLoop); }   // 超时/异常回退时帧循环可能没在跑
   nesToast('画面异常，已自动切换兼容引擎');
 }
 function nesBtnDown(p, code){
@@ -12361,7 +12364,7 @@ function nesBoot(rom){
     try{ S.nes.loadROM(bin); jsnesOk = true; }
     catch(err){ if(window.NESCore){ S.engine = 'nescore'; S.nes = null; } else { nesSession = null; nesToast('这个 ROM 跑不起来（可能是特殊 mapper）：' + (err && err.message ? err.message : '')); return; } }
   } else {
-    S.detect = { n:0, limit:100 }; S.hasImg = false;
+    S.detect = { n:0, limit:200 }; S.hasImg = false;
   }
 
   $('#nesLobby').classList.add('hidden');
@@ -12394,7 +12397,7 @@ function nesBoot(rom){
     try{
       if(s.engine === 'nescore'){
         nesNewCore(s, s.rom);
-        s.detect = { n:0, limit:100 }; s.hasImg = false;
+        s.detect = { n:0, limit:200 }; s.hasImg = false;
         s.core.loadROM(nesRomU8(s.rom)).then(() => {
           if(nesSession !== s) return;
           s.paused = false; s.last = 0; s.acc = 0; s.down = {}; s.turbo = {};
@@ -12438,8 +12441,10 @@ function nesBoot(rom){
   const kickoff = () => { if(nesSession !== S) return; S.paused = false; S.raf = requestAnimationFrame(nesLoop); };
   if(S.engine === 'nescore'){
     nesNewCore(S, rom);
-    S.detect = S.detect || { n:0, limit:100 };
-    S.core.loadROM(nesRomU8(rom)).then(kickoff).catch(err => {
+    S.detect = S.detect || { n:0, limit:200 };
+    const to = setTimeout(() => { if(nesSession === S && S.engine === 'nescore'){ nesToast('增强引擎加载超时，切换兼容引擎…'); nesCoreFallback(S); } }, 4000);
+    S.core.loadROM(nesRomU8(rom)).then(() => { clearTimeout(to); kickoff(); }).catch(err => {
+      clearTimeout(to);
       if(nesSession !== S) return;
       S.core = null; S.detect = null;
       S.engine = 'jsnes'; S.nes = nesNewEmu(S);
