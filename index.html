@@ -691,7 +691,7 @@ body.konami-on .wrap{animation:konamiHue .9s steps(6) infinite}
       </svg>
       <div>
         <h1>像素屋</h1>
-        <div class="tagline">PIXEL HOUSE v3.9.1</div>
+        <div class="tagline">PIXEL HOUSE v3.9.2</div>
       </div>
     </div>
     <div class="hdr-actions">
@@ -12236,7 +12236,7 @@ function nesReadMapper(bin){
   return ((c6 >> 4) & 0x0F) | (((c7 >> 4) & 0x0F) << 4);
 }
 function nesPickEngine(mapper){
-  if(mapper === 25 || mapper === 74 || mapper === 162 || mapper === 246) return 'nescore';
+  if(mapper === 16 || mapper === 25 || mapper === 74 || mapper === 162 || mapper === 246) return 'nescore';
   return 'jsnes';
 }
 function nesRomU8(rom){
@@ -12269,6 +12269,13 @@ function nesCoreDetect(S){
 }
 function nesCoreFallback(S){
   if(S.engine !== 'nescore') return;
+  // jsnes 不支持的 mapper：回退 jsnes 必失败（会假暂停）→ 清除检测，让 nescore 继续跑
+  if(S.mapper === 16 || S.mapper === 25 || S.mapper === 162 || S.mapper === 246){
+    S.detect = null; S.hasImg = false;
+    nesToast('增强引擎加载较慢，请稍候（已停用自动切换）');
+    if(!S.raf){ S.fpsT = performance.now(); S.raf = requestAnimationFrame(nesLoop); }
+    return;
+  }
   try{ if(S.audio.ctx) S.audio.ctx.close(); }catch(e){}
   S.audio.ctx = null; S.audio.n = 0; S.audio.next = 0;
   S.engine = 'jsnes'; S.detect = null; S.hasImg = null; S.core = null;
@@ -12354,7 +12361,7 @@ function nesBoot(rom){
   const ctx2d = cv.getContext('2d');
   const img = ctx2d.createImageData(NES_W, NES_H);
   const S = nesSession = {
-    rom, engine, running:true, paused:false, raf:0, last:0, acc:0, frames:0, fpsT:0,
+    rom, engine, mapper:nesReadMapper(bin), running:true, paused:false, raf:0, last:0, acc:0, frames:0, fpsT:0,
     down:{}, turbo:{}, ctx:ctx2d, img, u32:new Uint32Array(img.data.buffer),
     audio:{ ctx:null, gain:null, next:0, L:new Float32Array(4096), R:new Float32Array(4096), n:0 }
   };
