@@ -622,6 +622,13 @@ html.game-lock{overflow:hidden !important}
 .nes-combo .px-btn{font-family:'Press Start 2P',monospace; font-size:9px; padding:7px 8px; touch-action:none}
 .nes-combo .px-btn.on{background:var(--yellow); color:var(--line)}
 .nes-pad .px-btn.on{transform:translate(2px,2px); box-shadow:1px 1px 0 rgba(0,0,0,.5); filter:brightness(1.25)}
+/* v3.9.4 桌面鼠标按键区：画面右侧大圆钮，左手 WASD 移动、右手鼠标点 A/B（按住=持续按下） */
+.nes-desk{display:flex; align-items:center; justify-content:center; gap:18px}
+.nes-mousepad{display:none; flex-direction:column; gap:16px; user-select:none; -webkit-user-select:none}
+.nes-mousepad .px-btn{width:76px; height:76px; border-radius:50%; padding:0; font-family:'Press Start 2P',monospace; font-size:18px; touch-action:none; cursor:pointer}
+.nes-mousepad .px-btn.on{transform:translate(2px,2px); box-shadow:1px 1px 0 rgba(0,0,0,.5); filter:brightness(1.25)}
+.nes-mousepad-tip{font-size:11px; color:var(--muted); text-align:center; line-height:1.8; user-select:none; -webkit-user-select:none}
+@media (min-width:700px) and (pointer:fine){ .nes-mousepad{display:flex} }
 /* 手机触摸·竖屏：复古游戏厅画面置顶 + 虚拟手柄上移到屏幕中下（避开底部地址栏） */
 @media (pointer: coarse) and (orientation: portrait){
   body.game-full #nesView.game-view:not(.hidden){
@@ -632,6 +639,7 @@ html.game-lock{overflow:hidden !important}
   #nesView.game-view .game-topbar{flex:none; margin-bottom:6px}
   #nesView.game-view #nesMount{flex:1; min-height:0; display:flex; flex-direction:column}
   #nesMount .nes-stage{width:100%; max-width:520px; margin:0 auto; flex:none}
+  #nesMount .nes-desk{width:100%}
   #nesMount .nes-tools{flex:none; margin-top:8px}
   #nesMount .nes-hint{flex:none}
   #nesMount .nes-pad{flex:none; width:100%; max-width:430px; margin:auto 0 clamp(16dvh,24dvh,200px)}
@@ -691,7 +699,7 @@ body.konami-on .wrap{animation:konamiHue .9s steps(6) infinite}
       </svg>
       <div>
         <h1>像素屋</h1>
-        <div class="tagline">PIXEL HOUSE v3.9.3</div>
+        <div class="tagline">PIXEL HOUSE v3.9.4</div>
       </div>
     </div>
     <div class="hdr-actions">
@@ -12169,6 +12177,41 @@ function nesBuildPad(){
   return pad;
 }
 
+/* v3.9.4 桌面鼠标按键区：右手区悬停即可操作——左键=B(攻击)、右键=A(跳跃)、齐按=组合键、按住=持续按下；
+   圆钮只是指示灯（亮=按下中），事件全在感应区上统一处理，走 nesPress(1,k,…) 双引擎通吃 */
+function nesBuildMousepad(){
+  const box = document.createElement('div');
+  box.className = 'nes-mousepad';
+  box.innerHTML = '<button class="px-btn red" data-k="B" type="button" tabindex="-1" aria-label="鼠标左键：攻击（B 键）">B</button>'
+    + '<button class="px-btn red" data-k="A" type="button" tabindex="-1" aria-label="鼠标右键：跳跃（A 键）">A</button>'
+    + '<span class="nes-mousepad-tip">左键攻击 · 右键跳跃<br>齐按=组合键 · 按住=持续</span>';
+  const bk = box.querySelector('[data-k="B"]'), ak = box.querySelector('[data-k="A"]');
+  const sync = () => {   // 指示灯以真实按键状态为准（blur/切走后的残亮靠 hover 回来自愈）
+    const S = nesSession;
+    bk.classList.toggle('on', !!(S && S.down && S.down['1:B']));
+    ak.classList.toggle('on', !!(S && S.down && S.down['1:A']));
+  };
+  const hit = e => e.button === 0 ? 'B' : (e.button === 2 ? 'A' : null);
+  box.addEventListener('pointerdown', e => {
+    const k = hit(e); if(!k) return;
+    e.preventDefault();   // 不让焦点跑进按钮，键盘 WASD 不受影响
+    try{ box.setPointerCapture(e.pointerId); }catch(err){}   // 按住拖出感应区也能收到 up
+    nesPress(1, k, true);
+    sync();
+  });
+  const release = e => {
+    const k = hit(e); if(!k) return;
+    nesPress(1, k, false);
+    sync();
+  };
+  box.addEventListener('pointerup', release);
+  box.addEventListener('pointercancel', release);
+  box.addEventListener('pointerleave', () => { nesPress(1, 'B', false); nesPress(1, 'A', false); sync(); });   // 漏网兜底
+  box.addEventListener('pointerenter', sync);
+  box.addEventListener('contextmenu', e => e.preventDefault());
+  return box;
+}
+
 /* ---- 存档（toJSON → gzip → base64，单槽） ---- */
 async function nesPackState(str){
   if(window.CompressionStream){
@@ -12393,7 +12436,11 @@ function nesBoot(rom){
   const stage = document.createElement('div');
   stage.className = 'nes-stage';
   stage.appendChild(cv);
-  host.appendChild(stage);
+  const desk = document.createElement('div');
+  desk.className = 'nes-desk';
+  desk.appendChild(stage);
+  desk.appendChild(nesBuildMousepad());
+  host.appendChild(desk);
 
   const tools = document.createElement('div');
   tools.className = 'nes-tools';
