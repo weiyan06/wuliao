@@ -118,6 +118,7 @@
 
 ## 版本历史（摘要）
 
+- **v3.9.7 感应区右缘顶到窗口边**：页面整体装在 `.wrap`（max-width 1000px 居中栏）里，感应区 `right:0` 只能贴到栏右缘，宽屏下窗口右缘和栏缘之间那条空白够不着（用户红框指出）。改 `right:calc((100% - 100vw) / 2)`——用栏宽与视口宽差的一半往外推，正好补齐 (窗口−栏宽)/2 顶到窗口边（沉浸模式 game-lock 无滚动条，100vw 不走样；body overflow-x:hidden 兜底防溢出）。无头 CDP 实测：1280 窗口下 zone 右缘距窗口 0px、左缘贴画面右缘、7 断言 + 12 tab 零报错
 - **v3.9.6 修感应区左右键不能齐按**：鼠标是**单指针设备**——按住左键再按右键，浏览器**不发第二次 pointerdown**（只发带新 `buttons` 掩码的 pointermove），pointerup 也在最后一只松开时才发 → 按 pointerdown/up 逐键注册的写法第二只键注册不上、先松的键还会卡住。改为 `e.buttons` 位掩码（1=左 2=右）在 pointerdown/move/up 里经 `apply(mask)` 增量校准（按住期间 pointermove 持续对账，cur 标志去重不重发）；pointerenter 只在无真实按键时清跟踪态防残亮；`pointerType!=='touch'` 才响应（触屏仍走触摸手柄）。无头 CDP 按真实鼠标事件序列（第二键走 move 掩码）7 断言全过
 - **v3.9.5 感应区改全右侧 + 画面还原**：v3.9.4 用 flex 行包 stage 把画面挤小了（flex item 收缩到 canvas 固有宽），用户要求还原。改回 stage 独立居中块（布局与 v3.9.3 完全一致），感应区改**绝对定位铺满画面右侧整条区域**（`#nesMount` relative + `left:calc(50% + 264px)` 即画面右缘、上下全高、延伸到窗口右缘）——不用精确瞄准小按钮，右边任意位置左键=B/右键=A/齐按=组合键；B/A 圆钮+提示在感应区垂直居中，交互逻辑不变
 - **v3.9.4 复古游戏厅桌面鼠标按键区**：游戏画面右侧新增鼠标感应区（`.nes-mousepad`，随 `.nes-desk` flex 行包住 stage），桌面端（`min-width:700px 且 pointer:fine`）显示，手机竖屏/触屏设备不显示（已有触摸手柄）；交互为**悬停即操控**——左键=B（攻击）、右键=A（跳跃）、齐按=组合键、按住=持续按下（`setPointerCapture` 保证拖出感应区也能收到 up），B/A 圆钮只是指示灯（亮=按下中，以 `S.down['1:B/A']` 为准、hover 回来自愈残亮），走 `nesPress(1,k,…)` 双引擎通吃；`contextmenu` 屏蔽右键菜单、`pointerdown` preventDefault 防焦点跑进按钮（键盘 WASD 不受影响）；全屏仍是 stage 单元素（感应区不进全屏）。无头 Chrome CDP 实测：Falling 开机后感应区 7 项断言全过（左/右/齐按/松开/leave 兜底/指示灯）、12 tab 回归零报错、stopNes 后重启正常

@@ -625,7 +625,9 @@ html.game-lock{overflow:hidden !important}
 /* v3.9.5 桌面鼠标感应区：画面右侧整条区域（画面右缘→窗口右缘、上下全高），悬停即可左键=B(攻击)/右键=A(跳跃)；
    画面布局与 v3.9.3 完全一致（stage 仍是 #nesMount 居中块），感应区绝对定位铺右侧、不挤压画面 */
 #nesMount{position:relative}
-.nes-mousepad{display:none; position:absolute; top:0; bottom:0; left:calc(50% + 264px); right:0; flex-direction:column; align-items:center; justify-content:center; gap:16px; user-select:none; -webkit-user-select:none}
+/* v3.9.7 right 用 (100%-100vw)/2 往外推：页面装在 .wrap(1000px 居中栏)里，right:0 只能到栏缘；
+   负值正好补齐 (窗口-栏宽)/2，感应区右缘顶到窗口边（沉浸模式无滚动条，body overflow-x:hidden 兜底） */
+.nes-mousepad{display:none; position:absolute; top:0; bottom:0; left:calc(50% + 264px); right:calc((100% - 100vw) / 2); flex-direction:column; align-items:center; justify-content:center; gap:16px; user-select:none; -webkit-user-select:none}
 .nes-mousepad .px-btn{width:76px; height:76px; border-radius:50%; padding:0; font-family:'Press Start 2P',monospace; font-size:18px; touch-action:none; cursor:pointer}
 .nes-mousepad .px-btn.on{transform:translate(2px,2px); box-shadow:1px 1px 0 rgba(0,0,0,.5); filter:brightness(1.25)}
 .nes-mousepad-tip{font-size:11px; color:var(--muted); text-align:center; line-height:1.8; user-select:none; -webkit-user-select:none}
@@ -699,7 +701,7 @@ body.konami-on .wrap{animation:konamiHue .9s steps(6) infinite}
       </svg>
       <div>
         <h1>像素屋</h1>
-        <div class="tagline">PIXEL HOUSE v3.9.6</div>
+        <div class="tagline">PIXEL HOUSE v3.9.7</div>
       </div>
     </div>
     <div class="hdr-actions">
