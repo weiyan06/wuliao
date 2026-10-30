@@ -622,9 +622,10 @@ html.game-lock{overflow:hidden !important}
 .nes-combo .px-btn{font-family:'Press Start 2P',monospace; font-size:9px; padding:7px 8px; touch-action:none}
 .nes-combo .px-btn.on{background:var(--yellow); color:var(--line)}
 .nes-pad .px-btn.on{transform:translate(2px,2px); box-shadow:1px 1px 0 rgba(0,0,0,.5); filter:brightness(1.25)}
-/* v3.9.4 桌面鼠标按键区：画面右侧大圆钮，左手 WASD 移动、右手鼠标点 A/B（按住=持续按下） */
-.nes-desk{display:flex; align-items:center; justify-content:center; gap:18px}
-.nes-mousepad{display:none; flex-direction:column; gap:16px; user-select:none; -webkit-user-select:none}
+/* v3.9.5 桌面鼠标感应区：画面右侧整条区域（画面右缘→窗口右缘、上下全高），悬停即可左键=B(攻击)/右键=A(跳跃)；
+   画面布局与 v3.9.3 完全一致（stage 仍是 #nesMount 居中块），感应区绝对定位铺右侧、不挤压画面 */
+#nesMount{position:relative}
+.nes-mousepad{display:none; position:absolute; top:0; bottom:0; left:calc(50% + 264px); right:0; flex-direction:column; align-items:center; justify-content:center; gap:16px; user-select:none; -webkit-user-select:none}
 .nes-mousepad .px-btn{width:76px; height:76px; border-radius:50%; padding:0; font-family:'Press Start 2P',monospace; font-size:18px; touch-action:none; cursor:pointer}
 .nes-mousepad .px-btn.on{transform:translate(2px,2px); box-shadow:1px 1px 0 rgba(0,0,0,.5); filter:brightness(1.25)}
 .nes-mousepad-tip{font-size:11px; color:var(--muted); text-align:center; line-height:1.8; user-select:none; -webkit-user-select:none}
@@ -639,7 +640,6 @@ html.game-lock{overflow:hidden !important}
   #nesView.game-view .game-topbar{flex:none; margin-bottom:6px}
   #nesView.game-view #nesMount{flex:1; min-height:0; display:flex; flex-direction:column}
   #nesMount .nes-stage{width:100%; max-width:520px; margin:0 auto; flex:none}
-  #nesMount .nes-desk{width:100%}
   #nesMount .nes-tools{flex:none; margin-top:8px}
   #nesMount .nes-hint{flex:none}
   #nesMount .nes-pad{flex:none; width:100%; max-width:430px; margin:auto 0 clamp(16dvh,24dvh,200px)}
@@ -699,7 +699,7 @@ body.konami-on .wrap{animation:konamiHue .9s steps(6) infinite}
       </svg>
       <div>
         <h1>像素屋</h1>
-        <div class="tagline">PIXEL HOUSE v3.9.4</div>
+        <div class="tagline">PIXEL HOUSE v3.9.5</div>
       </div>
     </div>
     <div class="hdr-actions">
@@ -12436,11 +12436,8 @@ function nesBoot(rom){
   const stage = document.createElement('div');
   stage.className = 'nes-stage';
   stage.appendChild(cv);
-  const desk = document.createElement('div');
-  desk.className = 'nes-desk';
-  desk.appendChild(stage);
-  desk.appendChild(nesBuildMousepad());
-  host.appendChild(desk);
+  host.appendChild(stage);
+  host.appendChild(nesBuildMousepad());
 
   const tools = document.createElement('div');
   tools.className = 'nes-tools';
