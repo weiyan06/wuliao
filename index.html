@@ -6642,7 +6642,10 @@ GAMES.rubik = {
       const v = R.view;
       R.cube.style.transform = 'rotateX(' + v.rx + 'deg) rotateY(' + v.ry + 'deg)';
     };
+    let rbDown = null, rbMoved = false;
     scene.addEventListener('pointerdown', function(e){
+      rbDown = (e.target && e.target.closest) ? e.target.closest('.rb-sticker') : null;
+      rbMoved = false;
       R.drag = { x:e.clientX, y:e.clientY, rx:R.view.rx, ry:R.view.ry };
       try{ scene.setPointerCapture(e.pointerId); }catch(_){}
       scene.classList.add('dragging');
@@ -6650,13 +6653,26 @@ GAMES.rubik = {
     });
     scene.addEventListener('pointermove', function(e){
       if(!R.drag) return;
+      if(!rbMoved && Math.hypot(e.clientX - R.drag.x, e.clientY - R.drag.y) > 6) rbMoved = true;
       R.view.rx = R.drag.rx + (e.clientY - R.drag.y) * 0.5;
       R.view.ry = R.drag.ry + (e.clientX - R.drag.x) * 0.5;
       R.applyView();
     });
     ['pointerup','pointercancel'].forEach(ev => scene.addEventListener(ev, function(e){
       if(!R.drag) return;
-      R.drag = null;
+      const st = rbDown;
+      if(ev === 'pointerup' && st && st._rb_cb && !rbMoved){
+        const cb = st._rb_cb;
+        const nl = [0,0,0]; nl[st._rb_ax] = st._rb_sgn;
+        const nw = rbVecMul(cb.rot, nl);
+        const am = Math.abs(nw[0]), bm = Math.abs(nw[1]), cm = Math.abs(nw[2]);
+        let axis;
+        if(am >= bm && am >= cm) axis = 0;
+        else if(bm >= cm) axis = 1;
+        else axis = 2;
+        rubikMove([['R','L'],['U','D'],['F','B']][axis][nw[axis] > 0 ? 0 : 1]);
+      }
+      R.drag = null; rbDown = null;
       scene.classList.remove('dragging');
       try{ scene.releasePointerCapture(e.pointerId); }catch(_){}
     }));
@@ -6674,7 +6690,7 @@ GAMES.rubik = {
     mountEl.appendChild(ops);
     const help = document.createElement('div');
     help.className = 'rb-help';
-    help.textContent = '拖动魔方可旋转视角查看；用面按钮手动转练手复原；打乱后点「提示」每下自动转一步、带你走到复原；「一键还原」立即复原。';
+    help.textContent = '拖动魔方旋转视角查看；点击魔方的面可直接转动对应层，也可用下方 R/L/U/D/F/B 按钮；打乱后点「提示」每下自动转一步、带你走到复原；「一键还原」立即复原。';
     mountEl.appendChild(help);
     rbInit();
     renderRubik();
@@ -6708,6 +6724,7 @@ function rbInit(){
       const key = ax+'-'+sgn;
       s.style.background = RB_FACECOLOR[key];
       s.style.transform = RB_STICKER_TR[key] + ' translateZ(' + (RB_S/2) + 'px)';
+      s._rb_cb = cb; s._rb_ax = ax; s._rb_sgn = sgn;
       el.appendChild(s);
     });
     cb.el = el;
