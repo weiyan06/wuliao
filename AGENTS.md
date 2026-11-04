@@ -14,17 +14,17 @@
 
 ## 文件布局
 
-| 文件               | 体量     | 内容                                                                                    | 加载方式                                       |
-| ---------------- | ------ | ------------------------------------------------------------------------------------- | ------------------------------------------ |
-| `index.html`     | ~552KB | 全部 HTML + CSS + 逻辑（巨型 `<script>` 在 `<body>` 末尾）                                       | 首屏                                         |
-| `data/site.js`   | 122KB  | CONTENT（随机内容，含歇后语 45 条）/ SPEAKS(100) / DISHES(60) / STORIES(40) / VOCAB(220)          | 首屏同步前载                                     |
-| `data/daily.js`  | 9.4KB  | ALMANAC_YI(38) / ALMANAC_JI(36) / HISTORY(89 条带日期) / HISTORY_FALLBACK(22)             | 首屏同步前载（`renderDaily` 有 `typeof` 守卫）        |
-| `data/movies.js` | 30KB   | MOVIES(95部) 片库                                                                        | 首屏同步前载                                     |
-| `data/gsfx.js`   | 130KB  | GSFX(23个游戏事件音效 mp3 base64，Kenney CC0 来源)                                              | **懒加载**，首次交互 / 进游戏时 `ensureAudioData()` 注入 |
-| `data/tang.js`   | 1.7MB  | TANG300(320首) + TANG_S2T/TANG_T2S 繁简映射 + TANG_FOLD                                    | **懒加载**，首次进诗词 tab 时 `ensureTang(cb)` 注入    |
-| `data/nes.js`    | 165KB  | jsnes 1.2.1（NES 模拟器 UMD，Apache-2.0）+ NES_ROMS[1]（Falling，MIT，ROM base64）+ NES_LICENSE | **懒加载**，首次进复古游戏厅时 `ensureNES(cb)` 注入       |
-| `data/nesjs-core.js` | 266KB | @nesjs/core 2.7.0（备用 NES 模拟器，MIT，130+ mapper）——jsnes 打不开的 mapper(25/74/162/246) 自动切它重试 | **懒加载**，首次玩增强引擎游戏时 `ensureNESCore(cb)` 注入 |
-| `licenses/`      | 12KB   | jsnes Apache-2.0 / Falling MIT 授权原文 + 说明                                              | 静态文件，不上页面                                  |
+| 文件                   | 体量     | 内容                                                                                     | 加载方式                                       |
+| -------------------- | ------ | -------------------------------------------------------------------------------------- | ------------------------------------------ |
+| `index.html`         | ~552KB | 全部 HTML + CSS + 逻辑（巨型 `<script>` 在 `<body>` 末尾）                                        | 首屏                                         |
+| `data/site.js`       | 122KB  | CONTENT（随机内容，含歇后语 45 条）/ SPEAKS(100) / DISHES(60) / STORIES(40) / VOCAB(220)           | 首屏同步前载                                     |
+| `data/daily.js`      | 9.4KB  | ALMANAC_YI(38) / ALMANAC_JI(36) / HISTORY(89 条带日期) / HISTORY_FALLBACK(22)              | 首屏同步前载（`renderDaily` 有 `typeof` 守卫）        |
+| `data/movies.js`     | 30KB   | MOVIES(95部) 片库                                                                         | 首屏同步前载                                     |
+| `data/gsfx.js`       | 130KB  | GSFX(23个游戏事件音效 mp3 base64，Kenney CC0 来源)                                               | **懒加载**，首次交互 / 进游戏时 `ensureAudioData()` 注入 |
+| `data/tang.js`       | 1.7MB  | TANG300(320首) + TANG_S2T/TANG_T2S 繁简映射 + TANG_FOLD                                     | **懒加载**，首次进诗词 tab 时 `ensureTang(cb)` 注入    |
+| `data/nes.js`        | 165KB  | jsnes 1.2.1（NES 模拟器 UMD，Apache-2.0）+ NES_ROMS[1]（Falling，MIT，ROM base64）+ NES_LICENSE  | **懒加载**，首次进复古游戏厅时 `ensureNES(cb)` 注入       |
+| `data/nesjs-core.js` | 266KB  | @nesjs/core 2.7.0（备用 NES 模拟器，MIT，130+ mapper）——jsnes 打不开的 mapper(25/74/162/246) 自动切它重试 | **懒加载**，首次玩增强引擎游戏时 `ensureNESCore(cb)` 注入  |
+| `licenses/`          | 12KB   | jsnes Apache-2.0 / Falling MIT 授权原文 + 说明                                               | 静态文件，不上页面                                  |
 
 巨型 script 的内部分区用 `/* ---------- 标题 ---------- */` 注释分隔，顺序大致是：
 工具函数 → sfx/VIEWS/setTab → 游戏（GAMES.xxx = {…}）→ 各内容 tab 逻辑（poems/speak/food/story/vocab/movies）→ `/* ---------- 启动 ---------- */` 收尾。
@@ -91,49 +91,81 @@
 ## 血泪坑清单（别重蹈覆辙）
 
 - **PowerShell**：`.Replace(string,string)` 会被重载仲裁坑（报"无法转 char"）→ 一律 `IndexOf + Remove + Insert`
+
 - **多区间删除必须严格按位置降序**执行，否则中途 shift 全错位（切割脚本教训）
+
 - **锚点匹配**：先 `IndexOf` 探测真实字节再改；跨多行锚点注意 CRLF；行内 `"}];` 收口和独立行 `];` 都存在过
+
 - **浏览器工具**：tab id 会失效，先 `browser.tabs.list` 拿当前 id；`evaluate` 里**没有 `setTimeout`**，长任务分步或用 `browser.wait`；本地文件必须走 `browser.preview`（不能 file:// open）
+
 - **诗词 tab**：懒加载钩子挂在 `setTab('poems')` 分支（boot 时不渲染）；诗卡类名是 `.poem-card`（不是 `.speak-card`）；按钮 id 是 `poemRnd`（不是 poemRand）
+
 - **TANG300 收口**是行内的 `"}];`，不是独立行 `];`（拆数据脚本踩过）
+
 - 控制台输出中文乱码是 PowerShell 显示问题，文件本身没事——用 `grep` 工具核对中文
+
 - **插入锚点**：8 款新游戏在 `const TOYS = {};` **之前**（GAMES 定义区末尾）、4 个新玩具在「像素宠物 · 果冻进阶版」段**之前**、每日卡片/摸鱼计时/Konami 在「启动」注释**之前**——插错位置会拿不到 `GAMES`/`TOYS` 或抢在初始化前执行
+
 - **jsnes 1.2.1 的 `nes.reset()` 是坑**：reset 后状态不干净，实测能把 ROM 跑到非法操作码、CPU 死循环（页面卡死）。「重置」一律**重建 `new jsnes.NES()` + loadROM**（见 `nesNewEmu`）
+
 - **jsnes 崩溃会走 `this.nes.stop()`**：1.2.1 里 `NES.prototype.stop` 不存在 → 每帧抛 `this.nes.stop is not a function` 刷屏。所以 `nesLoop` 里 `frame()` 必须 try/catch，出错就暂停并提示「点重置」
+
 - **存档别直接存 `toJSON()`**：原始 JSON ≈1.9MB（ppu 的 vramMem/buffer/bgbuffer 全是 3 万级普通数组），必须 `CompressionStream('gzip')`+base64（≈130KB）再进 localStorage；`DecompressionStream` 兜底走 `raw:` 前缀
+
 - **模拟器数据必须懒加载**：`data/nes.js` 165KB，`setTab('nes')` 才注入；否则首屏 gzip 直接 +34KB
+
 - **jsnes 画面四边默认被裁**：`ppu.clipToTvSize` 初值 `true`，`endFrame()` 把上下左右各 8px 清零（TV 过扫描）。症状是「状态栏右边少一块」，**但不报错、其余画面看着全对** —— 排查画面缺角先查它，别去怀疑 mapper / 滚动 / 镜像；已在 `nesNewEmu` 置 `false`，改模拟器时别改回去
+
 - **jsnes `nmiCounter` 太小 → 游戏卡在等 vblank、整屏灰**：`endScanline` case 261 置 vblank 标志后，要等 `nmiCounter` 个 PPU dot 才触发 NMI；原值 9 ≈3 CPU 周期，比游戏主循环 `LDA $2002 / BPL` 一轮 7 周期还短，NMI 处理程序每帧抢先把 $80 读走 → 游戏永远等不到 vblank → PPU 一个字节都没初始化（调色板/nametable/CHR 全 0）→ **整屏灰**（NES 调色板 $00 就是灰，所以是灰不是黑）。辨识特征：`cpu.REG_PC` 连续几百帧钉死在同一地址 + `ppu.vramMem[0x3F00..0x3F1F]` 全 0。已改 `60`；这是**全局 NMI 时序**，再动它必须连带回归 MMC3 分屏游戏
 
 - **`evaluate` 里别拿页面自身的进度计数当循环条件**（如 `while(nesSession.frames<k) nes.frame()`）：暂停/未跑起来时该计数不增长 → **死循环焊死主线程**，刷新的 load 事件都排队发不出去，只能关标签重开。长任务一律**固定次数 + 分步**，跑之前先想清楚退出条件
+
 - **jsnes `Tile.opaque` 是「每行」标志，不是每像素**：`setScanline` 只在该行有透明像素时写 `false`，默认是 `undefined` —— 拿它统计「tile 有没有图形」会得到全 0 的错误结论（误判成图案表全空、画面该黑屏）。要看图形用 `tile.pix`
+
 - **CHR-RAM 游戏（`vromCount===0`）别自己从 `rom.vrom` 拷银行**：`load1kVromBank` 在 `vromCount===0` 时直接 return，游戏是通过 `$2007` 写 `ptTile` 的；mapper 里再拷一次会把游戏写好的图形抹掉
+
 - **MMC5 的 PRG 模式切换有前置依赖**：`m5prgApply` 里用 `prg_set[]` 门住「本槽由哪个寄存器控制」，**该寄存器还没被写过就保留 loadROM 开机映射**；否则游戏一写 `$5100`，还没写过的槽会被切成全 0 的 RAM → 代码区变 BRK，3 帧内 CPU 跑飞到 $0007 崩（症状：`pc` 钉在低地址 + 非法操作码）
+
 - **MMC5 `$5204` 的 in-frame（bit6）必须现算**：用常驻 `in_frame` 标志它整帧不清，游戏 `BIT $5204 / BVC` 的等待瞬间通过、时序全错；按 jsnes 扫描线编号用 `scanline∈[20,260]` + `$2001` 渲染开关判定（`clockIrqCounter` 只在 20~260 被调，261→-1 是 vblank 起点）
+
 - **`data/nes.js` 是 CRLF 单行巨文件**：多行替换先把 `
-` 归一化成 `
-` 再写回；**替换串里不要再手写 `
-`**，会被写回逻辑二次转义成 `
-`（`node --check` 照过，但字节脏了）。mapper 实例就是 `nes.mmap`（原型上挂 `m5*` 方法），没有 `.m` / `.mapper`
+  ` 归一化成 `
+  ` 再写回；**替换串里不要再手写 `
+  `**，会被写回逻辑二次转义成 `
+  `（`node --check` 照过，但字节脏了）。mapper 实例就是 `nes.mmap`（原型上挂 `m5*` 方法），没有 `.m` / `.mapper`
 
 ## 版本历史（摘要）
 
+- **v3.10.0 新增三阶魔方小游戏**：纯 CSS 3D 三阶魔方（26 cubelet + 162 贴面，`preserve-3d` + `matrix3d`，零依赖），大厅「三阶魔方」卡（小游戏 40→41）。功能三件套：**一键打乱**（随机 20~30 步进历史栈）、**一键还原**（逆序历史逐条应用逆矩阵，`.rb-nofade` 禁过渡即时复原）、**提示玩法**（点「💡 提示」每下 pop 历史最后一步并应用其逆操作，逐步带你复原）。另有 12 个面按钮 R/L/U/D/F/B 及各自逆，键盘 R/L/U/D/F/B 转面、1打乱/2还原/3提示。旋转用 3×3 旋转矩阵（R=绕X、U=绕Y、F=绕Z，逆=转置），位置+朝向四舍五入防漂移；复原检测=位置+朝向全归位（`rbCheck`）。**实测**：node 逻辑 200 轮打乱→逆序全还原、半途提示逆序=正向尾部全过；浏览器打乱/提示逐步复原/一键还原/手动转动/重进重置全通、12 tab 回归零报错
+
 - **v3.9.8 感应区上下分半：上半连发 / 下半普通**：用户草图指定——右侧感应区按高度对半分，**上半区长按（左键B/右键A）= 连发**、下半区长按 = 持续按下（原行为），左/右键与齐按组合键不变；虚线分界 + 「连发区/普通区」小标签，B 灯移上半区、A 灯+提示在下半区。连发不走 `nesTurbo`（它不记 `S.down`，指示灯会瞎），本地 `setInterval(55ms)` 经 `nesPress` 翻转——`S.down` 跟着闪、指示灯自动变连发指示；按住跨区（move 客户端 Y 过中线）自动 disengage→engage 换模式；翻转守卫 `document.visibilityState!=='visible'` 跳过（hasFocus 在无头环境不保证，blur 时全局松键后回来靠 enter/move 对账自愈）。无头 CDP 实测 9 断言全过：上半连发四采样不全等、拖到下半变恒 down、跨区换模式、双连发、leave 无泄漏；12 tab 零报错
+
 - **v3.9.7 感应区右缘顶到窗口边**：页面整体装在 `.wrap`（max-width 1000px 居中栏）里，感应区 `right:0` 只能贴到栏右缘，宽屏下窗口右缘和栏缘之间那条空白够不着（用户红框指出）。改 `right:calc((100% - 100vw) / 2)`——用栏宽与视口宽差的一半往外推，正好补齐 (窗口−栏宽)/2 顶到窗口边（沉浸模式 game-lock 无滚动条，100vw 不走样；body overflow-x:hidden 兜底防溢出）。无头 CDP 实测：1280 窗口下 zone 右缘距窗口 0px、左缘贴画面右缘、7 断言 + 12 tab 零报错
+
 - **v3.9.6 修感应区左右键不能齐按**：鼠标是**单指针设备**——按住左键再按右键，浏览器**不发第二次 pointerdown**（只发带新 `buttons` 掩码的 pointermove），pointerup 也在最后一只松开时才发 → 按 pointerdown/up 逐键注册的写法第二只键注册不上、先松的键还会卡住。改为 `e.buttons` 位掩码（1=左 2=右）在 pointerdown/move/up 里经 `apply(mask)` 增量校准（按住期间 pointermove 持续对账，cur 标志去重不重发）；pointerenter 只在无真实按键时清跟踪态防残亮；`pointerType!=='touch'` 才响应（触屏仍走触摸手柄）。无头 CDP 按真实鼠标事件序列（第二键走 move 掩码）7 断言全过
+
 - **v3.9.5 感应区改全右侧 + 画面还原**：v3.9.4 用 flex 行包 stage 把画面挤小了（flex item 收缩到 canvas 固有宽），用户要求还原。改回 stage 独立居中块（布局与 v3.9.3 完全一致），感应区改**绝对定位铺满画面右侧整条区域**（`#nesMount` relative + `left:calc(50% + 264px)` 即画面右缘、上下全高、延伸到窗口右缘）——不用精确瞄准小按钮，右边任意位置左键=B/右键=A/齐按=组合键；B/A 圆钮+提示在感应区垂直居中，交互逻辑不变
+
 - **v3.9.4 复古游戏厅桌面鼠标按键区**：游戏画面右侧新增鼠标感应区（`.nes-mousepad`，随 `.nes-desk` flex 行包住 stage），桌面端（`min-width:700px 且 pointer:fine`）显示，手机竖屏/触屏设备不显示（已有触摸手柄）；交互为**悬停即操控**——左键=B（攻击）、右键=A（跳跃）、齐按=组合键、按住=持续按下（`setPointerCapture` 保证拖出感应区也能收到 up），B/A 圆钮只是指示灯（亮=按下中，以 `S.down['1:B/A']` 为准、hover 回来自愈残亮），走 `nesPress(1,k,…)` 双引擎通吃；`contextmenu` 屏蔽右键菜单、`pointerdown` preventDefault 防焦点跑进按钮（键盘 WASD 不受影响）；全屏仍是 stage 单元素（感应区不进全屏）。无头 Chrome CDP 实测：Falling 开机后感应区 7 项断言全过（左/右/齐按/松开/leave 兜底/指示灯）、12 tab 回归零报错、stopNes 后重启正常
+
 - **v3.9.3 修真·所有走 nescore 的游戏真机报错（u8.subarray is not a function）**：用户实测「忍者神龟3 黑屏、控制台 TypeError: u8.subarray is not a function at nesBytesToB64/nesRomU8/nesBoot」——**真正根治此前一连串"黑屏/暂停/乱码"的根因**。定位：`nesLoadBytes` 为兼容 jsnes 把 ROM 数据用 `String.fromCharCode` 转成**二进制字符串**存 `rom.bin`（jsnes 接受字符串）；但 **nescore 需要 Uint8Array**，`nesRomU8` 里 `nesBytesToB64(rom.bin)` 对字符串调 `.subarray` 就崩 → loadROM 失败。**影响所有走 nescore 的 mapper（16/25/74/162/246）**：忍者神龟3/重装机兵汉化/封神榜/塞尔达三神之力/热血曲棍球·新纪录·格斗——其中 mapper74 类靠"nescore 失败→回退 jsnes（jsnes 吃字符串 bin 能跑）"侥幸可玩（如天使之翼2），回退也失败的直接报错跑不了（如忍者神龟3）。**这也解释了"无头/桌面测试页正常、真机黑屏"**：node 测试直接传 Uint8Array 不走 nesLoadBytes 转换。**修复**：`nesRomU8` 兼容三种来源——`rom.b64`→nesB64ToBytes、`rom.bin` 字符串→逐字节 `charCodeAt&0xFF` 转 Uint8Array、`rom.bin` 已是 Uint8Array→直接用；jsnes 仍走字符串 bin 不受影响。桌面独立测试页（Edge + nescore + putImageData + 音频）忍者神龟3 50 帧出画面。index.html 升 v3.9.3，待用户真机实测。
+
 - **v3.9.2 修真忍者神龟3（mapper 16）真机假暂停**：用户实测「忍着神龟3 / 热血时代剧 进去都是暂停」——诊断发现忍着神龟3 实际是 **mapper 16**（非 25），`nesPickEngine` 未收录 → 走 jsnes → jsnes 不支持 16（loadROM 报 Not a valid NES ROM）→ 切 nescore 后黑屏检测/4s 超时触发 `nesCoreFallback` → 无脑回退 jsnes → jsnes 再失败 → 卡进 `nesPauseUi` 假暂停。修复 3 处：① `nesPickEngine` 加 `mapper===16`（忍着神龟3 直接走 nescore）；② `S` 会话记录 `mapper:nesReadMapper(bin)`；③ `nesCoreFallback` 开头对 **jsnes 不支持的 mapper（16/25/162/246）不再回退 jsnes**（回退必死），改为清除黑屏检测 `S.detect=null` 保持 nescore 继续渲染 + 必要时重启 rAF。效果：忍着神龟3 留 nescore（node 实测 nescore 渲染 600 帧游戏场景 / 700 帧四龟标题正常），不再假暂停。**热血时代剧（191）/松鼠大作战2（192）两引擎仍不支持**（Unsupport Mapper Type），无解需换 ROM；重装机兵汉字乱码已由用户换 Vanyogin 3.11 汉化版解决（标准 mapper74，nescore 起名界面「你的名字是？」汉字清晰实测）。index.html 升 v3.9.2，待用户真机实测。
+
 - **v3.9.1 修真机黑屏（用户实测天使之翼2/重装机兵黑屏）**：v3.9.0 双引擎后 mapper74 走 nescore，但 nescore 对这两款真机出现 loadROM 卡住/渲染抛错/黑屏，原「黑屏检测 100 帧回退」未触发 → 永久黑屏。修复 3 处：① `nesLoop` catch 里 nescore 抛错不再暂停，直接 `nesCoreFallback` 回退 jsnes；② nescore `loadROM` 加 4s 超时强制回退；③ 黑屏检测窗口 100→200 帧（两处初始化）；④ `nesCoreFallback` 末尾 `!S.raf` 时启动 rAF（覆盖超时/异常回退时循环未启动）。效果：天使之翼2 无论 nescore 黑屏/卡/错都回退 jsnes 恢复可玩；重装机兵若 nescore 正常则保持（汉字正常）不回退。线上 v3.9.1，**待用户真机实测确认**。
+
 - **v3.9.0 复古游戏厅双引擎：jsnes 主引擎 + @nesjs/core 备用引擎，重装机兵汉字正常 + 再救 3 款**：核心痛点（重装机兵 mapper74 对话中文花屏）此前 v3.8.3 的「跳过 CHR bank8/9」修复被用户实测否定（「花的更厉害了」）后回退，根治改为引入第二引擎 @nesjs/core 2.7.0（github.com/taiyuuki/nesjs，MIT，130+ mapper，纯 JS）内联进 `data/nesjs-core.js`（266KB，懒加载，`licenses/nesjs-core-MIT.txt` 留原文）。**引擎规则** `nesPickEngine(mapper)`：mapper 25/74/162/246 → nescore（jsnes 打不开：忍着神龟3/重装机兵/封神榜/塞尔达三神之力），其余 → jsnes；**mapper74 黑屏自动回退**：nescore 起跑 100 帧无画面自动重建 jsnes（天使之翼2 在 nescore 黑屏、jsnes 正常 → 回退保住）。**实测（无头 Chrome 全部画面验证）**：重装机兵 nescore 标题「重装机兵」汉字清晰（截图 OCR 可读，@nesjs/core 的 mapper74 CHR-RAM 处理正确）、忍着神龟3/封神榜/塞尔达三神之力 nescore 出画面、天使之翼2 nescore 黑屏→自动回退 jsnes 出画面、热血曲棍球/新纪录/格斗 nescore 出画面、天神之剑(195)/快打旋风/忍者龙剑传3/Falling jsnes 无回归、12 tab 零报错。**实现**：`S.engine`（'jsnes'|'nescore'）+ `S.core` 双实例，`nesLoop` 帧循环按引擎调 `S.nes.frame()`/`S.core.runFrame()`，按键 `nesBtnDown/Up` 统一（jsnes `buttonDown/Up` 与 nescore `getGamepad().setButton` 的按钮码一致 A=0,B=1,SELECT=2,START=3,UP=4,DOWN=5,LEFT=6,RIGHT=7），音频 nescore 走 `setAudioInterface({outputSample,flushFrame})`，存档按引擎分开（jsnes `toJSON` gzip / nescore `createBinarySaveState` 二进制，格式不互通但可分别存/读），重置按引擎重建实例。**已知遗留**：热血时代剧(191)/松鼠大作战2(192) 两引擎都不支持（Unsupport Mapper Type），仍跑不起来；热血足球 jsnes 黑屏待查。index.html 升 v3.9.0
 
 - **v3.8.3 修重装机兵中文字体花屏（mapper 74 CHR-RAM 支持）**：mapper 74 = MMC3 克隆 + 74LS138/139，硬件把 CHR-ROM 1KB bank **#8/#9 重定向到 2KB CHR-RAM**（NESdev Wiki INES_Mapper_074）。中文 hack 卡运行时通过 `$2007` 把汉字点阵写入 CHR-RAM，渲染时选 bank 8/9 读取。jsnes 的 `writeMem` 对 pattern 区**无条件**写 vramMem + ptTile（`patternWrite`），所以 `$2007` 写汉字本就生效；花屏根因是 h[74]=h[4] 的 MMC3 在选 bank 8/9 时 `load1kVromBank` 从 CHR-ROM 重新加载覆盖了游戏写入的字模。修复：`h[74].prototype.load1kVromBank=function(b,a){if(8===b||9===b)return;return h[0].prototype.load1kVromBank.apply(this,arguments)}`（选 bank 8/9 跳过 CHR-ROM 加载，保留 CHR-RAM）。确定性验证：写 0xAB 到 pattern 0x0800 → 选 bank 8 → 保留 0xAB（未修复会被 CHR-ROM 的 0x9B 覆盖）。回归：mapper74 四款（天使之翼2/热血新纪录/热血曲棍球/热血格斗）+ 原有 8 款 + 内置 Falling + 12 tab 零报错。**重装机兵中文对话字模修复（确定性测试验证机制，端到端待用户实测确认）**。index.html 升 v3.8.3
+
 - **v3.8.2 复古游戏厅新增 mapper 74（MMC3 克隆）支持，4 款中文盗版卡复活**：`data/nes.js` 注册 `h[74]=h[4]` + `h[74].prototype=new h[4]`（与 v3.7.8 mapper195 同模式）。mapper 74 是 NESdev 记载的「MMC3 clone」，用于中文/盗版 hack，jsnes 原生不支持（loadROM 抛「mapper not supported」）。实测：天使之翼2 / 热血新纪录 / 热血曲棍球 / 热血格斗 从「跑不起来」变可玩（帧缓冲 1K~61K 非黑像素），原有 mapper 4/195 各代表款 + 内置 Falling 全部正常、12 tab 零报错。**已知遗留**：同批「重装机兵」（512K PRG 的 mapper74 盗版卡）能启动但黑屏——疑似用了 mapper 74 在选特定 CHR bank 时切 CHR-RAM 的特性，未处理；忍着神龟3(25)/塞尔达三神之力(162)/热血时代剧(191)/松鼠大作战2(192)/封神榜(246) 为未实现 mapper，仍跑不起来（用户暂缓）
+
 - **v3.8.1 复古游戏厅手机端交互优化**：① 手机触摸·竖屏（`@media (pointer:coarse) and (orientation:portrait)`）下游戏画面置顶 + 虚拟手柄上移到屏幕中下（`#nesMount .nes-pad{margin:auto 0 clamp(16dvh,24dvh,200px)}`，避开底部地址栏），桌面端/横屏不受影响；② 虚拟手柄新增「连发」开关（点亮后 A/B 走 `nesTurbo` 连发，关闭时 `nesTurboRelease` 防卡键）+「A+B」组合键（按住同时触发 B+A）。无头 Chrome 390×844 触摸模拟实测：A 单次 / 连发 / 组合键三路互不冲突、画面置顶 + 手柄 59%~78% 屏幕中下、页面零报错。index.html 升 v3.8.1
+
 - **v3.8.0 补齐 MMC5（mapper 5）：恶魔城传说 / 三国志II霸王的大陆 / 大航海时代 从「一开机就抛异常」变可玩**：`data/nes.js` 的 `h[5]` 从残缺桩（`exWrite/ClearIRQ/SetBank_CPU/SetBank_PPU/SetBank_SRAM` 只有调用没定义）换成完整实现（约 +150 行）。① **PRG 四模式**（`$5100` 0=32KB 用 `$5117` 通吃 / 1=16K×2 / 2=16+8+8 / 3=8KB×4，bank 对齐掩码 `&124/&126/&127`）+ `$5114-$5117` **bit7=1 选 ROM、0 选 RAM**、`$5117` 恒为 ROM（Pretendo mapper 005 文档原文核对）。② **开机 `$5100=3`（8KB×4）**：三国志II/大航海时代 从不写 `$5100`，却按 8KB 粒度写 `$5114/15/16`（0xE0/E1/F2/F9/FE/FF 都是 8KB 银行号），只有模式 3 让三个寄存器同时生效；Pretendo 也记着「Romance of the 3 Kingdoms 2 seems to expect $5100 = $03」。开机四窗全映射到末 8KB（对应「游戏预期 `$5117=$FF`」）。③ **CHR**：A 组 `$5120-$5127` / B 组 `$5128-$512F`（镜像 `$512C-$512F`）+ `$5130` 高 2 位；8x16 精灵下硬件是「背景吃 B 组、精灵吃 A 组」→ 在 `renderBgScanline` / `renderSpritesPartially` 开头调 `m5chrBg()/m5chrSpr()` 按阶段换银行，且**走私有装填 `m5chrLoad1k`**（`load1kVromBank` 会 `triggerRendering()`，渲染中换银行再触发渲染会跟精灵钩子互相打架甚至递归，实测把主线程跑满）。④ **`$5105` nametable 映射**：2bit 值 0/1/2/3 恰好等于 jsnes `nameTable` 下标 → 直接写 `ntable1[i]`，**复用闲置的 `nameTable[2]` 当 ExRAM nametable、`[3]` 当 Fill**，不扩数组、不破存档兼容；ExRAM 四种模式先只存不裁（避免 vblank 写入被清零）。⑤ **PRG-RAM**：`$5113` 选 8KB 页给 `$6000-$7FFF`，`$8000+` 落在 RAM 银行也回写 `prgRam`。⑥ **乘法 `$5205/$5206`、扫描线 IRQ**（挂 jsnes 每条可见线调一次的 `clockIrqCounter`：`scanline=20` 重置、21 起计数，恶魔城的 `$5203=8/14` 能触发）、`$5204` bit7=pending（读清零）、**bit6=in-frame 用扫描线区间现算**。⑦ `toJSON/fromJSON` 带完整 m5 状态。**实测**：恶魔城传说 进标题画面（`prg_size=2` 是它自己写的 `$5100`）、三国志II 主循环正常 + 按 START 切菜单（画面逐帧变化）、大航海时代 跑出剧情文本（nametable 里是「SAIL FOR THE COAST OF WEST AFRICA」，960 格逐格与帧缓冲比对 960:9 一致）。**已知缺口**：扩展音频 `$5000-$5015` 只存寄存器不发声（三款开机各只写一次 `$5010/$5015`，无音轨数据写入）；分屏 `$5200` 只存状态、未接 PPU 滚动（三款都写 `$5200=0` 即关闭）。回归：mapper 0/1/2/3/4/195 代表款（超级马里奥兄弟 / 塞尔达传说 / 魂斗罗 / 赤色要塞 / 冒险岛 / 天神之剑（水晶战记）/ 快打旋风 / 吞食天地II / 天神之剑（汉化））全部正常渲染，天神之剑（汉化）状态栏 y=224~239 仍是 16 行 × 256 全宽、右 8 列 128 个亮像素，12 个 tab 回归全过、控制台零报错
 
 - **v3.7.9 修 jsnes NMI 时序（赤色要塞开局整屏灰）**：`endScanline` case 261 置 vblank 标志后靠 `nmiCounter` 延时才触发 NMI，原值 `9` dot ≈3 CPU 周期，比游戏主循环 `LDA $2002 / BPL` 一轮 7 周期还短 → 每帧 NMI 处理程序（向量 $C292 一进来就 `LDA $2002`）抢先把 $80 吃掉，主循环 83900 次读取全拿到 $00 → 卡在 `$D0E0` 死等、PPU 从未被写过 → 调色板/nametable/CHR-RAM 全 0，整屏只剩 NES 调色板 $00 的灰。改 `nmiCounter=60` dot（最坏情况 24+9+12=45，扫参 24 能过但太脆）。「赤色要塞」（mapper 2 UxROM + CHR-RAM，即 Jackal）PC 脱困到 $C28F、调色板 0→30、CHR-RAM 0→4766、nametable 0→486。回归：mapper 0/1/2/3/4/195 各选代表（超级马里奥兄弟 / 塞尔达传说 / 魂斗罗 / 冒险岛 / 天神之剑（水晶战记）/ 快打旋风 / 吞食天地II / 天神之剑（汉化））+ 内置 Falling 全部正常渲染；天神之剑（汉化）状态栏 y=224~239 仍是 16 行 × 256 全宽、右 8 列 128 个亮像素（MMC3 IRQ 分屏未受 NMI 改动影响）；12 个 tab 回归全过、控制台零报错。**已知遗留（与本次无关）**：mapper 5 的「恶魔城传说 / 三国志II霸王的大陆 / 大航海时代」开机即抛 `papu.exWrite is not a function` / `this.SetBank_CPU is not a function` —— `h[5]` 是个残缺 MMC5 桩，`exWrite/ClearIRQ/SetBank_CPU/SetBank_PPU/SetBank_SRAM` 只有调用没有定义，自 v3.7.0 内联 jsnes 起就如此
+
 - **v3.7.8 兼容 mapper 195 + 修画面四边被裁**：① `data/nes.js` 注册 `h[195]=h[4]` —— iNES 195 = Waixing FS303，本质是 MMC3 克隆（PRG/CHR/镜像/IRQ 寄存器与 MMC3 一致，多一块「按 PPU 写 CHR 地址选 CHR-RAM」的 GAL），直接复用 MMC3 实现即可；「天神之剑（汉化）」（flags6=0x32 / flags7=0xC0 → mapper195，PRG 32×16K + CHR 32×8K，电池存档）从 `loadROM` 抛「mapper not supported by JSNES」变为正常进游戏。② 修**画面不全**：jsnes 1.2.1 `ppu.clipToTvSize` 初值 `true`，`endFrame()` 会把最上/下/左/右各 8px **整列清零**（TV 过扫描裁边），症状是「状态栏右边像被截了一块」；`nesNewEmu` 里置 `false` 后，状态栏 y=224~239 十六行恢复 256 全宽（右 8 列亮像素 0→128，走默认值时整条为 0）。实测：汉化版 标题 → 过场 → 带状态栏的游玩画面渲染正常、FPS 60；12 个 tab 回归全过、控制台零报错。仍属 jsnes Apache-2.0 改动版，`licenses/` 不变，ROM 字节不进仓库。
 
 - **v3.7.7 修 jsnes MMC3 IRQ（天神之剑能跑了）**：按 jsnes 官方 issue #595 + nesdev 标准修 `data/nes.js` Mapper4 三处——$C000=锁存/$C001=触发重装（原版写反）、`clockIrqCounter` 重写为「counter==0 或 reload 标志 → 从锁存重装，否则递减；减到 0 且使能才发 IRQ」（重装拍**不**递减，周期=latch+1 拍；初版把重装和递减写成逗号链导致提前 1 拍触发，忍者龙剑传3(汉) 会崩）、`irqReload` 进 toJSON/fromJSON 存档。实测：天神之剑/水晶战记（美版 Crystalis）✓、快打旋风 ✓、精选 27 款 MMC3 中 24 款 ✓ 无回归；超级马里奥兄弟3、忍者神龟3 新旧代码都崩（jsnes 固有缺陷，之前只验过 mapper 头从未真跑）；精选文件夹 68→71（+快打旋风、天神之剑（水晶战记）[美版 mapper4]、用户自加天神之剑（汉化）[mapper195 不支持，v3.7.8 已支持]），游戏清单.txt 补真机试跑备注

@@ -261,6 +261,16 @@ body.no-crt .scanlines{display:none}
 .snake-hud{display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:12px}
 .snake-hud .stat{flex:1 1 auto; text-align:center}
 
+/* ============ 三阶魔方 ============ */
+.rb-scene{position:relative; width:200px; height:200px; margin:0 auto; perspective:900px}
+.rb-cube{position:absolute; left:50%; top:50%; width:0; height:0; transform-style:preserve-3d}
+.rb-cubelet{position:absolute; width:0; height:0; transform-style:preserve-3d; transition:transform .28s ease}
+.rb-nofade .rb-cubelet{transition:none}
+.rb-sticker{position:absolute; width:56px; height:56px; left:-28px; top:-28px; border:1px solid rgba(0,0,0,.55); box-sizing:border-box; border-radius:4px}
+.rb-ops{display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin:16px auto 0; max-width:380px}
+.rb-ops .px-btn{min-width:46px; padding:8px 10px}
+.rb-help{max-width:420px; margin:14px auto 0; font-size:12px; color:var(--muted); line-height:1.6; text-align:center}
+
 /* ============ 2048 ============ */
 .t2048-wrap{max-width:420px; margin:0 auto}
 .t2048-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:10px; padding:10px;
@@ -705,7 +715,7 @@ body.konami-on .wrap{animation:konamiHue .9s steps(6) infinite}
       </svg>
       <div>
         <h1>像素屋</h1>
-        <div class="tagline">PIXEL HOUSE v3.9.8</div>
+        <div class="tagline">PIXEL HOUSE v3.10.0</div>
       </div>
     </div>
     <div class="hdr-actions">
@@ -1178,6 +1188,19 @@ body.konami-on .wrap{animation:konamiHue .9s steps(6) infinite}
             </span>
             <span class="card-name">黑白棋</span>
             <span class="card-desc">夹住就能翻面，最后子多者胜</span>
+          </button>
+          <button class="game-card" data-game="rubik" type="button">
+            <span class="card-icon" aria-hidden="true">
+              <svg width="40" height="40" viewBox="0 0 32 32">
+                <g stroke="#0b0c18" stroke-width="1.4">
+                  <rect x="2" y="2" width="9" height="9" fill="#f7f7f7"/><rect x="12" y="2" width="9" height="9" fill="#e23b3b"/><rect x="22" y="2" width="8" height="9" fill="#3baf3b"/>
+                  <rect x="2" y="12" width="9" height="9" fill="#ffd53d"/><rect x="12" y="12" width="9" height="9" fill="#3b6fd6"/><rect x="22" y="12" width="8" height="9" fill="#ff8c1a"/>
+                  <rect x="2" y="22" width="9" height="8" fill="#3b6fd6"/><rect x="12" y="22" width="9" height="8" fill="#3baf3b"/><rect x="22" y="22" width="8" height="8" fill="#e23b3b"/>
+                </g>
+              </svg>
+            </span>
+            <span class="card-name">三阶魔方</span>
+            <span class="card-desc">打乱→自己复原，卡住点提示自动带你转</span>
           </button>
         </div>
         <div class="pager" id="gamePager" aria-label="游戏分页"></div>
@@ -6574,7 +6597,192 @@ function endReversi(){
   renderReversi();
 }
 
-const TOYS = {};
+/* ================= 三阶魔方 ================= */
+let rubik = null;
+const RB_S = 56, RB_STEP = 60; // sticker 尺寸 / cubelet 间距
+const RB_FACECOLOR = {'0-1':'#e23b3b','0--1':'#ff8c1a','1-1':'#f7f7f7','1--1':'#ffd53d','2-1':'#3baf3b','2--1':'#3b6fd6'};
+const RB_STICKER_TR = {
+  '0-1':'rotateY(90deg)','0--1':'rotateY(-90deg)','1-1':'rotateX(90deg)','1--1':'rotateX(-90deg)','2-1':'','2--1':'rotateY(180deg)'
+};
+const RB_I = [[1,0,0],[0,1,0],[0,0,1]];
+const RB_RX = [[1,0,0],[0,0,-1],[0,1,0]];
+const RB_RY = [[0,0,1],[0,1,0],[-1,0,0]];
+const RB_RZ = [[0,1,0],[-1,0,0],[0,0,1]];
+function rbT(m){ return [[m[0][0],m[1][0],m[2][0]],[m[0][1],m[1][1],m[2][1]],[m[0][2],m[1][2],m[2][2]]]; }
+function rbVecMul(m,v){ return [m[0][0]*v[0]+m[0][1]*v[1]+m[0][2]*v[2], m[1][0]*v[0]+m[1][1]*v[1]+m[1][2]*v[2], m[2][0]*v[0]+m[2][1]*v[1]+m[2][2]*v[2]]; }
+function rbMatMul(a,b){ const r=[[],[],[]]; for(let i=0;i<3;i++)for(let j=0;j<3;j++) r[i][j]=a[i][0]*b[0][j]+a[i][1]*b[1][j]+a[i][2]*b[2][j]; return r; }
+function rbRound(m){ return m.map(r=>r.map(x=>Math.round(x))); }
+function rbEqual(a,b){ for(let i=0;i<3;i++)for(let j=0;j<3;j++) if(a[i][j]!==b[i][j]) return false; return true; }
+const RB_MOVES = {};
+[['R',0,1,RB_RX],['L',0,-1,rbT(RB_RX)],['U',1,1,RB_RY],['D',1,-1,rbT(RB_RY)],['F',2,1,RB_RZ],['B',2,-1,rbT(RB_RZ)]].forEach(([n,a,l,m])=>{
+  RB_MOVES[n] = {axis:a, layer:l, m:m, inv:rbT(m), lbl:n};
+  RB_MOVES[n+"'"] = {axis:a, layer:l, m:rbT(m), inv:m, lbl:n+"'"};
+});
+GAMES.rubik = {
+  title: '三阶魔方',
+  mount(mountEl, statsEl){
+    mountEl.classList.add('stage');
+    const R = rubik = { cubies:[], history:[], moves:0, solving:false };
+    statsEl.innerHTML =
+      '<div class="stat">步数<b id="rbMoves">0</b></div>' +
+      '<div class="stat">状态<b id="rbState">已复原</b></div>' +
+      '<button class="px-btn red" id="rbScramble" type="button">🎲 打乱</button>' +
+      '<button class="px-btn green" id="rbSolve" type="button">✨ 一键还原</button>' +
+      '<button class="px-btn yellow" id="rbHint" type="button">💡 提示</button>';
+    const scene = document.createElement('div');
+    scene.className = 'rb-scene';
+    const cube = document.createElement('div');
+    cube.className = 'rb-cube';
+    scene.appendChild(cube);
+    mountEl.appendChild(scene);
+    R.cube = cube;
+    const ops = document.createElement('div');
+    ops.className = 'rb-ops';
+    ['R',"R'",'L',"L'",'U',"U'",'D',"D'",'F',"F'",'B',"B'"].forEach(lbl => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'px-btn';
+      b.textContent = lbl;
+      b.addEventListener('click', () => rubikMove(lbl));
+      ops.appendChild(b);
+    });
+    mountEl.appendChild(ops);
+    const help = document.createElement('div');
+    help.className = 'rb-help';
+    help.textContent = '用面按钮手动转练手复原；打乱后点「提示」每下自动转一步、带你走到复原；「一键还原」立即复原。';
+    mountEl.appendChild(help);
+    rbInit();
+    renderRubik();
+    $('#rbScramble').addEventListener('click', rubikScramble);
+    $('#rbSolve').addEventListener('click', rubikSolveAll);
+    $('#rbHint').addEventListener('click', rubikHint);
+  },
+  onKey(e){
+    const R = rubik; if(!R) return false;
+    const k = e.key.toLowerCase();
+    const map = { r:'R', l:'L', u:'U', d:'D', f:'F', b:'B', '1':'SCRAMBLE', '2':'SOLVE', '3':'HINT' };
+    if(map[k] === 'SCRAMBLE'){ rubikScramble(); return true; }
+    if(map[k] === 'SOLVE'){ rubikSolveAll(); return true; }
+    if(map[k] === 'HINT'){ rubikHint(); return true; }
+    if(map[k]){ rubikMove(map[k]); return true; }
+    return false;
+  },
+  destroy(){ rubik = null; }
+};
+function rbInit(){
+  const R = rubik; if(!R) return;
+  R.cubies = []; R.history = []; R.moves = 0;
+  R.cube.innerHTML = '';
+  for(let x=-1;x<=1;x++) for(let y=-1;y<=1;y++) for(let z=-1;z<=1;z++){
+    const cb = { pos:[x,y,z], init:[x,y,z], rot:RB_I.map(r=>r.slice()) };
+    const el = document.createElement('div');
+    el.className = 'rb-cubelet';
+    [[0,1],[0,-1],[1,1],[1,-1],[2,1],[2,-1]].forEach(([ax,sgn])=>{
+      const s = document.createElement('div');
+      s.className = 'rb-sticker';
+      const key = ax+'-'+sgn;
+      s.style.background = RB_FACECOLOR[key];
+      s.style.transform = RB_STICKER_TR[key] + ' translateZ(' + (RB_S/2) + 'px)';
+      el.appendChild(s);
+    });
+    cb.el = el;
+    R.cube.appendChild(el);
+    R.cubies.push(cb);
+  }
+  const m = $('#rbMoves'); if(m) m.textContent = '0';
+  const st = $('#rbState'); if(st) st.textContent = '已复原';
+}
+function rbApply(mv, record){
+  const R = rubik; if(!R) return;
+  R.cubies.forEach(cb => {
+    if(cb.pos[mv.axis] === mv.layer){
+      cb.pos = rbVecMul(mv.m, cb.pos).map(x=>Math.round(x));
+      cb.rot = rbRound(rbMatMul(mv.m, cb.rot));
+    }
+  });
+  if(record) R.history.push(mv);
+  R.moves++;
+  const m = $('#rbMoves'); if(m) m.textContent = R.moves;
+  renderRubik();
+  rbCheck();
+}
+function renderRubik(){
+  const R = rubik; if(!R) return;
+  R.cubies.forEach(cb => {
+    const m = cb.rot;
+    const mm = [m[0][0],m[1][0],m[2][0],0, m[0][1],m[1][1],m[2][1],0, m[0][2],m[1][2],m[2][2],0, 0,0,0,1].join(',');
+    cb.el.style.transform = 'translate3d(' + (cb.pos[0]*RB_STEP) + 'px,' + (cb.pos[1]*RB_STEP) + 'px,' + (cb.pos[2]*RB_STEP) + 'px) matrix3d(' + mm + ')';
+  });
+}
+function rubikMove(lbl){
+  const R = rubik; if(!R) return;
+  if(R.solving) return;
+  const mv = RB_MOVES[lbl]; if(!mv) return;
+  rbApply(mv, true);
+  const st = $('#rbState'); if(st) st.textContent = R.history.length ? '已打乱' : '已复原';
+  gsfx('click');
+}
+function rubikScramble(){
+  const R = rubik; if(!R) return;
+  if(R.solving) return;
+  const names = Object.keys(RB_MOVES);
+  const n = 20 + Math.floor(Math.random()*11);
+  for(let i=0;i<n;i++) rbApply(RB_MOVES[names[Math.floor(Math.random()*names.length)]], true);
+  const st = $('#rbState'); if(st) st.textContent = '已打乱';
+  gsfx('shuffle');
+}
+function rubikHint(){
+  const R = rubik; if(!R) return;
+  if(R.solving) return;
+  if(!R.history.length){ const st = $('#rbState'); if(st) st.textContent = '已复原 🎉'; return; }
+  const last = R.history.pop();
+  const inv = { axis:last.axis, layer:last.layer, m:last.inv };
+  R.cubies.forEach(cb => {
+    if(cb.pos[inv.axis] === inv.layer){
+      cb.pos = rbVecMul(inv.m, cb.pos).map(x=>Math.round(x));
+      cb.rot = rbRound(rbMatMul(inv.m, cb.rot));
+    }
+  });
+  renderRubik();
+  rbCheck();
+  gsfx('click');
+}
+function rubikSolveAll(){
+  const R = rubik; if(!R) return;
+  if(R.solving) return;
+  R.solving = true;
+  R.cube.classList.add('rb-nofade');
+  const steps = R.history.slice(); R.history = [];
+  for(let i=steps.length-1;i>=0;i--){
+    const last = steps[i];
+    const inv = { axis:last.axis, layer:last.layer, m:last.inv };
+    R.cubies.forEach(cb => {
+      if(cb.pos[inv.axis] === inv.layer){
+        cb.pos = rbVecMul(inv.m, cb.pos).map(x=>Math.round(x));
+        cb.rot = rbRound(rbMatMul(inv.m, cb.rot));
+      }
+    });
+  }
+  renderRubik();
+  requestAnimationFrame(()=> requestAnimationFrame(()=> R.cube.classList.remove('rb-nofade')));
+  R.solving = false;
+  rbCheck();
+}
+function rbCheck(){
+  const R = rubik; if(!R) return;
+  if(R.solving) return;
+  const solved = R.cubies.every(cb =>
+    cb.pos[0]===cb.init[0] && cb.pos[1]===cb.init[1] && cb.pos[2]===cb.init[2] && rbEqual(cb.rot, RB_I)
+  );
+  const st = $('#rbState'); if(!st) return;
+  if(solved && !R.history.length){
+    st.textContent = '🎉 复原了！';
+    gsfx('win'); vibK('win');
+  } else if(solved){
+    st.textContent = '已复原';
+  }
+}
+const TOYS = {};
 
 
 /* ---------------- 捏泡泡 ---------------- */
