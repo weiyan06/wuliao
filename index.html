@@ -262,7 +262,7 @@ body.no-crt .scanlines{display:none}
 .snake-hud .stat{flex:1 1 auto; text-align:center}
 
 /* ============ 三阶魔方 ============ */
-.rb-scene{position:relative; width:200px; height:200px; margin:0 auto; perspective:900px; cursor:grab; touch-action:none; user-select:none}
+.rb-scene{position:relative; width:240px; height:240px; margin:0 auto; perspective:900px; cursor:grab; touch-action:none; user-select:none}
 .rb-scene.dragging{cursor:grabbing}
 .rb-cube{position:absolute; left:50%; top:50%; width:0; height:0; transform-style:preserve-3d}
 .rb-cubelet{position:absolute; width:0; height:0; transform-style:preserve-3d; transition:transform .28s ease}
@@ -716,7 +716,7 @@ body.konami-on .wrap{animation:konamiHue .9s steps(6) infinite}
       </svg>
       <div>
         <h1>像素屋</h1>
-        <div class="tagline">PIXEL HOUSE v3.10.1</div>
+        <div class="tagline">PIXEL HOUSE v3.10.2</div>
       </div>
     </div>
     <div class="hdr-actions">
@@ -6640,39 +6640,65 @@ GAMES.rubik = {
     R.view = { rx:-20, ry:-38 };
     R.applyView = function(){
       const v = R.view;
-      R.cube.style.transform = 'rotateX(' + v.rx + 'deg) rotateY(' + v.ry + 'deg)';
+      R.cube.style.transform = 'rotateX(' + v.rx + 'deg) rotateY(' + v.ry + 'deg) scale(.75)';
     };
-    let rbDown = null, rbMoved = false;
+    let rbGrab = null, rbDrag = null;
+    const RB_AXV = [[1,0,0],[0,1,0],[0,0,1]];
+    const rbTurnBy = function(g, dx, dy){
+      const a = RB_AXV[g.axis];
+      const p = g.cb.pos;
+      const tx = a[1]*p[2] - a[2]*p[1];
+      const ty = a[2]*p[0] - a[0]*p[2];
+      const tz = a[0]*p[1] - a[1]*p[0];
+      const fwd = (tx*dx + ty*dy + tz*0) >= 0;
+      const posL = g.layer > 0;
+      let name;
+      if(fwd) name = posL ? ('RUF'[g.axis]) : ('LDB'[g.axis]);
+      else    name = posL ? ("R'U'F'"[g.axis]) : ("L'D'B'"[g.axis]);
+      rubikMove(name);
+    };
     scene.addEventListener('pointerdown', function(e){
-      rbDown = (e.target && e.target.closest) ? e.target.closest('.rb-sticker') : null;
-      rbMoved = false;
-      R.drag = { x:e.clientX, y:e.clientY, rx:R.view.rx, ry:R.view.ry };
+      const st = (e.target && e.target.closest) ? e.target.closest('.rb-sticker') : null;
+      if(st && st._rb_cb){
+        const cb = st._rb_cb;
+        const nl = [0,0,0]; nl[st._rb_ax] = st._rb_sgn;
+        const nw = rbVecMul(cb.rot, nl);
+        let axis = 0;
+        if(Math.abs(nw[1]) > Math.abs(nw[0])) axis = 1;
+        if(Math.abs(nw[2]) > Math.abs(nw[axis])) axis = 2;
+        rbGrab = { cb, nw, axis, layer:cb.pos[axis], x:e.clientX, y:e.clientY, moved:false };
+        rbDrag = null;
+      } else {
+        rbGrab = null;
+        rbDrag = { x:e.clientX, y:e.clientY, rx:R.view.rx, ry:R.view.ry };
+      }
       try{ scene.setPointerCapture(e.pointerId); }catch(_){}
       scene.classList.add('dragging');
       e.preventDefault();
     });
     scene.addEventListener('pointermove', function(e){
-      if(!R.drag) return;
-      if(!rbMoved && Math.hypot(e.clientX - R.drag.x, e.clientY - R.drag.y) > 6) rbMoved = true;
-      R.view.rx = R.drag.rx + (e.clientY - R.drag.y) * 0.5;
-      R.view.ry = R.drag.ry + (e.clientX - R.drag.x) * 0.5;
+      if(rbGrab){
+        if(!rbGrab.moved && (Math.abs(e.clientX - rbGrab.x) > 6 || Math.abs(e.clientY - rbGrab.y) > 6)) rbGrab.moved = true;
+        return;
+      }
+      if(!rbDrag) return;
+      R.view.rx = rbDrag.rx + (e.clientY - rbDrag.y) * 0.5;
+      R.view.ry = rbDrag.ry + (e.clientX - rbDrag.x) * 0.5;
       R.applyView();
     });
     ['pointerup','pointercancel'].forEach(ev => scene.addEventListener(ev, function(e){
-      if(!R.drag) return;
-      const st = rbDown;
-      if(ev === 'pointerup' && st && st._rb_cb && !rbMoved){
-        const cb = st._rb_cb;
-        const nl = [0,0,0]; nl[st._rb_ax] = st._rb_sgn;
-        const nw = rbVecMul(cb.rot, nl);
-        const am = Math.abs(nw[0]), bm = Math.abs(nw[1]), cm = Math.abs(nw[2]);
-        let axis;
-        if(am >= bm && am >= cm) axis = 0;
-        else if(bm >= cm) axis = 1;
-        else axis = 2;
-        rubikMove([['R','L'],['U','D'],['F','B']][axis][nw[axis] > 0 ? 0 : 1]);
+      const g = rbGrab;
+      if(ev === 'pointerup' && g){
+        const dx = e.clientX - g.x, dy = e.clientY - g.y;
+        if(g.moved) rbTurnBy(g, dx, dy);
+        else if(g.cb){
+          const nw = g.nw;
+          const a0 = Math.abs(nw[0]), a1 = Math.abs(nw[1]), a2 = Math.abs(nw[2]);
+          let ax; if(a0 >= a1 && a0 >= a2) ax = 0; else if(a1 >= a2) ax = 1; else ax = 2;
+          rubikMove([['R','L'],['U','D'],['F','B']][ax][nw[ax] > 0 ? 0 : 1]);
+        }
       }
-      R.drag = null; rbDown = null;
+      rbGrab = null; rbDrag = null;
       scene.classList.remove('dragging');
       try{ scene.releasePointerCapture(e.pointerId); }catch(_){}
     }));
@@ -6690,7 +6716,7 @@ GAMES.rubik = {
     mountEl.appendChild(ops);
     const help = document.createElement('div');
     help.className = 'rb-help';
-    help.textContent = '拖动魔方旋转视角查看；点击魔方的面可直接转动对应层，也可用下方 R/L/U/D/F/B 按钮；打乱后点「提示」每下自动转一步、带你走到复原；「一键还原」立即复原。';
+    help.textContent = '按住魔方的面朝外拖动可转动对应层（往哪拖往哪转）；拖动旁边空白可旋转视角；也可用下方 R/L/U/D/F/B 按钮；打乱后点「提示」每下自动转一步、带你走到复原；「一键还原」立即复原。';
     mountEl.appendChild(help);
     rbInit();
     renderRubik();
