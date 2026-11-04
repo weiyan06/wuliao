@@ -262,7 +262,8 @@ body.no-crt .scanlines{display:none}
 .snake-hud .stat{flex:1 1 auto; text-align:center}
 
 /* ============ 三阶魔方 ============ */
-.rb-scene{position:relative; width:200px; height:200px; margin:0 auto; perspective:900px}
+.rb-scene{position:relative; width:200px; height:200px; margin:0 auto; perspective:900px; cursor:grab; touch-action:none; user-select:none}
+.rb-scene.dragging{cursor:grabbing}
 .rb-cube{position:absolute; left:50%; top:50%; width:0; height:0; transform-style:preserve-3d}
 .rb-cubelet{position:absolute; width:0; height:0; transform-style:preserve-3d; transition:transform .28s ease}
 .rb-nofade .rb-cubelet{transition:none}
@@ -715,7 +716,7 @@ body.konami-on .wrap{animation:konamiHue .9s steps(6) infinite}
       </svg>
       <div>
         <h1>像素屋</h1>
-        <div class="tagline">PIXEL HOUSE v3.10.0</div>
+        <div class="tagline">PIXEL HOUSE v3.10.1</div>
       </div>
     </div>
     <div class="hdr-actions">
@@ -6636,6 +6637,30 @@ GAMES.rubik = {
     scene.appendChild(cube);
     mountEl.appendChild(scene);
     R.cube = cube;
+    R.view = { rx:-20, ry:-38 };
+    R.applyView = function(){
+      const v = R.view;
+      R.cube.style.transform = 'rotateX(' + v.rx + 'deg) rotateY(' + v.ry + 'deg)';
+    };
+    scene.addEventListener('pointerdown', function(e){
+      R.drag = { x:e.clientX, y:e.clientY, rx:R.view.rx, ry:R.view.ry };
+      try{ scene.setPointerCapture(e.pointerId); }catch(_){}
+      scene.classList.add('dragging');
+      e.preventDefault();
+    });
+    scene.addEventListener('pointermove', function(e){
+      if(!R.drag) return;
+      R.view.rx = R.drag.rx + (e.clientY - R.drag.y) * 0.5;
+      R.view.ry = R.drag.ry + (e.clientX - R.drag.x) * 0.5;
+      R.applyView();
+    });
+    ['pointerup','pointercancel'].forEach(ev => scene.addEventListener(ev, function(e){
+      if(!R.drag) return;
+      R.drag = null;
+      scene.classList.remove('dragging');
+      try{ scene.releasePointerCapture(e.pointerId); }catch(_){}
+    }));
+    R.applyView();
     const ops = document.createElement('div');
     ops.className = 'rb-ops';
     ['R',"R'",'L',"L'",'U',"U'",'D',"D'",'F',"F'",'B',"B'"].forEach(lbl => {
@@ -6649,7 +6674,7 @@ GAMES.rubik = {
     mountEl.appendChild(ops);
     const help = document.createElement('div');
     help.className = 'rb-help';
-    help.textContent = '用面按钮手动转练手复原；打乱后点「提示」每下自动转一步、带你走到复原；「一键还原」立即复原。';
+    help.textContent = '拖动魔方可旋转视角查看；用面按钮手动转练手复原；打乱后点「提示」每下自动转一步、带你走到复原；「一键还原」立即复原。';
     mountEl.appendChild(help);
     rbInit();
     renderRubik();
