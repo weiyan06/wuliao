@@ -697,6 +697,52 @@ body.konami-on .wrap{animation:konamiHue .9s steps(6) infinite}
 @media (prefers-reduced-motion: reduce){
   *,*::before,*::after{animation-duration:.01ms!important; animation-iteration-count:1!important; transition-duration:.01ms!important}
 }
+/* ============ 今日天气 ============ */
+.weather-hero{max-width:720px; margin:0 auto 18px; background:var(--panel,#151733); border:3px solid var(--line,#0b0c18); box-shadow:5px 5px 0 0 rgba(0,0,0,.5); padding:18px 20px}
+.weather-date{margin:6px 0 10px; font-size:12.5px; color:var(--muted,#9aa0d8)}
+.weather-now{display:flex; align-items:center; gap:16px; flex-wrap:wrap; margin:4px 0 14px}
+.weather-icon{font-size:50px; line-height:1; filter:drop-shadow(3px 3px 0 rgba(0,0,0,.45))}
+.weather-temp{font-family:'Press Start 2P','DotGothic16',monospace; font-size:32px; color:var(--yellow,#ffc53d); text-shadow:3px 3px 0 var(--line,#0b0c18); letter-spacing:1px}
+.weather-now-side{display:flex; flex-direction:column; gap:4px; font-size:13px; color:var(--muted,#9aa0d8)}
+.weather-now-side b{font-size:17px; color:var(--ink,#eef0ff)}
+.weather-stats{display:grid; grid-template-columns:repeat(auto-fit,minmax(104px,1fr)); gap:10px; margin:0 0 8px}
+.weather-stat{background:var(--bg2,#0e0f1d); border:2px solid var(--line,#0b0c18); padding:8px 10px; line-height:1.4}
+.weather-stat span{display:block; font-size:11px; color:var(--muted,#9aa0d8)}
+.weather-stat b{font-family:'Press Start 2P','DotGothic16',monospace; font-size:13px; color:var(--ink,#eef0ff)}
+.weather-note{margin:4px 0 0; font-size:12px; color:var(--muted,#9aa0d8); min-height:18px}
+.weather-note.warn{color:var(--yellow,#ffc53d)}
+.weather-week{display:grid; grid-template-columns:repeat(7,1fr); gap:8px; margin-top:14px}
+.weather-day{background:var(--bg2,#0e0f1d); border:2px solid var(--line,#0b0c18); padding:8px 4px; text-align:center; line-height:1.45}
+.weather-day.today{border-color:var(--yellow,#ffc53d); box-shadow:0 0 0 2px rgba(255,197,61,.22)}
+.weather-day .wd{font-size:11px; color:var(--muted,#9aa0d8); white-space:nowrap}
+.weather-day .wi{display:block; font-size:20px; margin:2px 0}
+.weather-day .wt{font-family:'Press Start 2P','DotGothic16',monospace; font-size:10px; color:var(--ink,#eef0ff)}
+.weather-day .wt em{display:block; font-style:normal; color:var(--muted,#9aa0d8); font-size:9px; margin-top:2px}
+.weather-picker{max-width:720px; margin:0 auto 18px}
+.weather-results{display:flex; gap:8px; flex-wrap:wrap}
+@media (max-width:640px){
+  .weather-week{grid-template-columns:repeat(4,1fr)}
+  .weather-temp{font-size:24px}
+  .weather-icon{font-size:38px}
+}
+/* ============ 全网热榜 ============ */
+.hot-tools{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px}
+.hot-row{max-width:720px; margin:0 auto 10px; display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+.hot-status{flex:1; min-width:140px; font-size:12px; color:var(--muted,#9aa0d8); margin:0}
+.hot-status.warn{color:var(--yellow,#ffc53d)}
+.hot-list{max-width:720px; margin:0 auto; display:flex; flex-direction:column; gap:6px}
+.hot-item{display:flex; align-items:flex-start; gap:10px; background:var(--panel,#23244a); border:2px solid var(--line,#0b0c18); padding:9px 12px; color:var(--ink,#eef0ff); text-decoration:none; line-height:1.5; font-size:14px}
+a.hot-item:hover{filter:brightness(1.12)}
+a.hot-item:active{transform:translate(1px,1px)}
+.hot-idx{flex:none; width:24px; font-family:'Press Start 2P','DotGothic16',monospace; font-size:11px; color:var(--muted,#9aa0d8); padding-top:2px}
+.hot-item:nth-child(1) .hot-idx{color:var(--red,#ff3d5a)}
+.hot-item:nth-child(2) .hot-idx{color:var(--yellow,#ffc53d)}
+.hot-item:nth-child(3) .hot-idx{color:var(--green,#3ddc84)}
+.hot-title{flex:1; min-width:0; word-break:break-word}
+.hot-tag{display:inline-block; margin-left:6px; font-size:10px; color:var(--line,#0b0c18); background:var(--red,#ff3d5a); padding:0 4px; vertical-align:1px}
+.hot-hot{flex:none; font-family:'Press Start 2P','DotGothic16',monospace; font-size:10px; color:var(--muted,#9aa0d8); padding-top:3px; white-space:nowrap}
+.hot-note{max-width:720px; margin:14px auto 0; font-size:12px; color:var(--muted,#9aa0d8); line-height:1.8}
+.hot-empty{max-width:720px; margin:0 auto; padding:18px 12px; text-align:center; color:var(--muted,#9aa0d8); font-size:13px; border:2px dashed var(--line,#0b0c18)}
 </style>
 </head>
 <body>
@@ -716,7 +762,7 @@ body.konami-on .wrap{animation:konamiHue .9s steps(6) infinite}
       </svg>
       <div>
         <h1>像素屋</h1>
-        <div class="tagline">PIXEL HOUSE v3.10.2</div>
+        <div class="tagline">PIXEL HOUSE v3.12.0</div>
       </div>
     </div>
     <div class="hdr-actions">
@@ -738,6 +784,8 @@ body.konami-on .wrap{animation:konamiHue .9s steps(6) infinite}
     <button class="tab-btn" data-tab="vocab" type="button">每日背单词</button>
     <button class="tab-btn" data-tab="movies" type="button">电影推荐</button>
     <button class="tab-btn" data-tab="life" type="button">生活妙招</button>
+    <button class="tab-btn" data-tab="weather" type="button">今日天气</button>
+    <button class="tab-btn" data-tab="hot" type="button">热榜</button>
     <button class="tab-btn" data-tab="notes" type="button">随手记</button>
   </nav>
 
@@ -1590,6 +1638,61 @@ body.konami-on .wrap{animation:konamiHue .9s steps(6) infinite}
       </div>
     </section>
 
+    <!-- ===== 视图：今日天气 ===== -->
+    <section id="view-weather" class="view">
+      <div class="lobby">
+        <p class="view-tip">今日天气 · 每次进来自动更新 · 数据来自 Open-Meteo（CC BY 4.0）· 断网时显示上次缓存</p>
+        <div class="weather-hero">
+          <div class="story-top">
+            <span class="speak-lv">🌤 今日</span>
+            <h2 id="wxCity">北京</h2>
+            <button id="wxHere" class="px-btn ghost" type="button">📍 定位</button>
+            <button id="wxRefresh" class="px-btn ghost" type="button">⟳ 刷新</button>
+          </div>
+          <p class="weather-date" id="wxDate">…</p>
+          <div class="weather-now">
+            <span class="weather-icon" id="wxIcon" aria-hidden="true">🌡️</span>
+            <span class="weather-temp" id="wxTemp">--°</span>
+            <div class="weather-now-side">
+              <b id="wxDesc">正在取天气…</b>
+              <span id="wxRange"></span>
+            </div>
+          </div>
+          <div class="weather-stats" id="wxStats"></div>
+          <p class="weather-note" id="wxNote"></p>
+        </div>
+        <div class="weather-picker">
+          <div class="poem-tools">
+            <input id="wxSearch" class="poem-search" type="text" placeholder="搜城市（如：杭州 / Tokyo）…" />
+            <button id="wxSearchBtn" class="px-btn ghost" type="button">🔍 查</button>
+          </div>
+          <div class="poem-tools" id="wxChips"></div>
+          <div class="weather-results" id="wxResults"></div>
+        </div>
+        <div class="vocab-hero">
+          <div class="story-top">
+            <span class="speak-lv">📅 未来 7 天</span>
+            <h2>一周怎么穿</h2>
+          </div>
+          <div class="weather-week" id="wxDaily"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 视图：全网热榜 ===== -->
+    <section id="view-hot" class="view">
+      <div class="lobby">
+        <p class="view-tip">全网热榜 · 微博/知乎/B站/抖音等平台的实时热搜，每 5 分钟更新 · 数据来自 UAPI</p>
+        <div class="hot-tools" id="hotChips"></div>
+        <div class="hot-row">
+          <p class="hot-status" id="hotStatus"></p>
+          <button id="hotRefresh" class="px-btn ghost" type="button">⟳ 刷新榜单</button>
+        </div>
+        <div class="hot-list" id="hotList"></div>
+        <p class="hot-note">点标题跳原平台。榜单标题的版权归各平台与原作者所有，本站只做聚合展示、不代表认同其内容；接口由 uapis.cn 提供，偶有上游限流时稍后重试即可。</p>
+      </div>
+    </section>
+
     <!-- ===== 视图：随手记 ===== -->
     <section id="view-notes" class="view">
       <div id="noteLobby" class="lobby">
@@ -2208,7 +2311,7 @@ $('#crtBtn').addEventListener('click', ()=>{ crtOn=!crtOn; syncHeader(); sfx.cli
 $('#muteBtn').addEventListener('click', ()=>{ muted=!muted; store.set('muted', muted); syncHeader(); if(!muted) sfx.click(); else if(typeof stopRain === 'function' && rain) stopRain(); });
 
 /* ---------- 标签页切换（支持 hash） ---------- */
-const VIEWS = { games:'view-games', random:'view-random', poems:'view-poems', speak:'view-speak', food:'view-food', story:'view-story', vocab:'view-vocab', movies:'view-movies', life:'view-life', notes:'view-notes', toys:'view-toys', nes:'view-nes' };
+const VIEWS = { games:'view-games', random:'view-random', poems:'view-poems', speak:'view-speak', food:'view-food', story:'view-story', vocab:'view-vocab', movies:'view-movies', life:'view-life', notes:'view-notes', weather:'view-weather', hot:'view-hot', toys:'view-toys', nes:'view-nes' };
 const state = { tab:'games', game:null, toy:null };
 
 function stopActive(){
@@ -12038,6 +12141,364 @@ function konamiFire(){
   setTimeout(() => { layer.remove(); toast.remove(); }, 5600);
 }
 
+/* ---------- 今日天气（Open-Meteo 免 key 只读接口；失败降级本机缓存） ----------
+   接口：api.open-meteo.com（实况+7日）/ air-quality-api.open-meteo.com（AQI）/ geocoding-api.open-meteo.com（搜城市）
+   全部免 key、CORS 开放；数据 CC BY 4.0，页面内保留来源说明。
+   进 tab 才拉数据（deferTabInit），结果存 store('weather.cache')，断网/超时显示上次数据。 */
+const WX_PRESETS = [
+  {name:'北京', lat:39.9042, lon:116.4074}, {name:'上海', lat:31.2304, lon:121.4737},
+  {name:'广州', lat:23.1291, lon:113.2644}, {name:'深圳', lat:22.5431, lon:114.0579},
+  {name:'杭州', lat:30.2741, lon:120.1551}, {name:'成都', lat:30.5728, lon:104.0668},
+  {name:'武汉', lat:30.5928, lon:114.3055}, {name:'西安', lat:34.3416, lon:108.9398}
+];
+/* WMO 天气码 → [中文, 白天图标, 夜间图标] */
+const WX_CODES = {
+  0:['晴','☀️','🌙'], 1:['晴间多云','🌤️','🌙'], 2:['多云','⛅','☁️'], 3:['阴','☁️','☁️'],
+  45:['有雾','🌫️','🌫️'], 48:['雾凇','🌫️','🌫️'],
+  51:['小毛毛雨','🌦️','🌦️'], 53:['毛毛雨','🌦️','🌦️'], 55:['毛毛雨','🌧️','🌧️'],
+  56:['冻毛毛雨','🌧️','🌧️'], 57:['冻毛毛雨','🌧️','🌧️'],
+  61:['小雨','🌦️','🌧️'], 63:['中雨','🌧️','🌧️'], 65:['大雨','🌧️','🌧️'],
+  66:['冻雨','🌧️','🌧️'], 67:['冻雨','🌧️','🌧️'],
+  71:['小雪','🌨️','🌨️'], 73:['中雪','🌨️','🌨️'], 75:['大雪','❄️','❄️'], 77:['米雪','🌨️','🌨️'],
+  80:['阵雨','🌦️','🌧️'], 81:['强阵雨','🌧️','🌧️'], 82:['暴雨','⛈️','⛈️'],
+  85:['阵雪','🌨️','🌨️'], 86:['强阵雪','❄️','❄️'],
+  95:['雷阵雨','⛈️','⛈️'], 96:['雷雨伴冰雹','⛈️','⛈️'], 99:['雷雨伴冰雹','⛈️','⛈️']
+};
+/* 欧洲 AQI 分级 */
+const WX_AQI = [[20,'优','#3ddc84'], [40,'良','#ffc53d'], [60,'轻度','#ff9f43'], [80,'中度','#ff6b6b'], [100,'重度','#b18cff'], [9999,'严重','#ff3d5a']];
+
+let wxCity = store.get('weather.city', null);
+if(!wxCity || typeof wxCity.lat !== 'number' || typeof wxCity.lon !== 'number'){
+  wxCity = {name:'北京', lat:39.9042, lon:116.4074};
+}
+let wxCache = store.get('weather.cache', null);   // {city:{name,lat,lon}, at, fc, aq}
+let wxBusy = false, wxError = '';
+
+function wxInfo(code, isDay){
+  const m = WX_CODES[code] || ['未知天气','🌡️','🌡️'];
+  return { t:m[0], e:(Number(isDay) === 0 ? m[2] : m[1]) };
+}
+/* fetch + 超时（AbortController；老浏览器退化成纯 fetch） */
+function wxF(url, ms){
+  return new Promise(function(res, rej){
+    let ac = null, timer = null;
+    const fin = function(fn, v){ if(timer){ clearTimeout(timer); timer = null; } fn(v); };
+    if(typeof AbortController === 'function') ac = new AbortController();
+    timer = setTimeout(function(){ try{ if(ac) ac.abort(); }catch(e){} fin(rej, new Error('timeout')); }, ms || 9000);
+    let opt = {cache:'no-store'};
+    if(ac) opt.signal = ac.signal;
+    fetch(url, opt)
+      .then(function(r){ if(!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(function(j){ fin(res, j); })
+      .catch(function(e){ fin(rej, e); });
+  });
+}
+function wxErrText(e){
+  const m = (e && e.message) ? e.message : '网络错误';
+  if(m === 'timeout' || /abort/i.test(m)) return '请求超时';
+  if(/Failed to fetch|NetworkError|Load failed/i.test(m)) return '连不上接口（离线或被拦）';
+  return m;
+}
+function wxUrls(){
+  const q = 'latitude=' + wxCity.lat.toFixed(4) + '&longitude=' + wxCity.lon.toFixed(4) + '&timezone=auto';
+  return {
+    fc: 'https://api.open-meteo.com/v1/forecast?' + q
+      + '&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m,is_day'
+      + '&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,precipitation_probability_max'
+      + '&forecast_days=7',
+    aq: 'https://air-quality-api.open-meteo.com/v1/air-quality?' + q + '&current=pm2_5,european_aqi,us_aqi'
+  };
+}
+function wxAqi(v){
+  if(typeof v !== 'number' || isNaN(v)) return null;
+  for(let i = 0; i < WX_AQI.length; i++) if(v <= WX_AQI[i][0]) return {lv:WX_AQI[i][1], color:WX_AQI[i][2]};
+  return {lv:'严重', color:'#ff3d5a'};
+}
+function wxWeekday(iso, i){
+  if(i === 0) return '今天';
+  if(i === 1) return '明天';
+  const d = new Date(String(iso) + 'T00:00:00');
+  return '周' + '日一二三四五六'.charAt(d.getDay());
+}
+function wxClock(t){                            // "2026-11-18T06:52" → "06:52"
+  const s = String(t || ''), k = s.indexOf('T');
+  return k >= 0 ? s.slice(k + 1, k + 6) : s;
+}
+function wxAgo(at){
+  const m = Math.max(0, Math.round((Date.now() - at) / 60000));
+  if(m < 1) return '刚刚';
+  if(m < 60) return m + ' 分钟前';
+  const h = Math.round(m / 60);
+  return h < 24 ? h + ' 小时前' : Math.round(h / 24) + ' 天前';
+}
+function wxNote(text, warn){
+  const el = $('#wxNote'); if(!el) return;
+  el.textContent = text || '';
+  el.classList.toggle('warn', !!warn);
+}
+function wxStatCell(label, val, color){
+  return '<div class="weather-stat"><span>' + label + '</span><b' + (color ? ' style="color:' + color + '"' : '') + '>' + escHtml(String(val)) + '</b></div>';
+}
+function wxRender(){
+  const d = new Date();
+  $('#wxCity').textContent = wxCity.name;
+  $('#wxDate').textContent = (d.getMonth() + 1) + ' 月 ' + d.getDate() + ' 日 · 星期' + '日一二三四五六'.charAt(d.getDay());
+  const fc = wxCache && wxCache.fc;
+  if(!fc){
+    $('#wxIcon').textContent = '🌡️';
+    $('#wxTemp').textContent = '--°';
+    $('#wxDesc').textContent = wxBusy ? '正在取天气…' : '暂无数据';
+    $('#wxRange').textContent = wxBusy ? '' : '点右上角「刷新」再试一次';
+    $('#wxStats').innerHTML = '';
+    $('#wxDaily').innerHTML = '';
+    if(wxError) wxNote('取不到天气：' + wxError + '（' + (navigator.onLine ? '接口没响应' : '当前设备离线') + '）', true);
+    return;
+  }
+  const cur = fc.current || {}, daily = fc.daily || {};
+  const info = wxInfo(cur.weather_code, cur.is_day);
+  $('#wxIcon').textContent = info.e;
+  $('#wxTemp').textContent = (typeof cur.temperature_2m === 'number' ? Math.round(cur.temperature_2m) : '--') + '°';
+  $('#wxDesc').textContent = info.t;
+  const hi = daily.temperature_2m_max ? daily.temperature_2m_max[0] : null;
+  const lo = daily.temperature_2m_min ? daily.temperature_2m_min[0] : null;
+  $('#wxRange').textContent = (typeof hi === 'number' ? '今日最高 ' + Math.round(hi) + '°' : '')
+    + (typeof lo === 'number' ? ' / 最低 ' + Math.round(lo) + '°' : '');
+  const a = (wxCache.aq && wxCache.aq.current) ? wxCache.aq.current : null;
+  const aqi = a ? wxAqi(a.european_aqi) : null;
+  const rain = daily.precipitation_probability_max ? daily.precipitation_probability_max[0] : null;
+  $('#wxStats').innerHTML =
+      wxStatCell('体感', typeof cur.apparent_temperature === 'number' ? Math.round(cur.apparent_temperature) + '°' : '—')
+    + wxStatCell('湿度', typeof cur.relative_humidity_2m === 'number' ? cur.relative_humidity_2m + '%' : '—')
+    + wxStatCell('风速', typeof cur.wind_speed_10m === 'number' ? Math.round(cur.wind_speed_10m) + ' km/h' : '—')
+    + wxStatCell('降水概率', typeof rain === 'number' ? rain + '%' : '—')
+    + wxStatCell('日出', daily.sunrise && daily.sunrise[0] ? wxClock(daily.sunrise[0]) : '—')
+    + wxStatCell('日落', daily.sunset && daily.sunset[0] ? wxClock(daily.sunset[0]) : '—')
+    + wxStatCell('空气质量', aqi ? aqi.lv : '—', aqi ? aqi.color : '')
+    + wxStatCell('PM2.5', a && typeof a.pm2_5 === 'number' ? Math.round(a.pm2_5) + ' μg/m³' : '—');
+  const times = daily.time || [];
+  $('#wxDaily').innerHTML = times.map(function(t, i){
+    const di = wxInfo(daily.weather_code ? daily.weather_code[i] : -1, 1);
+    const h = daily.temperature_2m_max ? daily.temperature_2m_max[i] : null;
+    const l = daily.temperature_2m_min ? daily.temperature_2m_min[i] : null;
+    return '<div class="weather-day' + (i === 0 ? ' today' : '') + '">'
+      + '<span class="wd">' + wxWeekday(t, i) + '</span>'
+      + '<span class="wi" aria-hidden="true">' + di.e + '</span>'
+      + '<span class="wt">' + (typeof h === 'number' ? Math.round(h) + '°' : '—')
+      + '<em>' + (typeof l === 'number' ? Math.round(l) + '°' : '') + '</em></span>'
+      + '</div>';
+  }).join('');
+  let note = '更新于 ' + wxAgo(wxCache.at) + ' · 数据：Open-Meteo（CC BY 4.0）';
+  if(!a) note += ' · 空气质量这次没取到';
+  if(wxError) note += ' · 本次刷新失败，先看上次数据';
+  wxNote(note, !!wxError);
+}
+function wxRefresh(){
+  if(wxBusy) return;
+  wxBusy = true; wxError = '';
+  wxRender();
+  const u = wxUrls();
+  const grab = function(url){ return wxF(url, 9000).then(function(j){ return {ok:true, j:j}; }, function(e){ return {ok:false, e:e}; }); };
+  Promise.all([grab(u.fc), grab(u.aq)]).then(function(res){
+    const fr = res[0], ar = res[1];
+    if(fr.ok && fr.j && fr.j.current){
+      const prevAq = (wxCache && wxCache.aq) ? wxCache.aq : null;
+      wxCache = {
+        city: {name:wxCity.name, lat:wxCity.lat, lon:wxCity.lon},
+        at: Date.now(),
+        fc: fr.j,
+        aq: (ar.ok && ar.j) ? ar.j : prevAq
+      };
+      store.set('weather.cache', wxCache);
+    } else {
+      wxError = fr.ok ? '返回数据不完整' : wxErrText(fr.e);
+    }
+    wxBusy = false;
+    wxRender();
+  });
+}
+function wxRenderChips(){
+  const host = $('#wxChips'); if(!host) return;
+  host.innerHTML = WX_PRESETS.map(function(c){
+    return '<button class="chip' + (c.name === wxCity.name ? ' active' : '') + '" data-wx="' + c.name + '" type="button">' + c.name + '</button>';
+  }).join('');
+}
+function wxSetCity(c){
+  if(!c || typeof c.lat !== 'number' || typeof c.lon !== 'number') return;
+  wxCity = {name:String(c.name || '未知地点'), lat:c.lat, lon:c.lon};
+  store.set('weather.city', wxCity);
+  wxCache = null;                       // 换城市后旧城市的缓存不再可信，直接清掉
+  store.set('weather.cache', null);
+  wxRenderChips(); wxRender(); wxRefresh();
+}
+function wxSearchCity(){
+  const q = ($('#wxSearch').value || '').trim();
+  const host = $('#wxResults');
+  if(!q){ wxNote('先输入城市名，再点「查」', true); return; }
+  host.innerHTML = '<span class="story-clock-label">查找中…</span>';
+  wxF('https://geocoding-api.open-meteo.com/v1/search?name=' + encodeURIComponent(q) + '&count=6&language=zh&format=json', 9000)
+    .then(function(j){
+      const list = (j && j.results) || [];
+      if(!list.length){
+        host.innerHTML = '<span class="story-clock-label">没找到这个城市，换个写法试试（如 Beijing / Tokyo）</span>';
+        return;
+      }
+      host.innerHTML = list.map(function(r){
+        const label = r.name + (r.admin1 && r.admin1 !== r.name ? ' · ' + r.admin1 : '') + (r.country ? ' · ' + r.country : '');
+        return '<button class="px-btn ghost" type="button" data-wxn="' + escHtml(r.name) + '"'
+          + ' data-wxlat="' + r.latitude + '" data-wxlon="' + r.longitude + '">' + escHtml(label) + '</button>';
+      }).join('');
+      sfx.click();
+    }, function(e){
+      host.innerHTML = '<span class="story-clock-label">搜城市失败：' + escHtml(wxErrText(e)) + '</span>';
+    });
+}
+$('#wxRefresh').addEventListener('click', function(){ sfx.click(); wxRefresh(); });
+$('#wxSearchBtn').addEventListener('click', function(){ sfx.click(); wxSearchCity(); });
+$('#wxSearch').addEventListener('keydown', function(e){ if(e.key === 'Enter') wxSearchCity(); });
+$('#wxChips').addEventListener('click', function(e){
+  const b = e.target.closest('[data-wx]'); if(!b) return;
+  const p = WX_PRESETS.filter(function(c){ return c.name === b.dataset.wx; })[0];
+  if(p){ sfx.click(); wxSetCity(p); }
+});
+$('#wxResults').addEventListener('click', function(e){
+  const b = e.target.closest('[data-wxlat]'); if(!b) return;
+  wxSetCity({name:b.dataset.wxn, lat:parseFloat(b.dataset.wxlat), lon:parseFloat(b.dataset.wxlon)});
+  $('#wxResults').innerHTML = '';
+  $('#wxSearch').value = '';
+  sfx.click();
+});
+$('#wxHere').addEventListener('click', function(){
+  sfx.click();
+  if(!navigator.geolocation){ wxNote('这个浏览器不支持定位，手动搜城市吧', true); return; }
+  wxNote('正在请求定位权限…');
+  navigator.geolocation.getCurrentPosition(function(pos){
+    wxSetCity({name:'我的位置', lat:pos.coords.latitude, lon:pos.coords.longitude});
+    wxNote('已按当前位置查天气（坐标只在你的浏览器里用，不上传）');
+  }, function(){
+    wxNote('定位失败（file:// 打开或没给权限）——点上面的城市，或搜一个', true);
+  }, {timeout:8000, maximumAge:600000});
+});
+function weatherInit(){
+  wxRenderChips();
+  wxRender();
+  const fresh = !!(wxCache && wxCache.at && wxCache.city && wxCache.city.name === wxCity.name
+    && (Date.now() - wxCache.at) < 30 * 60000);
+  if(!fresh) wxRefresh();
+}
+
+/* ---------- 全网热榜（UAPI 免 key 聚合接口；失败降级本机缓存） ----------
+   接口：https://uapis.cn/api/v1/misc/hotboard?type=平台 —— 免 key，CORS 回显 Origin，
+   每 IP 每天 2000 次（页面级 4 QPS）；返回 {type, update_time, list:[{index,title,url,hot_value,extra}]}。
+   限制：Origin 为 null（file:// 双击打开）时不返回 ACAO，浏览器会拦——此时给提示而不是空转。
+   进 tab 才拉数据（deferTabInit），结果存 store('hot.cache')，失败显示上次榜单。 */
+const HOT_TAGS = ['新','爆','热','沸','荐','置顶','独家'];
+const HOT_TYPES = [
+  {k:'weibo', n:'微博'}, {k:'zhihu', n:'知乎'}, {k:'bilibili', n:'B站'}, {k:'douyin', n:'抖音'},
+  {k:'toutiao', n:'头条'}, {k:'baidu', n:'百度'}, {k:'douban-movie', n:'豆瓣电影'},
+  {k:'ithome', n:'IT之家'}, {k:'sspai', n:'少数派'}, {k:'juejin', n:'掘金'},
+  {k:'history', n:'历史上的今天'}, {k:'weatheralarm', n:'天气预警'}
+];
+let hotType = store.get('hot.type', 'weibo');
+if(!HOT_TYPES.some(function(x){ return x.k === hotType; })) hotType = 'weibo';
+let hotCache = store.get('hot.cache', null);   // {type, at, data}
+let hotBusy = false, hotError = '';
+
+function hotName(k){
+  const t = HOT_TYPES.filter(function(x){ return x.k === k; })[0];
+  return t ? t.n : String(k);
+}
+function hotNum(v){
+  const raw = String(v == null ? '' : v).trim();
+  if(!raw) return '';
+  if(!/^\d+(\.\d+)?$/.test(raw)) return raw;          // 上游偶尔直接给「1.2万」这类文本
+  const n = Number(raw);
+  if(!isFinite(n) || n <= 0) return '';
+  if(n >= 100000000) return (n / 100000000).toFixed(1) + '亿';
+  if(n >= 10000) return (n / 10000).toFixed(1) + '万';
+  return String(n);
+}
+function hotTagOf(it){
+  const ex = it ? it.extra : null;
+  if(!ex || !Array.isArray(ex.info) || !ex.info.length) return '';
+  const t = String(ex.info[0] || '').trim();
+  if(HOT_TAGS.indexOf(t) < 0) return '';
+  return '<span class="hot-tag">' + escHtml(t) + '</span>';
+}
+function hotItemHtml(it, i){
+  const title = escHtml(String((it && it.title) || ''));
+  const url = (it && typeof it.url === 'string' && /^https?:\/\//i.test(it.url)) ? it.url : '';
+  const hv = hotNum(it ? it.hot_value : '');
+  const inner = '<span class="hot-idx">' + escHtml(String((it && it.index) || (i + 1))) + '</span>'
+    + '<span class="hot-title">' + title + hotTagOf(it) + '</span>'
+    + (hv ? '<span class="hot-hot">' + escHtml(hv) + '</span>' : '');
+  return url
+    ? '<a class="hot-item" href="' + escHtml(url) + '" target="_blank" rel="noopener noreferrer">' + inner + '</a>'
+    : '<div class="hot-item">' + inner + '</div>';
+}
+function hotRenderChips(){
+  const host = $('#hotChips'); if(!host) return;
+  host.innerHTML = HOT_TYPES.map(function(t){
+    return '<button class="chip' + (t.k === hotType ? ' active' : '') + '" data-hot="' + t.k + '" type="button">' + t.n + '</button>';
+  }).join('');
+}
+function hotStatus(text, warn){
+  const el = $('#hotStatus'); if(!el) return;
+  el.textContent = text || '';
+  el.classList.toggle('warn', !!warn);
+}
+function hotRender(){
+  const data = (hotCache && hotCache.type === hotType && hotCache.data) ? hotCache.data : null;
+  const list = (data && Array.isArray(data.list)) ? data.list : null;
+  if(!list){
+    $('#hotList').innerHTML = '<div class="hot-empty">'
+      + (hotBusy ? '正在取「' + escHtml(hotName(hotType)) + '」榜单…'
+        : (hotError ? '没取到榜单：' + escHtml(hotError) : '点「刷新榜单」加载'))
+      + '</div>';
+    hotStatus(hotBusy ? '正在获取…' : (hotError ? hotName(hotType) + ' · 取榜单失败' : ''), !hotBusy && !!hotError);
+    return;
+  }
+  $('#hotList').innerHTML = list.slice(0, 100).map(hotItemHtml).join('');
+  let txt = '「' + hotName(hotType) + '」共 ' + list.length + ' 条 · 更新于 ' + wxAgo(hotCache.at) + ' · 数据：UAPI';
+  if(hotError) txt += ' · 本次刷新失败，先看上次榜单';
+  hotStatus(txt, !!hotError);
+}
+function hotLoad(){
+  if(hotBusy) return;
+  hotBusy = true; hotError = '';
+  hotRender();
+  wxF('https://uapis.cn/api/v1/misc/hotboard?type=' + encodeURIComponent(hotType), 9000)
+    .then(function(j){
+      if(!j || !Array.isArray(j.list)) throw new Error('返回数据不完整');
+      hotCache = {type:hotType, at:Date.now(), data:j};
+      store.set('hot.cache', hotCache);
+      hotBusy = false;
+      hotRender();
+    }, function(e){
+      hotError = wxErrText(e);
+      if(location.protocol === 'file:' && /连不上|超时/.test(hotError)){
+        hotError += '（双击 file:// 打开时浏览器禁止跨域，改用线上地址或本地服务器）';
+      }
+      hotBusy = false;
+      hotRender();
+    });
+}
+$('#hotRefresh').addEventListener('click', function(){ sfx.click(); hotLoad(); });
+$('#hotChips').addEventListener('click', function(e){
+  const b = e.target.closest('[data-hot]'); if(!b) return;
+  if(b.dataset.hot === hotType) return;
+  hotType = b.dataset.hot;
+  store.set('hot.type', hotType);
+  hotError = '';
+  hotRenderChips(); hotRender(); hotLoad();
+  sfx.click();
+});
+function hotInit(){
+  hotRenderChips();
+  hotRender();
+  const fresh = !!(hotCache && hotCache.type === hotType && hotCache.at && (Date.now() - hotCache.at) < 5 * 60000);
+  if(!fresh) hotLoad();
+}
+
 /* ---------- 复古游戏厅（内置 jsnes 模拟器） ----------
    data/nes.js 懒加载：jsnes 1.2.1（Apache-2.0）+ 开源 ROM Falling（MIT）。
    只内置可再分发的自制游戏；用户自己的 .nes 由 <input type=file> 本机读入，不上传、不落库。 */
@@ -13228,6 +13689,8 @@ initPager('#gamePager', '#gameLobby .game-card', 16);
 initPager('#toyPager', '#toyLobby .game-card', 16);
 syncHeader();
 deferTabInit('random', renderRandom);
+deferTabInit('weather', weatherInit);
+deferTabInit('hot', hotInit);
 const initialHash = (location.hash || '').replace('#', '');
 if(VIEWS[initialHash]) setTab(initialHash);
 </script>

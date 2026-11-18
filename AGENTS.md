@@ -31,7 +31,7 @@
 
 ## tab 架构（新增 tab 的五步）
 
-12 个 tab：小游戏(40款) / 互动玩具(36个) / 复古游戏厅(NES 模拟器：内置1款开源 ROM + 本地载入) / 随机内容(10栏目 + 黄历·历史两张每日卡片) / 唐诗三百首(320) / 每日练嘴(100) / 每日菜谱(60) / 睡前故事(40) / 每日背单词(220词=44天×5) / 电影推荐(95) / 生活妙招(80条) / 随手记(便签+Gist同步)。
+14 个 tab：小游戏(41款) / 互动玩具(36个) / 复古游戏厅(NES 模拟器：内置1款开源 ROM + 本地载入) / 随机内容(10栏目 + 黄历·历史两张每日卡片) / 唐诗三百首(320) / 每日练嘴(100) / 每日菜谱(60) / 睡前故事(40) / 每日背单词(220词=44天×5) / 电影推荐(95) / 生活妙招(80条) / 今日天气(Open-Meteo 实况·AQI·7日预报) / 热榜(UAPI 聚合微博知乎B站抖音等 12 个平台) / 随手记(便签+Gist同步)。
 
 1. `<nav class="tabs">` 加 `<button class="tab-btn" data-tab="NAME" type="button">标题</button>`
 2. `const VIEWS = { …, NAME:'view-NAME' }` 加一项
@@ -55,12 +55,16 @@
 - `ensureAudioData()`：注入 `data/gsfx.js`（首次交互 / 进游戏 / 空闲时调用，幂等）；`deferTabInit(name, fn) / runTabInit(name)`：内容 tab 首访渲染
 - `ensureNES(cb) / ensureNESCore(cb) / nesBoot(rom) / stopNes()`：复古游戏厅（**双引擎**：jsnes 主 + @nesjs/core 备用）。`ensureNES` 幂等注入 `data/nes.js`（jsnes）；`ensureNESCore` 幂等注入 `data/nesjs-core.js`（@nesjs/core 2.7.0，MIT，130+ mapper），仅玩增强引擎游戏才下载；引擎选择 `nesPickEngine(mapper)`：mapper 25/74/162/246 → nescore（重装机兵汉字正常、忍着神龟3、封神榜、塞尔达三神之力），其余 → jsnes；**mapper74 黑屏自动回退**：nescore 起跑 100 帧无画面自动重建 jsnes（保护天使之翼2，它在 nescore 黑屏但 jsnes 正常）；`S.engine` + `S.core` 双实例，`nesLoop` 按引擎调 `S.nes.frame()`/`S.core.runFrame()`，按键 `nesBtnDown/Up` 统一（两引擎按钮码一致 A=0,B=1,…），存档按引擎分开；`setTab('nes')` 预先拉取，`setTab` 非 nes 时自动 `stopNes()`（清 rAF + 关 AudioContext）；ROM 对象形如 `{id,name,author,license,desc,b64|bin}`，用户载入的放 `nesUserRoms`；「载入 ROM」支持 .nes / .zip（zip 用浏览器原生 `DecompressionStream('deflate-raw')` 纯前端解包，零依赖）+ **多选批量导入**；命名规则：**有 zip 用 zip 文件名，没有 zip 用 .nes 文件名**（过一遍 `nesPrettyName`：点号→空格、剥结尾地区/语言标记）；**卡带架**（v3.7.2）：导入的 ROM 存本机 IndexedDB `wuliao-nes-carts`（`nesRack*` 函数族），刷新/重启都在，大厅「我的卡带架」卡片可玩/改名/删除/清空；模拟器就绪时 `nesRackLoad()` 自动把卡带架灌回 `nesUserRoms`（rom.id=`rack<key>` 稳定，旧存档可重新挂上）；**按键**（v3.7.4）：`nesKeys`（localStorage `nes.keys`）可自定义双人键位，P1 默认 方向键+Z/X+Enter/右Shift、P2 默认 WASD+K/J+U/I，大厅「按键设置」卡片和游戏内「按键」按钮（自动暂停）进 `#nesKeysView` 改键（点框按键即绑、抢占式去重、Esc 取消），虚拟手柄固定玩家1
 - 模拟器要点：画面 `256×240` canvas 直接 `putImageData`（CSS `image-rendering:pixelated` 放大）、rAF 按 `1000/60.0988` 累加限帧、声音走 `onAudioSample` → Float32Array 累积 → `AudioBufferSourceNode` 排程（`A.next` 落后/超前都重对齐），音量跟随全局 `muted`（gain 0/0.3）；存档是 `toJSON()` → gzip(`CompressionStream`) → base64 存 `nes.state`（≈130KB）
+- `wxRefresh() / weatherInit()`：今日天气（Open-Meteo：实况+7日 / 空气质量 / 搜城市），`wxF(url, ms)` 带 AbortController 超时，结果存 `weather.cache`；首访由 `deferTabInit('weather', weatherInit)` 触发，30 分钟内复用缓存，换城市清缓存
+- `hotLoad() / hotInit()`：全网热榜（UAPI 聚合，12 个平台 chip），复用 `wxF` 超时与缓存降级；结果存 `hot.cache`，5 分钟内复用；标题渲染一律过 `escHtml`，`url` 只放行 `^https?://`
 - `dailySeed() / seededPick(arr, seed, n)`：每日卡片（黄历宜忌 / 历史上的今天）的稳定随机；`renderDaily()` 启动时渲染一次，`data/daily.js` 缺失时静默跳过
 - 每日内容 seed 公式：`new Date()` → `seed = y*372 + (m+1)*31 + day`（poems daily、vocab Day 制、黄历/历史同源；词汇 epoch `V_EPOCH = 2026-10-24`）
 
-## localStorage 键位表（**禁止改名，会丢用户数据**；共 71 个）
+## localStorage 键位表（**禁止改名，会丢用户数据**；共 75 个）
 
 - 每日内容：`vocab.count/vocab.marks/vocab.streak/vocab.rev`、`story.stamp/story.count/story.favs/story.fsz`、`food.favs/food.spins`、`speak.favs/speak.streak`、`poem.favs`、`movie.favs/movie.rolls`、`life.favs/life.best`、`notes.list/notes.token/notes.gist/notes.fold`
+- 今日天气：`weather.city`（`{name,lat,lon}` 手选/搜索/定位的城市）、`weather.cache`（`{city,at,fc,aq}` 最近一次接口结果，断网时兜底展示）
+- 热榜：`hot.type`（当前平台 key）、`hot.cache`（`{type,at,data}` 上次榜单，断网/限流时兜底）
 - 复古游戏厅：`nes.keys`（自定义按键映射 {p1:{UP…},p2:{…}}，值为 e.code）
 - 游戏最佳分：`snake.best`、`g2048.best`、`mine.best`、`tetris.best`、`simon.best`、`breakout.best`、`pong.best`、`flap.best`、`reflex.best`、`guess.best`、`maze.best`、`memory.best`、`rps.best`、`slide.best`、`mole.best`、`jumper.best`、`fishy.best`、`spider…`（`*.best` 后缀为惯例）
 - v3.6 新游戏：`suika.best`、`picross.best`、`jigsaw.best`、`diff.best`、`typing.best`、`hanoi.best`（对象 `{3,4,5}` 按盘数存）、`g24.best`、`reversi.best`
@@ -71,7 +75,7 @@
 ## 硬性约束
 
 1. **零构建**：不引入打包器、框架；字体走 CDN（display=swap + media=print 异步加载，不阻塞首屏），图标用 inline SVG
-2. **零外部运行时依赖**：不接 API（决策记录：TMDB key 无法藏 + 大陆网络不稳 + 双端一致，数据一律内置 `data/*.js`）。**例外**（2026-10 决策）：随手记的 Gist 同步走 `api.github.com`——用户自有 token + 私有 gist，数据自控、可撤销，断网自动降级本地模式
+2. **零外部运行时依赖**：不接 API（决策记录：TMDB key 无法藏 + 大陆网络不稳 + 双端一致，数据一律内置 `data/*.js`）。**例外**（2026-10 决策）：随手记的 Gist 同步走 `api.github.com`——用户自有 token + 私有 gist，数据自控、可撤销，断网自动降级本地模式。**例外 2**（2026-11 决策）：「今日天气」tab 读 Open-Meteo 三个免 key 只读接口（`api.open-meteo.com` / `air-quality-api.open-meteo.com` / `geocoding-api.open-meteo.com`，CORS `*`、数据 CC BY 4.0）——纯静态站藏不住 key，所以只接「无 key」接口；结果必须缓存到 `weather.cache`，超时/失败一律降级显示上次数据，绝不白屏。**例外 3**（2026-11 决策）：「热榜」tab 读 UAPI（`uapis.cn/api/v1/misc/hotboard`）——免 key、CORS 回显 Origin、每 IP 每天 2000 次；**但 `Origin: null`（file:// 双击打开）不返回 ACAO**，所以该 tab 在 file:// 下会给出「改用线上地址」的提示；榜单只展示标题+外链，缓存进 `hot.cache`
 3. **单文件时代风格**：新代码复用既有模式（原生 JS、`$/$$`、`store`、`sfx`、`initPager`），不搞新范式
 4. `index.html` 是 **CRLF 行尾**；多行文本锚点匹配必须用 `\r\n`
 5. 文件全 UTF-8；PowerShell 脚本写盘用 `UTF8Encoding($false)`（无 BOM），含中文的 ps1 用 `-File` 执行时字符串会花——用 `[IO.File]::ReadAllText` + IndexOf 重写法处理
@@ -135,6 +139,10 @@
   `（`node --check` 照过，但字节脏了）。mapper 实例就是 `nes.mmap`（原型上挂 `m5*` 方法），没有 `.m` / `.mapper`
 
 ## 版本历史（摘要）
+
+- **v3.12.0 第 14 个 tab「热榜」**：接 UAPI 热榜聚合接口（`https://uapis.cn/api/v1/misc/hotboard?type=平台`，免 key、CORS 回显 Origin、每 IP 每天 2000 次、4 QPS、上游 5 分钟更新一次）——12 个平台 chip：微博/知乎/B站/抖音/头条/百度/豆瓣电影/IT之家/少数派/掘金/历史上的今天/天气预警；条目渲染序号+标题+热度（万/亿自动换算，微博「新/爆」标签走 `extra.info`）+ 外链跳原站，标题全部过 `escHtml`、`url` 只放行 `http(s)`；复用 `wxF` 9s 超时，结果存 `hot.cache` 并 5 分钟内复用，失败保留上次榜单转黄字提示；**`Origin: null`（file:// 双击打开）不返回 ACAO**，故在 file:// 下给出「改用线上地址或本地服务器」的明确提示。首屏零新增字节。实测（本地服务器 + 真实网络）：微博 20 条/知乎 20/B站 100/抖音 49/百度 51/网易云 200 均正常渲染、切平台即拉新榜、强制 fetch 失败时缓存保留并转警告、14 tab 回归全过、控制台零报错
+
+- **v3.11.0 第 13 个 tab「今日天气」**：接 Open-Meteo（免 key、CORS 开放、数据 CC BY 4.0）——实况温度/体感/湿度/风速/降水概率 + 日出日落 + 欧洲 AQI/PM2.5 + 未来 7 天；城市可点预设（北京/上海/广州/深圳/杭州/成都/武汉/西安）、可搜索（geocoding API）、可浏览器定位（`file://` 下会失败并给出提示）。首访才拉数据（`deferTabInit('weather', weatherInit)`），结果写 `weather.cache` 并在 30 分钟内复用；`wxF` 超时 9s，接口失败时保留上次数据 + 黄色提示「本次刷新失败，先看上次数据」，换城市清缓存防城市错配。首屏零新增字节（无新 `data/*.js`，逻辑内联）。实测（本地静态服务器 + 真实网络）：北京 6°/晴/7 天/AQI 轻度 23 μg/m³ 正常渲染、切上海 12°、搜「杭州」出结果并切换 14°、`fetch` 强制失败时缓存保留且转警告、13 tab 回归全过、控制台零报错
 
 - **v3.10.1 三阶魔方支持旋转视角 + 拖拽拧层 + 点击转层**：魔方不再是固定单面——`.rb-scene`（240×240，`cursor:grab; touch-action:none`）初始视角 `rotateX(-20deg) rotateY(-38deg) scale(.75)` 立体露多面且四周留空白；**拖拽拧层**（用户选定，最像真魔方）：按住魔方任意面贴纸朝外拖动，pointerup 时按「贴纸绕其所在层旋转轴的屏幕速度方向」与拖拽方向点积定正/反转（`v=a×pos` 投影到屏幕 = `Rx(rx)·Ry(ry)·v` 取 xy），`fwd`→正名 `RUF/LDB`（layer>0/<0），否则逆名——往哪拖往哪转，方向随贴纸当前位置自洽；**轻点贴纸**仍按世界法向转对应层（点击转层保留）；**拖 scene 空白转视角**（pointerdown 命中贴纸=拧层、命中空白=转视角，互不冲突）。不用 click 事件（scene 的 setPointerCapture 会把真实 click 目标重定向到 scene，`closest('.rb-sticker')` 取不到贴纸，故在 pointerdown 记录贴纸、pointerup 手动判定）。12 个面按钮 R/L/U/D/F/B 及键盘仍作辅助。实测：拖顶面贴纸步数 0→1（transform 不变）、拖空白 transform 实时变化且步数不变、轻点转层、打乱→提示→一键还原链路正常、12 tab 回归零报错
 - **v3.10.0 新增三阶魔方小游戏**：纯 CSS 3D 三阶魔方（26 cubelet + 162 贴面，`preserve-3d` + `matrix3d`，零依赖），大厅「三阶魔方」卡（小游戏 40→41）。功能三件套：**一键打乱**（随机 20~30 步进历史栈）、**一键还原**（逆序历史逐条应用逆矩阵，`.rb-nofade` 禁过渡即时复原）、**提示玩法**（点「💡 提示」每下 pop 历史最后一步并应用其逆操作，逐步带你复原）。另有 12 个面按钮 R/L/U/D/F/B 及各自逆，键盘 R/L/U/D/F/B 转面、1打乱/2还原/3提示。旋转用 3×3 旋转矩阵（R=绕X、U=绕Y、F=绕Z，逆=转置），位置+朝向四舍五入防漂移；复原检测=位置+朝向全归位（`rbCheck`）。**实测**：node 逻辑 200 轮打乱→逆序全还原、半途提示逆序=正向尾部全过；浏览器打乱/提示逐步复原/一键还原/手动转动/重进重置全通、12 tab 回归零报错
