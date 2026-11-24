@@ -16,10 +16,11 @@
 
 | 文件                   | 体量     | 内容                                                                                     | 加载方式                                       |
 | -------------------- | ------ | -------------------------------------------------------------------------------------- | ------------------------------------------ |
-| `index.html`         | ~552KB | 全部 HTML + CSS + 逻辑（巨型 `<script>` 在 `<body>` 末尾）                                        | 首屏                                         |
+| `index.html`         | ~660KB | 全部 HTML + CSS + 逻辑（巨型 `<script>` 在 `<body>` 末尾）                                        | 首屏                                         |
 | `data/site.js`       | 122KB  | CONTENT（随机内容，含歇后语 45 条）/ SPEAKS(100) / DISHES(60) / STORIES(40) / VOCAB(220)           | 首屏同步前载                                     |
 | `data/daily.js`      | 9.4KB  | ALMANAC_YI(38) / ALMANAC_JI(36) / HISTORY(89 条带日期) / HISTORY_FALLBACK(22)              | 首屏同步前载（`renderDaily` 有 `typeof` 守卫）        |
 | `data/movies.js`     | 30KB   | MOVIES(95部) 片库                                                                         | 首屏同步前载                                     |
+| `data/nanning.js`    | 12KB   | NN_MAP（像素南宁：邕江控制点/桥位/主干道/公园·山·湖/16 个地标文案）                                          | 首屏同步前载（无地图时 `nnEnsureMap` 静默跳过）           |
 | `data/gsfx.js`       | 130KB  | GSFX(23个游戏事件音效 mp3 base64，Kenney CC0 来源)                                               | **懒加载**，首次交互 / 进游戏时 `ensureAudioData()` 注入 |
 | `data/tang.js`       | 1.7MB  | TANG300(320首) + TANG_S2T/TANG_T2S 繁简映射 + TANG_FOLD                                     | **懒加载**，首次进诗词 tab 时 `ensureTang(cb)` 注入    |
 | `data/nes.js`        | 165KB  | jsnes 1.2.1（NES 模拟器 UMD，Apache-2.0）+ NES_ROMS[1]（Falling，MIT，ROM base64）+ NES_LICENSE  | **懒加载**，首次进复古游戏厅时 `ensureNES(cb)` 注入       |
@@ -31,7 +32,7 @@
 
 ## tab 架构（新增 tab 的五步）
 
-14 个 tab：小游戏(41款) / 互动玩具(36个) / 复古游戏厅(NES 模拟器：内置1款开源 ROM + 本地载入) / 随机内容(10栏目 + 黄历·历史两张每日卡片) / 唐诗三百首(320) / 每日练嘴(100) / 每日菜谱(60) / 睡前故事(40) / 每日背单词(220词=44天×5) / 电影推荐(95) / 生活妙招(80条) / 今日天气(Open-Meteo 实况·AQI·7日预报) / 热榜(UAPI 聚合微博知乎B站抖音等 12 个平台) / 随手记(便签+Gist同步)。
+15 个 tab：小游戏(41款) / 互动玩具(36个) / 复古游戏厅(NES 模拟器：内置1款开源 ROM + 本地载入) / 像素南宁(像素地图漫游，16 个地标) / 随机内容(10栏目 + 黄历·历史两张每日卡片) / 唐诗三百首(320) / 每日练嘴(100) / 每日菜谱(60) / 睡前故事(40) / 每日背单词(220词=44天×5) / 电影推荐(95) / 生活妙招(80条) / 今日天气(Open-Meteo 实况·AQI·7日预报) / 热榜(UAPI 聚合微博知乎B站抖音等 12 个平台) / 随手记(便签+Gist同步)。
 
 1. `<nav class="tabs">` 加 `<button class="tab-btn" data-tab="NAME" type="button">标题</button>`
 2. `const VIEWS = { …, NAME:'view-NAME' }` 加一项
@@ -59,8 +60,9 @@
 - `hotLoad() / hotInit()`：全网热榜（UAPI 聚合，12 个平台 chip），复用 `wxF` 超时与缓存降级；结果存 `hot.cache`，5 分钟内复用；标题渲染一律过 `escHtml`，`url` 只放行 `^https?://`
 - `dailySeed() / seededPick(arr, seed, n)`：每日卡片（黄历宜忌 / 历史上的今天）的稳定随机；`renderDaily()` 启动时渲染一次，`data/daily.js` 缺失时静默跳过
 - 每日内容 seed 公式：`new Date()` → `seed = y*372 + (m+1)*31 + day`（poems daily、vocab Day 制、黄历/历史同源；词汇 epoch `V_EPOCH = 2026-10-24`）
+- `nnEnsureMap() / nnEnterTab() / nnStart() / nnStop()`：像素南宁（读 `data/nanning.js` 的 `NN_MAP`）。首次进 tab 才程序化生成 240×160 格（河/桥/路/街区/公园·山·湖/16 地标）并烘焙进 1920×1280 离屏画布，之后每帧只 `drawImage` 视口一块；`nnStart()` 进沉浸模式起 rAF（方向键/WASD 移动、Shift 加速、AABB 碰撞、相机跟随、手机方向键走 `mountDpad`），`nnStop()` 停循环并存 `nanning.pos`；切到其它 tab 时 `setTab` 自动 `nnStop()`
 
-## localStorage 键位表（**禁止改名，会丢用户数据**；共 75 个）
+## localStorage 键位表（**禁止改名，会丢用户数据**；共 77 个）
 
 - 每日内容：`vocab.count/vocab.marks/vocab.streak/vocab.rev`、`story.stamp/story.count/story.favs/story.fsz`、`food.favs/food.spins`、`speak.favs/speak.streak`、`poem.favs`、`movie.favs/movie.rolls`、`life.favs/life.best`、`notes.list/notes.token/notes.gist/notes.fold`
 - 今日天气：`weather.city`（`{name,lat,lon}` 手选/搜索/定位的城市）、`weather.cache`（`{city,at,fc,aq}` 最近一次接口结果，断网时兜底展示）
@@ -71,6 +73,7 @@
 - v3.6 新玩具/彩蛋：`muyu.count`、`qian.count`、`typewriter.count`、`slack.sec`（累计停留秒）、`slack.visits`（来访次数）
 - 玩具/设置：`muted`、`lamp.on/lamp.hue/lamp.bright/lamp.spread`、`beat.bpm`、`rhythm.best`、`pet.save`（宠物存档：名字/皮肤/三围数值/照顾天数/阶段）
 - v3.7 复古游戏厅：`nes.state`（单个模拟器存档 `{rom,name,at,data:'gz:…'}`，gzip 后 base64，容量不足时静默失败并提示）
+- v3.13 像素南宁：`nanning.visited`（`{地标id:1}` 已解锁集合）、`nanning.pos`（`{x,y}` 上次站立的世界坐标，读档时若被建筑/水挡住自动回出生点）
 
 ## 硬性约束
 
@@ -139,6 +142,8 @@
   `（`node --check` 照过，但字节脏了）。mapper 实例就是 `nes.mmap`（原型上挂 `m5*` 方法），没有 `.m` / `.mapper`
 
 ## 版本历史（摘要）
+
+- **v3.13.0 第 15 个 tab「像素南宁」**：零构建、零接口的像素地图漫游。首次进 tab 时用 `NN_MAP`（`data/nanning.js`，12KB）程序化生成 240×160 格主城示意地图——邕江曲线（控制点插值 + 摆动）、两岸沙滩、4 座过江桥（桥面可走）、8 条横向 + 27 条竖向主干道、沿江路、道路两侧自动铺人行道、按老城/青秀/江南/五象四片区密度生成的街区建筑、人民公园/广西大学/青秀山/南湖/五象湖，全部烘焙进 1920×1280 离屏画布，每帧只裁视口一块 `drawImage`（≈400×250 世界像素，60 宽 38 高格）；16 个地标带专属像素画（站房/朱槿穹顶/龙象塔/骑楼+红灯笼/塔楼/山门/桥栏）与浮动小旗（未解锁黄、已解锁绿）。玩法：方向键/WASD 移动 + Shift 加速 + AABB 四角碰撞（水/建筑/山不可穿），靠近 26px 自动解锁并弹出卡片（文案 + 冷知识），Esc/「继续探索」收起卡片期间暂停移动；相机跟着走并夹在地图边界内；手机端复用 `mountDpad` 方向键。大厅有 600×400 全景小地图（绿点=已解锁、黄点=未解锁、蓝点=当前位置）+ 16 格地标清单 + 进度条，点地标看详情；`nanning.visited`/`nanning.pos` 存本机，读档位置若被挡自动回出生点。实测：生成 ~3.8 万格、首访建图约 0.2s；方向键走动、江岸/建筑阻挡、走上邕江大桥解锁「邕江大桥」、卡片弹出+Esc 关闭、16/16 进度条与小地图全绿、清空记录、进出漫游无重复 canvas、页脚在漫游中隐藏，15 个 tab 逐个回归、控制台零报错。首屏零新增字节（`data/nanning.js` 仅 12KB，且只在首访建图）
 
 - **v3.12.0 第 14 个 tab「热榜」**：接 UAPI 热榜聚合接口（`https://uapis.cn/api/v1/misc/hotboard?type=平台`，免 key、CORS 回显 Origin、每 IP 每天 2000 次、4 QPS、上游 5 分钟更新一次）——12 个平台 chip：微博/知乎/B站/抖音/头条/百度/豆瓣电影/IT之家/少数派/掘金/历史上的今天/天气预警；条目渲染序号+标题+热度（万/亿自动换算，微博「新/爆」标签走 `extra.info`）+ 外链跳原站，标题全部过 `escHtml`、`url` 只放行 `http(s)`；复用 `wxF` 9s 超时，结果存 `hot.cache` 并 5 分钟内复用，失败保留上次榜单转黄字提示；**`Origin: null`（file:// 双击打开）不返回 ACAO**，故在 file:// 下给出「改用线上地址或本地服务器」的明确提示。首屏零新增字节。实测（本地服务器 + 真实网络）：微博 20 条/知乎 20/B站 100/抖音 49/百度 51/网易云 200 均正常渲染、切平台即拉新榜、强制 fetch 失败时缓存保留并转警告、14 tab 回归全过、控制台零报错
 

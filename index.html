@@ -743,6 +743,43 @@ a.hot-item:active{transform:translate(1px,1px)}
 .hot-hot{flex:none; font-family:'Press Start 2P','DotGothic16',monospace; font-size:10px; color:var(--muted,#9aa0d8); padding-top:3px; white-space:nowrap}
 .hot-note{max-width:720px; margin:14px auto 0; font-size:12px; color:var(--muted,#9aa0d8); line-height:1.8}
 .hot-empty{max-width:720px; margin:0 auto; padding:18px 12px; text-align:center; color:var(--muted,#9aa0d8); font-size:13px; border:2px dashed var(--line,#0b0c18)}
+/* ============ 像素南宁 · 漫游地图 ============ */
+.nn-hero{display:grid; grid-template-columns:minmax(0,1fr) 210px; gap:14px; margin-bottom:16px; align-items:start}
+@media (max-width:760px){ .nn-hero{grid-template-columns:1fr} }
+.nn-mini{width:100%; height:auto; display:block; image-rendering:pixelated; background:#0b1014; border:3px solid var(--line); box-shadow:5px 5px 0 rgba(0,0,0,.5)}
+.nn-side{display:flex; flex-direction:column; gap:10px}
+.nn-side .px-btn{width:100%; text-align:center}
+.nn-count{font-family:'Press Start 2P','DotGothic16',monospace; font-size:11px; color:var(--muted); line-height:1.9}
+.nn-count b{font-size:16px; color:var(--yellow)}
+.nn-bar{height:12px; padding:2px; background:var(--bg2); border:2px solid var(--line)}
+.nn-bar i{display:block; height:100%; width:0; background:var(--green); transition:width .3s steps(8)}
+.nn-lms{display:grid; grid-template-columns:repeat(2,1fr); gap:10px}
+@media (min-width:760px){ .nn-lms{grid-template-columns:repeat(4,1fr)} }
+.nn-lm{display:flex; align-items:center; gap:8px; text-align:left; padding:9px 10px; font-size:13px; color:var(--muted);
+  background:var(--panel2); border:2px solid var(--line); box-shadow:3px 3px 0 rgba(0,0,0,.45); cursor:pointer; font-family:inherit}
+.nn-lm .nn-dot{width:9px; height:9px; flex:none; background:var(--panel); border:1px solid var(--line)}
+.nn-lm.done{color:var(--ink); border-color:#2f7d55; box-shadow:3px 3px 0 rgba(0,0,0,.45), inset 0 0 0 1px rgba(61,220,132,.25)}
+.nn-lm.done .nn-dot{background:var(--green)}
+.nn-lm:hover{filter:brightness(1.1)}
+.nn-lm:active{transform:translate(2px,2px); box-shadow:1px 1px 0 rgba(0,0,0,.45)}
+.nn-detail{margin-top:14px; padding:14px 16px; background:var(--panel); border:3px solid var(--line); box-shadow:5px 5px 0 rgba(0,0,0,.5)}
+.nn-detail h3{font-size:16px; letter-spacing:1px; margin-bottom:6px}
+.nn-detail p{font-size:13px; color:var(--muted); line-height:1.9}
+.nn-detail .nn-d-tip{color:var(--yellow); margin-top:6px}
+.nn-stage{position:relative; max-width:880px; margin:0 auto}
+body.game-full .nn-stage{max-width:min(880px, calc((100dvh - 170px) * 1.6))}
+.nn-map{width:100%; height:auto; display:block; image-rendering:pixelated; background:#0b1014; border:3px solid var(--line); box-shadow:5px 5px 0 rgba(0,0,0,.5); touch-action:none}
+.nn-near{position:absolute; left:8px; top:8px; z-index:4; max-width:72%; padding:4px 8px; font-size:12px; color:var(--yellow); background:rgba(11,12,24,.86); border:2px solid var(--line)}
+.nn-card{position:absolute; left:50%; bottom:12px; transform:translateX(-50%); z-index:6; width:min(440px,94%); padding:12px 14px; background:var(--panel); border:3px solid var(--line); box-shadow:5px 5px 0 rgba(0,0,0,.55)}
+.nn-card-head{display:flex; align-items:center; gap:10px}
+.nn-card-emoji{font-size:20px; line-height:1}
+.nn-card h3{margin:0; font-size:15px; letter-spacing:1px; flex:1; min-width:0}
+.nn-card p{font-size:12.5px; color:var(--muted); line-height:1.8; margin-top:7px}
+.nn-card .nn-tip{color:var(--yellow)}
+.nn-card .px-btn{margin-top:10px; width:100%}
+.nn-hint{color:var(--muted); font-size:12px; text-align:center; margin-top:10px; line-height:1.8}
+#nnPadHost .dpad{margin-top:6px}
+body.nn-live footer.site-footer{display:none}
 </style>
 </head>
 <body>
@@ -762,7 +799,7 @@ a.hot-item:active{transform:translate(1px,1px)}
       </svg>
       <div>
         <h1>像素屋</h1>
-        <div class="tagline">PIXEL HOUSE v3.12.0</div>
+        <div class="tagline">PIXEL HOUSE v3.13.0</div>
       </div>
     </div>
     <div class="hdr-actions">
@@ -776,6 +813,7 @@ a.hot-item:active{transform:translate(1px,1px)}
     <button class="tab-btn active" data-tab="games" type="button">小游戏</button>
     <button class="tab-btn" data-tab="toys" type="button">互动玩具</button>
     <button class="tab-btn" data-tab="nes" type="button">复古游戏厅</button>
+    <button class="tab-btn" data-tab="nanning" type="button">像素南宁</button>
     <button class="tab-btn" data-tab="random" type="button">随机内容</button>
     <button class="tab-btn" data-tab="poems" type="button">唐诗三百首</button>
     <button class="tab-btn" data-tab="speak" type="button">每日练嘴</button>
@@ -2194,6 +2232,37 @@ a.hot-item:active{transform:translate(1px,1px)}
       </div>
     </section>
 
+    <!-- ===== 视图：像素南宁 ===== -->
+    <section id="view-nanning" class="view">
+      <div id="nnLobby" class="lobby">
+        <p class="view-tip">一座 8-bit 的南宁：方向键 / WASD 漫步主城，走到地标跟前会自动跳出卡片。探索记录只存在本机浏览器。</p>
+        <div class="nn-hero">
+          <div><canvas id="nnMini" class="nn-mini" width="600" height="400" aria-label="南宁像素地图全景"></canvas></div>
+          <div class="nn-side">
+            <div class="nn-count">已探索 <b id="nnCountTxt">0</b> / <span id="nnTotalTxt">16</span></div>
+            <div class="nn-bar"><i id="nnBar"></i></div>
+            <button id="nnStart" class="px-btn green" type="button">▶ 开始漫游</button>
+            <button id="nnReset" class="px-btn ghost" type="button">↺ 清空探索记录</button>
+          </div>
+        </div>
+        <div class="nn-lms" id="nnLmList"></div>
+        <div class="nn-detail hidden" id="nnDetail"></div>
+      </div>
+
+      <div id="nnView" class="game-view hidden">
+        <div class="game-topbar">
+          <button id="nnBack" class="px-btn ghost" type="button">← 返回</button>
+          <h2>像素南宁 · 漫游</h2>
+          <div class="game-stats" id="nnStats"></div>
+        </div>
+        <div class="nn-stage" id="nnStage">
+          <div class="nn-near" id="nnNear">在附近走走，找找地标</div>
+          <div class="nn-card hidden" id="nnCard"></div>
+        </div>
+        <p class="nn-hint">方向键 / WASD 移动 · Shift 加速 · 手机用下方方向键 · Esc 收起卡片</p>
+        <div id="nnPadHost"></div>
+      </div>
+    </section>
   </main>
 
   <footer class="site-footer">
@@ -2203,6 +2272,7 @@ a.hot-item:active{transform:translate(1px,1px)}
 
 </div>
 
+<script src="data/nanning.js"></script>
 <script src="data/movies.js"></script>
 <script src="data/life.js"></script>
 <script src="data/dsfx.js"></script>
@@ -2311,7 +2381,7 @@ $('#crtBtn').addEventListener('click', ()=>{ crtOn=!crtOn; syncHeader(); sfx.cli
 $('#muteBtn').addEventListener('click', ()=>{ muted=!muted; store.set('muted', muted); syncHeader(); if(!muted) sfx.click(); else if(typeof stopRain === 'function' && rain) stopRain(); });
 
 /* ---------- 标签页切换（支持 hash） ---------- */
-const VIEWS = { games:'view-games', random:'view-random', poems:'view-poems', speak:'view-speak', food:'view-food', story:'view-story', vocab:'view-vocab', movies:'view-movies', life:'view-life', notes:'view-notes', weather:'view-weather', hot:'view-hot', toys:'view-toys', nes:'view-nes' };
+const VIEWS = { games:'view-games', random:'view-random', poems:'view-poems', speak:'view-speak', food:'view-food', story:'view-story', vocab:'view-vocab', movies:'view-movies', life:'view-life', notes:'view-notes', weather:'view-weather', hot:'view-hot', toys:'view-toys', nes:'view-nes', nanning:'view-nanning' };
 const state = { tab:'games', game:null, toy:null };
 
 function stopActive(){
@@ -2342,6 +2412,8 @@ function setTab(name){
   if(name==='notes'){ noteSyncSoon(); }
   if(name!=='nes') stopNes();
   if(name==='nes'){ stopNes(); $('#nesView').classList.add('hidden'); $('#nesLobby').classList.remove('hidden'); ensureNES(syncNesLobby); }
+  if(name!=='nanning') nnStop();
+  if(name==='nanning') nnEnterTab();
   runTabInit(name);
   try{ if(location.hash !== '#'+name) history.replaceState(null, '', '#'+name); }catch(e){}
   sfx.click();
@@ -2450,6 +2522,7 @@ document.addEventListener('keydown', (e) => {
 
 /* ---------- 触屏虚拟方向键（键盘类游戏用，粗指针设备显示） ---------- */
 const DPAD_GAMES = {
+  nanning: {},
   snake:  { mid:{key:' ', label:'⏸', title:'暂停'} },
   g2048:  {},
   tetris: { mid:{key:' ', label:'⇓', title:'硬降'} },
@@ -13646,6 +13719,693 @@ $('#nesKeysReset').addEventListener('click', () => {
   renderNesKeys(); sfx.pop();
 });
 
+/* ============================================================
+   像素南宁 · 漫游地图（程序化生成的主城 + 步行解锁 16 个地标）
+   ============================================================ */
+const nnS = {
+  built:false, running:false, w:0, h:0, tile:8, riverY:null,
+  type:null, dec:null, blds:[], lms:[],
+  mapCv:null, cv:null, ctx:null,
+  view:{ w:400, h:250 },
+  pos:{ x:0, y:0 }, cam:{ x:0, y:0 },
+  keys:{}, dir:'d', animT:0, stepT:0, frame:0, last:0, raf:0,
+  visited:{}, cardOpen:false, nearTxt:'', done:-1, dist:''
+};
+
+function nnRand(seed){
+  let a = seed >>> 0;
+  return function(){
+    a += 0x6D2B79F5;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function nnClamp(v, a, b){ return v < a ? a : (v > b ? b : v); }
+
+/* ---------- 生成地图（地形 / 道路 / 桥 / 街区 / 地标） ---------- */
+function nnEnsureMap(){
+  if(nnS.built) return true;
+  if(typeof NN_MAP === 'undefined') return false;
+  const W = NN_MAP.w, H = NN_MAP.h, T = NN_MAP.tile, half = NN_MAP.river.half;
+  nnS.w = W; nnS.h = H; nnS.tile = T;
+  const type = new Uint8Array(W*H);
+  const dec  = new Uint8Array(W*H);
+  const zone = new Uint8Array(W*H);
+  const rnd  = nnRand(20261124);
+  const get = (x,y) => (x<0||y<0||x>=W||y>=H) ? 9 : type[y*W+x];
+  const put = (x,y,c) => { if(x>=0&&y>=0&&x<W&&y<H) type[y*W+x] = c; };
+  const putDec = (x,y,d) => { if(x>=0&&y>=0&&x<W&&y<H) dec[y*W+x] = d; };
+
+  /* 邕江中心线 */
+  const riverY = new Float32Array(W);
+  const pts = NN_MAP.river.pts;
+  for(let x=0;x<W;x++){
+    let i = 0;
+    while(i < pts.length-2 && x > pts[i+1][0]) i++;
+    const a = pts[i], b = pts[i+1];
+    const t = nnClamp((x - a[0]) / ((b[0]-a[0]) || 1), 0, 1);
+    riverY[x] = a[1] + (b[1]-a[1])*t + Math.sin(x*0.11)*1.2;
+  }
+  nnS.riverY = riverY;
+
+  /* 水面 + 两岸沙滩 */
+  for(let x=0;x<W;x++){
+    const cy = riverY[x];
+    for(let y=Math.floor(cy-half); y<=Math.ceil(cy+half); y++) put(x,y,1);
+    for(let k=1;k<=2;k++){ put(x, Math.floor(cy-half)-k, 6); put(x, Math.ceil(cy+half)+k, 6); }
+  }
+
+  /* 公园 / 大学 / 山 / 湖 */
+  for(const z of NN_MAP.zones){
+    if(z.kind === 'campus'){
+      for(let y=z.y1;y<=z.y2;y++) for(let x=z.x1;x<=z.x2;x++){
+        if(get(x,y) === 0){ zone[y*W+x] = 1; }
+      }
+      continue;
+    }
+    for(let y=Math.floor(z.cy-z.ry); y<=Math.ceil(z.cy+z.ry); y++){
+      for(let x=Math.floor(z.cx-z.rx); x<=Math.ceil(z.cx+z.rx); x++){
+        const dx = (x-z.cx)/z.rx, dy = (y-z.cy)/z.ry;
+        if(dx*dx + dy*dy > 1) continue;
+        const t = get(x,y);
+        if(t !== 0 && t !== 6) continue;
+        if(z.kind === 'lake') put(x,y,1);
+        else if(z.kind === 'mountain'){ put(x,y,5); zone[y*W+x] = 2; }
+        else zone[y*W+x] = 1;
+      }
+    }
+  }
+  /* 湖岸补沙滩 */
+  for(let y=1;y<H-1;y++) for(let x=1;x<W-1;x++){
+    if(get(x,y) !== 0) continue;
+    if(get(x-1,y)===1 || get(x+1,y)===1 || get(x,y-1)===1 || get(x,y+1)===1) put(x,y,6);
+  }
+
+  /* 地标前的小广场（先铺广场，再压道路，最后放建筑） */
+  for(const lm of NN_MAP.lms){
+    for(let dy=-3;dy<=3;dy++) for(let dx=-3;dx<=3;dx++){
+      if(dx*dx + dy*dy > 9) continue;
+      const t = get(lm.tx+dx, lm.ty+dy);
+      if(t===0 || t===2 || t===6) put(lm.tx+dx, lm.ty+dy, 3);
+    }
+  }
+
+  /* 主干道（水与山跳过） */
+  for(const r of NN_MAP.roadsH){
+    for(let y=r.y;y<r.y+r.w;y++) for(let x=r.x1;x<=r.x2;x++){
+      const t = get(x,y); if(t===1 || t===5) continue; put(x,y,2);
+    }
+  }
+  for(const r of NN_MAP.roadsV){
+    for(let x=r.x;x<r.x+r.w;x++){
+      const cy = riverY[Math.min(W-1, Math.max(0,x))];
+      for(let y=4;y<Math.floor(cy-half-1);y++){ const t=get(x,y); if(t!==1 && t!==5) put(x,y,2); }
+      for(let y=Math.ceil(cy+half+2);y<154;y++){ const t=get(x,y); if(t!==1 && t!==5) put(x,y,2); }
+    }
+  }
+  /* 沿江路 */
+  for(let x=6;x<W-6;x++){
+    const cy = riverY[x];
+    for(let k=0;k<2;k++){
+      const yn = Math.floor(cy-half-5-k), ys = Math.ceil(cy+half+5+k);
+      if(yn>0 && get(x,yn)!==1 && get(x,yn)!==5) put(x,yn,2);
+      if(ys<H-1 && get(x,ys)!==1 && get(x,ys)!==5) put(x,ys,2);
+    }
+  }
+  /* 道路两侧铺人行道 */
+  for(let y=1;y<H-1;y++) for(let x=1;x<W-1;x++){
+    if(get(x,y) !== 0) continue;
+    if(get(x-1,y)===2 || get(x+1,y)===2 || get(x,y-1)===2 || get(x,y+1)===2) put(x,y,8);
+  }
+  /* 过江桥 */
+  for(const bx of NN_MAP.bridges){
+    for(let x=bx-2;x<=bx+2;x++){
+      const cy = riverY[Math.min(W-1, Math.max(0,x))];
+      for(let y=Math.floor(cy-half-4); y<=Math.ceil(cy+half+4); y++){
+        const t = get(x,y);
+        if(t===0 || t===1 || t===2 || t===6) put(x,y,7);
+      }
+    }
+  }
+
+  /* 地标主体（不可穿行的建筑/塔/山门） */
+  const FOOT = {
+    station:[5,3], estation:[7,3], mall:[5,4], conference:[4,4], tower:[3,3],
+    oldstreet:[5,3], foodstreet:[5,3], waterstreet:[5,3], campus:[4,2],
+    park:[3,2], plaza:[1,1], bridge:[0,0], lake:[0,0], mountain:[2,2]
+  };
+  for(const lm of NN_MAP.lms){
+    const f = FOOT[lm.kind] || [3,3];
+    if(!f[0]) continue;
+    const x1 = lm.tx - Math.floor(f[0]/2), y1 = lm.ty - Math.floor(f[1]/2);
+    for(let y=y1;y<y1+f[1];y++) for(let x=x1;x<x1+f[0];x++){
+      const t = get(x,y);
+      if(t===1 || t===7) continue;
+      put(x,y,4);
+    }
+  }
+
+  /* 街区建筑 */
+  const palette = ['#5b4b7a','#45597f','#6e4b6b','#43667a','#6a5a3c','#3f5570','#7a564a','#585a88'];
+  const blds = [];
+  for(let by=5; by<H-8; by+=7){
+    for(let bx=5; bx<W-9; bx+=8){
+      const ry = riverY[Math.min(W-1, bx)];
+      const north = by < ry - 9;
+      const dens = north ? (bx<34 ? 0.5 : (bx<82 ? 0.86 : 0.93)) : (bx<120 ? 0.72 : 0.52);
+      if(rnd() > dens) continue;
+      for(let k=0;k<3;k++){
+        const w = 2 + Math.floor(rnd()*3), h = 2 + Math.floor(rnd()*3);
+        const ox = bx + Math.floor(rnd()*(8-w)), oy = by + Math.floor(rnd()*(7-h));
+        let ok = true;
+        for(let y=oy;y<oy+h && ok;y++){
+          for(let x=ox;x<ox+w;x++){ const t = get(x,y); if(t !== 0 && t !== 8){ ok = false; break; } }
+        }
+        if(!ok) continue;
+        for(let y=oy;y<oy+h;y++) for(let x=ox;x<ox+w;x++) put(x,y,4);
+        blds.push({ x:ox, y:oy, w:w, h:h, c: palette[(ox*3 + oy*5 + k) % palette.length] });
+      }
+    }
+  }
+
+  /* 树（公园/校园更密，只做装饰不挡路） */
+  for(let y=2;y<H-2;y++) for(let x=2;x<W-2;x++){
+    if(get(x,y) !== 0) continue;
+    const r = rnd(), p = zone[y*W+x] === 1 ? 0.36 : 0.05;
+    if(r < p) putDec(x,y,1);
+  }
+
+  nnS.type = type; nnS.dec = dec; nnS.blds = blds; nnS.lms = NN_MAP.lms.slice();
+  const vis = store.get('nanning.visited', {});
+  nnS.visited = (vis && typeof vis === 'object' && !Array.isArray(vis)) ? vis : {};
+  const sx = NN_MAP.start.x*T + 4, sy = NN_MAP.start.y*T + 4;
+  nnS.pos.x = sx; nnS.pos.y = sy;
+  const saved = store.get('nanning.pos', null);
+  if(saved && typeof saved.x === 'number' && nnCanStand(saved.x, saved.y)){ nnS.pos.x = saved.x; nnS.pos.y = saved.y; }
+  nnS.built = true;
+  nnPaintMap();
+  return true;
+}
+
+/* ---------- 一次性把地图画进离屏画布 ---------- */
+function nnPaintMap(){
+  const W = nnS.w, H = nnS.h, T = nnS.tile;
+  if(!nnS.mapCv){
+    const mc = document.createElement('canvas');
+    mc.width = W*T; mc.height = H*T;
+    nnS.mapCv = mc;
+  }
+  const c = nnS.mapCv.getContext('2d');
+  c.imageSmoothingEnabled = false;
+  const hash = (x,y) => { let h = (x*73856093) ^ (y*19349663); return (h ^ (h>>>13)) >>> 0; };
+
+  for(let y=0;y<H;y++){
+    for(let x=0;x<W;x++){
+      const t = nnS.type[y*W+x], px = x*T, py = y*T, r = hash(x,y);
+      if(t === 0){
+        c.fillStyle = (r%9 === 0) ? '#38603f' : '#315439';
+        c.fillRect(px,py,T,T);
+        if(r%13 === 0){ c.fillStyle = '#2c4b33'; c.fillRect(px+3,py+2,2,2); }
+      } else if(t === 1){
+        c.fillStyle = '#215280'; c.fillRect(px,py,T,T);
+        if(r%4 === 0){ c.fillStyle = '#2d6a9a'; c.fillRect(px+1,py+3,5,1); }
+        if(r%9 === 0){ c.fillStyle = '#1a4368'; c.fillRect(px+2,py+6,3,1); }
+      } else if(t === 2){
+        c.fillStyle = '#3b405e'; c.fillRect(px,py,T,T);
+        if(r%7 === 0){ c.fillStyle = '#454b6c'; c.fillRect(px+1,py+1,3,2); }
+      } else if(t === 3){
+        c.fillStyle = '#4a4f72'; c.fillRect(px,py,T,T);
+        if(r%5 === 0){ c.fillStyle = '#555b82'; c.fillRect(px+1,py+1,T-2,T-2); }
+      } else if(t === 8){
+        c.fillStyle = '#565d7f'; c.fillRect(px,py,T,T);
+        c.fillStyle = '#5f6689'; c.fillRect(px+1,py+1,T-2,1);
+        c.fillStyle = '#4b5273'; c.fillRect(px+1,py+T-2,T-2,1);
+      } else if(t === 5){
+        c.fillStyle = '#2a4631'; c.fillRect(px,py,T,T);
+        c.fillStyle = '#233c2a'; c.fillRect(px+1,py+1,T-2,T-2);
+        if(y%3 === 0){ c.fillStyle = '#35593c'; c.fillRect(px+1,py+1,T-2,1); }
+      } else if(t === 6){
+        c.fillStyle = '#6d5c46'; c.fillRect(px,py,T,T);
+        if(r%4 === 0){ c.fillStyle = '#7d6b52'; c.fillRect(px+1,py+3,3,2); }
+      } else if(t === 7){
+        c.fillStyle = '#4a4f70'; c.fillRect(px,py,T,T);
+        c.fillStyle = '#585e84'; c.fillRect(px,py+T-1,T,1);
+      } else {
+        c.fillStyle = '#26283f'; c.fillRect(px,py,T,T);
+      }
+    }
+  }
+
+  /* 车道虚线 */
+  c.fillStyle = '#ffd97a';
+  for(const r of NN_MAP.roadsH){
+    const row = r.y + Math.floor(r.w/2);
+    for(let x=r.x1;x<=r.x2;x+=6){
+      if(nnS.type[row*W+x] === 2) c.fillRect(x*T, row*T + 3, 2*T, 1);
+    }
+  }
+  for(const r of NN_MAP.roadsV){
+    const col = r.x + Math.floor(r.w/2);
+    for(let y=6;y<152;y+=6){
+      if(nnS.type[y*W+col] === 2) c.fillRect(col*T + 3, y*T, 1, 2*T);
+    }
+  }
+
+  for(const b of nnS.blds) nnPaintBld(c, b);
+
+  /* 桥栏杆与中线 */
+  const half = NN_MAP.river.half;
+  for(const bx of NN_MAP.bridges){
+    const cy = nnS.riverY[Math.min(W-1, Math.max(0,bx))];
+    const y1 = Math.floor(cy-half-4)*T, y2 = Math.ceil(cy+half+4)*T;
+    c.fillStyle = '#8e95c4';
+    c.fillRect((bx-2)*T, y1, 1, y2-y1);
+    c.fillRect((bx+3)*T-1, y1, 1, y2-y1);
+    c.fillStyle = '#ffc53d';
+    c.fillRect(bx*T+3, y1, 1, y2-y1);
+  }
+
+  for(let y=0;y<H;y++) for(let x=0;x<W;x++){
+    if(nnS.dec[y*W+x] !== 1) continue;
+    const px = x*T, py = y*T;
+    c.fillStyle = '#1e4429'; c.fillRect(px+1,py+2,6,5);
+    c.fillStyle = '#2c6b3c'; c.fillRect(px+2,py+1,4,4);
+    c.fillStyle = '#3d8a4e'; c.fillRect(px+2,py+2,2,2);
+  }
+
+  for(const lm of nnS.lms) nnPaintLm(c, lm);
+}
+
+function nnPaintBld(c, b){
+  const T = nnS.tile, px = b.x*T, py = b.y*T, pw = b.w*T, ph = b.h*T;
+  c.fillStyle = '#141528'; c.fillRect(px+1,py+1,pw-2,ph-2);
+  c.fillStyle = b.c; c.fillRect(px+2,py+2,pw-4,ph-4);
+  c.fillStyle = 'rgba(255,255,255,.30)'; c.fillRect(px+3,py+3,pw-6,2);
+  c.fillStyle = 'rgba(0,0,0,.45)'; c.fillRect(px+2,py+ph-4,pw-4,2);
+  c.fillStyle = 'rgba(255,255,255,.10)'; c.fillRect(px+2,py+2,2,ph-4);
+  for(let wy=py+7; wy<py+ph-6; wy+=5){
+    for(let wx=px+4; wx<px+pw-5; wx+=5){
+      const lit = ((wx*7 + wy*11 + b.w*5) % 4 === 0);
+      c.fillStyle = lit ? '#ffe08a' : '#5b6488';
+      c.fillRect(wx,wy,3,2);
+    }
+  }
+}
+
+/* ---------- 地标小画（朱槿穹顶、龙象塔、骑楼、站房…） ---------- */
+function nnPaintLm(c, lm){
+  const T = nnS.tile, cx = lm.tx*T, cy = lm.ty*T;
+  const R = (col,x,y,w,h) => { c.fillStyle = col; c.fillRect(cx+x, cy+y, w, h); };
+  const dark = '#0d0e1c';
+  switch(lm.kind){
+    case 'station':
+      R(dark,-20,-13,40,25);
+      R('#8d6c47',-18,-16,36,21);
+      R('#c9904e',-19,-19,38,4);
+      R('#6b4f2c',-18,-13,36,2);
+      R('#ffe9a8',-6,-12,12,7);
+      R(dark,-4,-11,8,5); R('#1b1c2e',-1,-10,2,3);
+      R('#2b2130',-14,-3,10,10); R('#2b2130',4,-3,10,10);
+      break;
+    case 'estation':
+      R(dark,-30,-12,60,24);
+      R('#a9b4c8',-28,-15,56,19);
+      R('#d7e0ee',-28,-18,56,5);
+      R('#3f4a63',-28,-9,56,2);
+      R('#1b2133',-22,-3,44,9);
+      R('#ffd97a',-4,3,8,2);
+      break;
+    case 'mall':
+      R(dark,-20,-16,40,32);
+      R('#7e3f68',-18,-18,36,29);
+      R('#ffc53d',-18,-18,36,4);
+      R('#2a1f33',-12,-4,10,12); R('#2a1f33',2,-4,10,12);
+      R('#ffd97a',-6,-10,12,3);
+      break;
+    case 'conference':
+      R(dark,-16,-16,32,32);
+      R('#cfe0ea',-14,-14,28,26);
+      R('#b9d3e0',-14,-14,28,6);
+      R('#ff8ac2',-6,-8,12,6);
+      R('#e8f2f6',-14,-14,6,12);
+      R('#2a2033',-8,-1,16,13);
+      break;
+    case 'tower':
+      R(dark,-10,-32,20,40);
+      R('#3e5a7a',-8,-34,16,36);
+      R('#6e9cc4',-8,-34,16,4);
+      for(let i=0;i<4;i++) R('#2a3b52',-6,-28+i*7,12,2);
+      R('#ffd97a',-6,6,12,2);
+      R('#eef0ff',-1,-40,2,7);
+      break;
+    case 'plaza':
+      R('#565a80',-10,-6,20,12);
+      R('#6e7398',-8,-8,16,16);
+      R('#eef0ff',-2,-12,4,16);
+      R('#ffc53d',-4,-16,8,4);
+      break;
+    case 'park':
+      R(dark,-16,-8,32,16);
+      R('#4a3b25',-14,-6,28,12);
+      R('#6b4f2c',-16,-10,4,16); R('#6b4f2c',12,-10,4,16);
+      R('#c9904e',-16,-12,32,4);
+      R('#2c6b3c',-10,0,5,5); R('#2c6b3c',4,0,5,5);
+      break;
+    case 'oldstreet':
+    case 'foodstreet':
+      for(let i=0;i<3;i++){
+        const ox = -18 + i*12;
+        R(dark, ox, -6, 12, 14);
+        R(i===1 ? '#7b5636' : '#8d6c47', ox, -8, 12, 15);
+        R('#3f2a1b', ox, -12, 12, 4);
+        R('#2b2130', ox+3, -1, 6, 9);
+      }
+      for(let i=0;i<3;i++) R('#ff3d5a', -14+i*12, -14, 3, 3);
+      break;
+    case 'waterstreet':
+      R('#5b4630',-22,2,44,4);
+      R('#7a5a3a',-22,6,44,4);
+      R('#2f7a4a',-20,-8,6,8);
+      R('#2f7a4a',14,-8,6,8);
+      R('#3b5f83',-8,4,16,6);
+      R('#eef0ff',-8,4,16,1);
+      for(let k=-6;k<=6;k+=4) R('#7a5a3a',k,8,1,6);
+      break;
+    case 'campus':
+      R(dark,-16,-6,32,18);
+      R('#8d6c47',-16,-8,4,20); R('#8d6c47',12,-8,4,20);
+      R('#c9904e',-16,-10,32,4);
+      R('#eef0ff',-5,-6,10,5);
+      R('#2b2130',-3,-5,6,3);
+      break;
+    case 'mountain':
+      for(let i=0;i<5;i++) R('#1f3524',-24+i*10,-10-(i%2)*3,10,16);
+      R('#8d2f3f',-3,-24,10,22);
+      R('#ffc53d',-3,-24,10,3);
+      R('#8d2f3f',-5,-26,14,3);
+      break;
+    case 'lake':
+      for(let i=0;i<3;i++) R('#2f7a4a',-14+i*12,-6,5,5);
+      R('#7a5a3a',-18,4,36,3);
+      R('#ff8ac2',-12,-10,3,3); R('#ff8ac2',6,-12,3,3);
+      break;
+    case 'bridge':
+      R('#5d6288',-24,-3,48,6);
+      R('#ffc53d',-24,-3,48,1);
+      for(let i=-18;i<=18;i+=12) R('#454a6b',i,-3,2,6);
+      break;
+  }
+}
+
+/* ---------- 碰撞 / 行走 ---------- */
+function nnCanStand(px, py){
+  if(!nnS.type) return false;
+  const T = nnS.tile;
+  const pts = [[px-2,py-1],[px+2,py-1],[px-2,py+2],[px+2,py+2]];
+  for(let i=0;i<pts.length;i++){
+    const tx = Math.floor(pts[i][0]/T), ty = Math.floor(pts[i][1]/T);
+    if(tx<0 || ty<0 || tx>=nnS.w || ty>=nnS.h) return false;
+    const t = nnS.type[ty*nnS.w+tx];
+    if(t === 1 || t === 4 || t === 5) return false;
+  }
+  return true;
+}
+function nnDistrict(px, py){
+  const T = nnS.tile, tx = Math.max(0, Math.min(nnS.w-1, Math.floor(px/T)));
+  const ty = py / T;
+  if(ty < nnS.riverY[tx]) return tx < 34 ? '西乡塘' : (tx < 82 ? '兴宁' : '青秀');
+  return tx < 120 ? '江南' : '五象新区';
+}
+function nnSave(){
+  if(!nnS.built) return;
+  store.set('nanning.visited', nnS.visited);
+  store.set('nanning.pos', { x: Math.round(nnS.pos.x), y: Math.round(nnS.pos.y) });
+}
+
+/* ---------- 绘制：画面 / 标记 / 小人 ---------- */
+function nnDrawMark(ctx, x, y, done){
+  const bob = Math.round(Math.sin(performance.now()/520) * 1.5);
+  ctx.fillStyle = '#eef0ff'; ctx.fillRect(x-1, y-18+bob, 1, 8);
+  ctx.fillStyle = done ? '#3ddc84' : '#ffc53d';
+  ctx.fillRect(x, y-18+bob, done ? 5 : 4, 4);
+  ctx.fillStyle = done ? '#25a862' : '#ff8c00';
+  ctx.fillRect(x, y-14+bob, done ? 5 : 4, 1);
+}
+function nnDrawPlayer(ctx, x, y){
+  const f = nnS.animT > 0 ? (Math.floor(nnS.animT/170) % 2) : 0;
+  const bob = f ? -1 : 0;
+  ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fillRect(x-4, y+1, 8, 2);
+  ctx.fillStyle = '#2a3155';
+  ctx.fillRect(x-3, y-3, 2, 3 + (f ? 0 : 1));
+  ctx.fillRect(x+1, y-3, 2, 3 + (f ? 1 : 0));
+  ctx.fillStyle = '#eef0ff'; ctx.fillRect(x-4, y-8+bob, 8, 6);
+  ctx.fillStyle = '#4da6ff'; ctx.fillRect(x-4, y-8+bob, 8, 1);
+  ctx.fillStyle = '#f0c090'; ctx.fillRect(x-3, y-12+bob, 6, 4);
+  ctx.fillStyle = '#2a2118'; ctx.fillRect(x-3, y-13+bob, 6, 2);
+  if(nnS.dir !== 'u'){
+    ctx.fillStyle = '#1a1b2a';
+    if(nnS.dir === 'l') ctx.fillRect(x-3, y-11+bob, 1, 1);
+    else if(nnS.dir === 'r') ctx.fillRect(x+2, y-11+bob, 1, 1);
+    else { ctx.fillRect(x-2, y-11+bob, 1, 1); ctx.fillRect(x+1, y-11+bob, 1, 1); }
+  }
+}
+function nnRender(){
+  if(!nnS.ctx || !nnS.mapCv) return;
+  const ctx = nnS.ctx, vw = nnS.view.w, vh = nnS.view.h, T = nnS.tile;
+  const mw = nnS.w*T, mh = nnS.h*T;
+  nnS.cam.x = nnClamp(nnS.pos.x - vw/2, 0, mw - vw);
+  nnS.cam.y = nnClamp(nnS.pos.y - vh/2, 0, mh - vh);
+  const cx = Math.round(nnS.cam.x), cy = Math.round(nnS.cam.y);
+  ctx.imageSmoothingEnabled = false;
+  ctx.clearRect(0,0,vw,vh);
+  ctx.drawImage(nnS.mapCv, cx, cy, vw, vh, 0, 0, vw, vh);
+  for(const lm of nnS.lms){
+    const sx = lm.tx*T + 4 - cx, sy = lm.ty*T + 4 - cy;
+    if(sx < -30 || sy < -30 || sx > vw+30 || sy > vh+30) continue;
+    nnDrawMark(ctx, Math.round(sx), Math.round(sy), !!nnS.visited[lm.id]);
+  }
+  nnDrawPlayer(ctx, Math.round(nnS.pos.x) - cx, Math.round(nnS.pos.y) - cy);
+}
+
+/* ---------- 小地图 / 大厅 ---------- */
+function nnDrawMini(){
+  const cv = $('#nnMini');
+  if(!cv || !nnS.mapCv || !nnS.built) return;
+  const ctx = cv.getContext('2d');
+  const W = 600, H = 400;
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.imageSmoothingEnabled = true;
+  ctx.clearRect(0,0,W,H);
+  ctx.drawImage(nnS.mapCv, 0, 0, W, H);
+  const k = W / (nnS.w * nnS.tile);
+  for(const lm of nnS.lms){
+    const x = Math.round(lm.tx*nnS.tile*k), y = Math.round(lm.ty*nnS.tile*k);
+    ctx.fillStyle = nnS.visited[lm.id] ? '#3ddc84' : '#ffc53d';
+    ctx.fillRect(x-3, y-3, 6, 6);
+    ctx.fillStyle = '#0b0c18'; ctx.fillRect(x-1, y-1, 2, 2);
+  }
+  const px = Math.round(nnS.pos.x*k), py = Math.round(nnS.pos.y*k);
+  ctx.fillStyle = '#4da6ff'; ctx.fillRect(px-2, py-2, 4, 4);
+  ctx.fillStyle = '#eef0ff'; ctx.fillRect(px-1, py-1, 2, 2);
+}
+function nnRefreshLobby(){
+  if(!nnS.built) return;
+  const total = nnS.lms.length;
+  const done = nnS.lms.reduce((n,l) => n + (nnS.visited[l.id] ? 1 : 0), 0);
+  $('#nnCountTxt').textContent = done;
+  $('#nnTotalTxt').textContent = total;
+  $('#nnBar').style.width = (done/total*100).toFixed(1) + '%';
+  $('#nnLmList').innerHTML = nnS.lms.map(l =>
+    '<button class="nn-lm' + (nnS.visited[l.id] ? ' done' : '') + '" data-lm="' + l.id + '" type="button">' +
+    '<span class="nn-dot"></span><span>' + l.name + '</span></button>').join('');
+  nnDrawMini();
+}
+function nnShowDetail(lm){
+  const d = $('#nnDetail');
+  d.innerHTML = '<h3>' + lm.emoji + ' ' + lm.name + '</h3>'
+    + '<p>' + lm.desc + '</p>'
+    + '<p class="nn-d-tip">💡 ' + lm.tip + '</p>'
+    + '<p class="nn-d-tip">' + (nnS.visited[lm.id] ? '✓ 已解锁' : '还没找到它 · 打开地图走过去就会解锁') + '</p>';
+  d.classList.remove('hidden');
+}
+
+/* ---------- 卡片 / 进度 ---------- */
+function nnOpenCard(lm){
+  nnS.cardOpen = true;
+  const card = $('#nnCard');
+  card.innerHTML = '<div class="nn-card-head"><span class="nn-card-emoji">' + lm.emoji + '</span><h3>' + lm.name + '</h3></div>'
+    + '<p>' + lm.desc + '</p>'
+    + '<p class="nn-tip">💡 ' + lm.tip + '</p>'
+    + '<button class="px-btn green" id="nnCardOk" type="button">继续探索</button>';
+  card.classList.remove('hidden');
+  $('#nnCardOk').addEventListener('click', nnCloseCard);
+  sfx.point();
+}
+function nnCloseCard(){
+  nnS.cardOpen = false;
+  $('#nnCard').classList.add('hidden');
+}
+function nnDiscover(lm){
+  if(nnS.visited[lm.id]) return;
+  nnS.visited[lm.id] = 1;
+  nnSave();
+  nnOpenCard(lm);
+  nnRefreshLobby();
+  const all = nnS.lms.every(l => nnS.visited[l.id]);
+  if(all) setTimeout(() => sfx.win(), 300);
+}
+function nnUpdateStats(){
+  if(!nnS.built) return;
+  const total = nnS.lms.length;
+  const done = nnS.lms.reduce((n,l) => n + (nnS.visited[l.id] ? 1 : 0), 0);
+  const dist = nnDistrict(nnS.pos.x, nnS.pos.y);
+  if(nnS.done !== done || nnS.dist !== dist){
+    nnS.done = done; nnS.dist = dist;
+    const el = $('#nnStats');
+    if(el) el.innerHTML = '<span class="stat">已探索<b>' + done + '/' + total + '</b></span><span class="stat">所在<b>' + dist + '</b></span>';
+  }
+}
+
+/* ---------- 进入 / 退出 / 主循环 ---------- */
+function nnEnterTab(){
+  if(!nnEnsureMap()) return;
+  $('#nnView').classList.add('hidden');
+  $('#nnLobby').classList.remove('hidden');
+  nnRefreshLobby();
+}
+function nnStart(){
+  if(!nnEnsureMap()) return;
+  ensureAudioData();
+  nnS.running = true; nnS.last = 0; nnS.keys = {}; nnS.stepT = 0;
+  $('#nnLobby').classList.add('hidden');
+  $('#nnView').classList.remove('hidden');
+  document.body.classList.add('game-full');
+  document.body.classList.add('nn-live');
+  document.documentElement.classList.add('game-lock');
+  window.scrollTo(0, 0);
+  if(!nnS.cv){
+    const m = makeCanvas(nnS.view.w, nnS.view.h);
+    m.cv.className = 'nn-map';
+    m.cv.id = 'nnCanvas';
+    m.cv.setAttribute('aria-label', '像素南宁漫游画面');
+    $('#nnStage').insertBefore(m.cv, $('#nnNear'));
+    nnS.cv = m.cv; nnS.ctx = m.ctx;
+  }
+  $('#nnCard').classList.add('hidden');
+  nnS.cardOpen = false;
+  nnS.nearTxt = '';
+  nnRender();
+  nnUpdateStats();
+  nnS.raf = requestAnimationFrame(nnTick);
+  const padHost = $('#nnPadHost');
+  if(padHost && !padHost.dataset.mounted){
+    mountDpad(padHost, 'nanning');
+    padHost.dataset.mounted = '1';
+  }
+}
+function nnStop(save){
+  nnS.running = false;
+  document.body.classList.remove('nn-live');
+  if(nnS.raf){ cancelAnimationFrame(nnS.raf); nnS.raf = 0; }
+  nnS.keys = {};
+  if(save !== false) nnSave();
+}
+function nnBack(){
+  nnStop();
+  document.body.classList.remove('game-full');
+  document.documentElement.classList.remove('game-lock');
+  $('#nnView').classList.add('hidden');
+  $('#nnLobby').classList.remove('hidden');
+  window.scrollTo(0, 0);
+  nnRefreshLobby();
+}
+function nnTick(ts){
+  if(!nnS.running) return;
+  nnS.raf = requestAnimationFrame(nnTick);
+  const dt = nnS.last ? Math.min(60, ts - nnS.last) : 16;
+  nnS.last = ts;
+  const T = nnS.tile, k = nnS.keys;
+  let dx = 0, dy = 0;
+  if(!nnS.cardOpen){
+    if(k.left) dx -= 1;
+    if(k.right) dx += 1;
+    if(k.up) dy -= 1;
+    if(k.down) dy += 1;
+  }
+  if(dx || dy){
+    const len = Math.hypot(dx, dy);
+    dx /= len; dy /= len;
+    const sp = (k.run ? 82 : 48) * dt / 1000;
+    const nx = nnS.pos.x + dx*sp, ny = nnS.pos.y + dy*sp;
+    if(nnCanStand(nx, nnS.pos.y)) nnS.pos.x = nx;
+    if(nnCanStand(nnS.pos.x, ny)) nnS.pos.y = ny;
+    nnS.animT += dt;
+    if(dx < 0) nnS.dir = 'l'; else if(dx > 0) nnS.dir = 'r'; else if(dy < 0) nnS.dir = 'u'; else nnS.dir = 'd';
+    nnS.stepT += dt;
+    if(nnS.stepT > 320){ nnS.stepT = 0; gsfx('step', 300); }
+  } else {
+    nnS.animT = 0;
+  }
+
+  let near = null, nearD = 1e9;
+  for(const lm of nnS.lms){
+    const lx = lm.tx*T + 4, ly = lm.ty*T + 4;
+    const d = Math.hypot(lx - nnS.pos.x, ly - nnS.pos.y);
+    if(d < nearD){ nearD = d; near = lm; }
+    if(d < 26 && !nnS.visited[lm.id]) nnDiscover(lm);
+  }
+  const txt = (near && nearD < 56)
+    ? (nnS.visited[near.id] ? ('✓ 已解锁 · ' + near.name) : ('附近：' + near.name + ' · 再靠近就解锁'))
+    : '在附近走走，找找地标';
+  if(txt !== nnS.nearTxt){
+    nnS.nearTxt = txt;
+    const el = $('#nnNear');
+    if(el) el.textContent = txt;
+  }
+
+  nnS.frame++;
+  nnRender();
+  nnUpdateStats();
+  if(nnS.frame % 1200 === 0) nnSave();
+}
+
+/* ---------- 交互绑定 ---------- */
+const NN_KEYMAP = { arrowup:'up', arrowdown:'down', arrowleft:'left', arrowright:'right', w:'up', a:'left', s:'down', d:'right' };
+document.addEventListener('keydown', e => {
+  if(!nnS.running) return;
+  if(e.key === 'Escape'){ if(nnS.cardOpen) nnCloseCard(); return; }
+  if(e.key === 'Shift'){ nnS.keys.run = true; return; }
+  const m = NN_KEYMAP[e.key.toLowerCase()];
+  if(!m || nnS.cardOpen) return;
+  e.preventDefault();
+  nnS.keys[m] = true;
+});
+document.addEventListener('keyup', e => {
+  if(!nnS.running) return;
+  if(e.key === 'Shift'){ nnS.keys.run = false; return; }
+  const m = NN_KEYMAP[e.key.toLowerCase()];
+  if(m) nnS.keys[m] = false;
+});
+window.addEventListener('blur', () => { nnS.keys = {}; });
+
+$('#nnStart').addEventListener('click', nnStart);
+$('#nnBack').addEventListener('click', nnBack);
+$('#nnLmList').addEventListener('click', e => {
+  const b = e.target.closest('[data-lm]');
+  if(!b || !nnS.lms.length) return;
+  const lm = nnS.lms.find(l => l.id === b.dataset.lm);
+  if(lm) nnShowDetail(lm);
+  sfx.click();
+});
+$('#nnReset').addEventListener('click', () => {
+  nnS.visited = {};
+  store.set('nanning.visited', {});
+  $('#nnDetail').classList.add('hidden');
+  nnRefreshLobby();
+  sfx.lose();
+});
 /* ---------- 启动 ---------- */
 
 
