@@ -189,6 +189,7 @@ body.no-crt .scanlines{display:none}
 .game-stats{display:flex; gap:8px; flex-wrap:wrap}
 .stat{background:var(--bg2); border:2px solid var(--line); padding:6px 10px; font-size:11px; color:var(--muted); line-height:1.5; white-space:nowrap}
 .stat b{display:block; font-family:'Press Start 2P',monospace; font-size:13px; color:var(--yellow)}
+.stat .sub{display:block; font-family:'DotGothic16',system-ui,sans-serif; font-style:normal; font-size:10px; color:var(--blue); line-height:1.4}
 .stage{max-width:560px; margin:0 auto; position:relative}
 .pix-canvas{width:100%; height:auto; display:block; image-rendering:pixelated; background:var(--bg2);
   border:3px solid var(--line); box-shadow:5px 5px 0 0 rgba(0,0,0,.5)}
@@ -799,7 +800,7 @@ body.nn-live footer.site-footer{display:none}
       </svg>
       <div>
         <h1>像素屋</h1>
-        <div class="tagline">PIXEL HOUSE v3.14.0</div>
+        <div class="tagline">PIXEL HOUSE v3.15.0/div>
       </div>
     </div>
     <div class="hdr-actions">
@@ -13946,8 +13947,16 @@ function nnPaintBld(c, b){
 
 /* ---------- 地标小画（朱槿穹顶、龙象塔、骑楼、站房…） ---------- */
 function nnPaintLm(c, lm){
-  const T = nnS.tile, cx = lm.tx*T, cy = lm.ty*T;
-  const R = (col,x,y,w,h) => { c.fillStyle = col; c.fillRect(cx+x, cy+y, w, h); };
+  const T = nnS.tile, cx = lm.tx*T + 4, cy = lm.ty*T + 4;
+  const S = 1.35;
+  /* 地标基座：一圈深色投影 + 浅色地台，让建筑从旁边楼群里跳出来 */
+  c.fillStyle = 'rgba(6,7,16,.55)'; c.fillRect(cx-26, cy+5, 52, 5);
+  c.fillStyle = '#8a91b4'; c.fillRect(cx-22, cy+1, 44, 5);
+  c.fillStyle = '#a6adca'; c.fillRect(cx-22, cy+1, 44, 1);
+  c.save();
+  c.translate(cx, cy);
+  c.scale(S, S);
+  const R = (col,x,y,w,h) => { c.fillStyle = col; c.fillRect(x, y, w, h); };
   const dark = '#0d0e1c';
   switch(lm.kind){
     case 'station':
@@ -14047,6 +14056,7 @@ function nnPaintLm(c, lm){
       for(let i=-18;i<=18;i+=12) R('#454a6b',i,-3,2,6);
       break;
   }
+  c.restore();
 }
 
 /* ---------- 碰撞 / 行走 ---------- */
@@ -14198,10 +14208,16 @@ function nnUpdateStats(){
   const total = nnS.lms.length;
   const done = nnS.lms.reduce((n,l) => n + (nnS.visited[l.id] ? 1 : 0), 0);
   const dist = nnDistrict(nnS.pos.x, nnS.pos.y);
-  if(nnS.done !== done || nnS.dist !== dist){
-    nnS.done = done; nnS.dist = dist;
+  const T = nnS.tile;
+  let near = '';
+  for(const lm of nnS.lms){
+    if(Math.abs(lm.tx*T + 4 - nnS.pos.x) < 46 && Math.abs(lm.ty*T + 4 - nnS.pos.y) < 46){ near = lm.name; break; }
+  }
+  if(nnS.done !== done || nnS.dist !== dist || nnS.near !== near){
+    nnS.done = done; nnS.dist = dist; nnS.near = near;
     const el = $('#nnStats');
-    if(el) el.innerHTML = '<span class="stat">已探索<b>' + done + '/' + total + '</b></span><span class="stat">所在<b>' + dist + '</b></span>';
+    if(el) el.innerHTML = '<span class="stat">已探索<b>' + done + '/' + total + '</b></span>'
+      + '<span class="stat">所在<b>' + dist + '</b>' + (near ? '<i class="sub">' + near + '</i>' : '') + '</span>';
   }
 }
 
