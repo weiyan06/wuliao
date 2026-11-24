@@ -748,6 +748,7 @@ a.hot-item:active{transform:translate(1px,1px)}
 .nn-hero{display:grid; grid-template-columns:minmax(0,1fr) 210px; gap:14px; margin-bottom:16px; align-items:start}
 @media (max-width:760px){ .nn-hero{grid-template-columns:1fr} }
 .nn-mini{width:100%; height:auto; display:block; image-rendering:pixelated; background:#0b1014; border:3px solid var(--line); box-shadow:5px 5px 0 rgba(0,0,0,.5)}
+.nn-mini{cursor:crosshair}
 .nn-side{display:flex; flex-direction:column; gap:10px}
 .nn-side .px-btn{width:100%; text-align:center}
 .nn-count{font-family:'Press Start 2P','DotGothic16',monospace; font-size:11px; color:var(--muted); line-height:1.9}
@@ -782,6 +783,17 @@ body.game-full .nn-stage{max-width:min(880px, calc((100dvh - 170px) * 1.6))}
 .nn-uni b{color:#dcfff4; font-size:12.5px; letter-spacing:.5px}
 .nn-uni.hidden{display:none}
 .nn-uni.pop{animation:nnRoadPop .38s ease-out}
+.nn-tele{position:fixed; inset:0; z-index:9000; background:rgba(6,7,16,.82); display:flex; align-items:center; justify-content:center; padding:16px}
+.nn-tele.hidden{display:none}
+.nn-tele-box{width:min(1000px, 96vw); background:#14162b; border:7px solid #3a3f68; box-shadow:0 0 0 3px #191b2e, 8px 8px 0 rgba(0,0,0,.5); padding:10px}
+.nn-tele-head{display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px; color:#e6f4ff; font-weight:700; letter-spacing:.5px}
+.nn-tele-map{display:block; width:100%; height:auto; background:#0b0c18; border:1px solid #2a2e4d; cursor:crosshair; image-rendering:pixelated}
+.nn-tele-info{margin-top:8px; font-size:12px; color:#8fd3ff; min-height:18px}
+.nn-tele-act{display:flex; gap:8px; margin-top:8px}
+.nn-tele-act .px-btn{flex:1}
+.nn-tele-tip{font-size:11.5px; color:#7f89b4; margin-top:6px}
+.nn-top-tools{display:flex; gap:6px}
+
 .nn-roadlog{font-size:11.5px; line-height:1.65; color:#8fd3ff; margin-top:6px; word-break:break-all}
 .nn-roadlog b{color:#e6f4ff}
 .nn-road.pop{animation:nnRoadPop .38s ease-out}
@@ -815,7 +827,7 @@ body.nn-live footer.site-footer{display:none}
       </svg>
       <div>
         <h1>像素屋</h1>
-        <div class="tagline">PIXEL HOUSE v3.18.0</div>
+        <div class="tagline">PIXEL HOUSE v3.19.0</div>
       </div>
     </div>
     <div class="hdr-actions">
@@ -2253,7 +2265,8 @@ body.nn-live footer.site-footer{display:none}
       <div id="nnLobby" class="lobby">
         <p class="view-tip">一座 8-bit 的南宁：34×23km 真实路网（含 113 座地铁站、46 所高校），方向键 / WASD 漫步主城，走到地标跟前会自动跳出卡片、走上哪条路就报哪条路、靠近地铁站和大学会报名字。探索记录只存在本机浏览器。</p>
         <div class="nn-hero">
-          <div><canvas id="nnMini" class="nn-mini" width="600" height="400" aria-label="南宁像素地图全景"></canvas></div>
+          <div><canvas id="nnMini" class="nn-mini" width="600" height="400" aria-label="南宁像素地图全景"></canvas>
+            <p class="nn-tele-tip">点小地图上任意位置 → 🗺 快捷传送到那里</p></div>
           <div class="nn-side">
             <div class="nn-count">已探索 <b id="nnCountTxt">0</b> / <span id="nnTotalTxt">16</span></div>
             <div class="nn-bar"><i id="nnBar"></i></div>
@@ -2270,6 +2283,7 @@ body.nn-live footer.site-footer{display:none}
       <div id="nnView" class="game-view hidden">
         <div class="game-topbar">
           <button id="nnBack" class="px-btn ghost" type="button">← 返回</button>
+          <button id="nnTeleBtn" class="px-btn ghost" type="button">🗺 传送</button>
           <h2>像素南宁 · 漫游</h2>
           <div class="game-stats" id="nnStats"></div>
         </div>
@@ -2280,8 +2294,21 @@ body.nn-live footer.site-footer{display:none}
           <div class="nn-uni hidden" id="nnUni"></div>
           <div class="nn-card hidden" id="nnCard"></div>
         </div>
-        <p class="nn-hint">方向键 / WASD 移动 · Shift 加速 · 手机用下方方向键 · Esc 收起卡片</p>
+        <p class="nn-hint">方向键 / WASD 移动 · Shift 加速 · T 快捷传送 · 手机用下方方向键 · Esc 收起卡片</p>
         <div id="nnPadHost"></div>
+      </div>
+
+      <div class="nn-tele hidden" id="nnTele">
+        <div class="nn-tele-box">
+          <div class="nn-tele-head"><span>🗺 快捷传送 · 点地图选坐标</span><button id="nnTeleClose" class="px-btn ghost" type="button">✕</button></div>
+          <canvas id="nnTeleMap" class="nn-tele-map" width="900" height="610" aria-label="传送选择地图"></canvas>
+          <div class="nn-tele-info" id="nnTeleInfo">点地图上任意位置，选中后再确认传送</div>
+          <div class="nn-tele-act">
+            <button id="nnTeleGo" class="px-btn green" type="button" disabled>▶ 确认传送</button>
+            <button id="nnTeleCancel" class="px-btn ghost" type="button">取消</button>
+          </div>
+          <p class="nn-tele-tip">传送记录会存本机；落到水里或楼里的点会自动挪到最近的空地上。</p>
+        </div>
       </div>
     </section>
   </main>
@@ -14146,8 +14173,129 @@ function nnCanStand(px, py){
   }
   return true;
 }
-function nnDistrict(px, py){
-  const T = nnS.tile, tx = Math.max(0, Math.min(nnS.w-1, Math.floor(px/T)));
+/* ---------- 快捷传送：点地图选坐标 → 确认 → 传送 ---------- */
+function nnTeleInfoText(px, py){
+  const T = nnS.tile, tx = Math.floor(px/T), ty = Math.floor(py/T);
+  const bits = [nnDistrict(px, py)];
+  let best = null, bestD = 1e9;
+  for(const lm of nnS.lms){
+    const d = Math.hypot(lm.tx*T + 4 - px, lm.ty*T + 4 - py);
+    if(d < bestD){ bestD = d; best = lm; }
+  }
+  if(best && bestD < 260) bits.push(best.name);
+  let uni = null, uniD = 1e9;
+  for(const u of (nnS.unis || [])){
+    const d = Math.hypot(u.tx*T + 4 - px, u.ty*T + 4 - py);
+    if(d < uniD){ uniD = d; uni = u; }
+  }
+  if(uni && uniD < 120) bits.push('🎓 ' + uni.n);
+  const road = nnRoadAt(px, py);
+  if(road) bits.push('🛣 ' + road);
+  const t = (tx >= 0 && ty >= 0 && tx < nnS.w && ty < nnS.h) ? nnS.type[ty*nnS.w+tx] : 0;
+  bits.push(t === 1 ? '水面上，会挪到最近的岸边' : (t === 4 ? '楼里，会挪到最近的空地' : '可落地'));
+  return bits.join(' · ');
+}
+function nnTeleDraw(){
+  const cv = $('#nnTeleMap');
+  if(!cv || !nnS.mapCv) return;
+  const ctx = cv.getContext('2d');
+  const W = cv.width, H = cv.height;
+  ctx.imageSmoothingEnabled = false;
+  ctx.clearRect(0, 0, W, H);
+  ctx.drawImage(nnS.mapCv, 0, 0, W, H);
+  const kx = W / (nnS.w * nnS.tile), ky = H / (nnS.h * nnS.tile);
+  /* 校园点 + 地标点 + 当前位置 */
+  for(const u of (nnS.unis || [])){
+    ctx.fillStyle = 'rgba(110,224,198,.75)';
+    ctx.fillRect(Math.round(u.tx*nnS.tile*kx) - 1, Math.round(u.ty*nnS.tile*ky) - 1, 3, 3);
+  }
+  for(const lm of nnS.lms){
+    ctx.fillStyle = nnS.visited[lm.id] ? '#3ddc84' : '#ffc53d';
+    ctx.fillRect(Math.round(lm.tx*nnS.tile*kx) - 2, Math.round(lm.ty*nnS.tile*ky) - 2, 5, 5);
+  }
+  const px = Math.round(nnS.pos.x*kx), py = Math.round(nnS.pos.y*ky);
+  ctx.fillStyle = '#4da6ff'; ctx.fillRect(px-3, py-3, 7, 7);
+  ctx.fillStyle = '#eef0ff'; ctx.fillRect(px-1, py-1, 3, 3);
+  /* 选中的坐标：十字 + 红针 */
+  const pk = nnS.telePick;
+  if(pk){
+    const x = Math.round(pk.wx*kx), y = Math.round(pk.wy*ky);
+    ctx.strokeStyle = 'rgba(255,90,90,.9)'; ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x-11, y); ctx.lineTo(x+11, y);
+    ctx.moveTo(x, y-11); ctx.lineTo(x, y+11);
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,90,90,.55)'; ctx.lineWidth = 2;
+    ctx.strokeRect(x-5, y-5, 10, 10);
+    /* 小旗子：光标压上去也看得见 */
+    ctx.fillStyle = '#0b0c18'; ctx.fillRect(x, y-24, 1, 14);
+    ctx.fillStyle = '#ff5a5a'; ctx.fillRect(x+1, y-24, 9, 6);
+    ctx.fillStyle = '#ffd97a'; ctx.fillRect(x+1, y-24, 9, 1);
+    ctx.fillStyle = '#ffe9a8'; ctx.fillRect(x-1, y-1, 3, 3);
+  }
+}
+function nnTeleOpen(pre){
+  if(!nnS.built) return;
+  nnS.telePick = null;
+  const box = $('#nnTele');
+  if(box) box.classList.remove('hidden');
+  nnS.teleOpen = true;
+  nnS.keys = {};
+  nnTeleDraw();
+  const info = $('#nnTeleInfo'); if(info) info.textContent = '点地图上任意位置，选中后再确认传送';
+  const go = $('#nnTeleGo'); if(go) go.disabled = true;
+  if(pre) nnTelePickAt(pre.wx, pre.wy);
+  sfx.pop();
+}
+function nnTeleClose(){
+  const box = $('#nnTele');
+  if(box) box.classList.add('hidden');
+  nnS.teleOpen = false;
+  nnS.telePick = null;
+}
+function nnTelePickAt(wx, wy){
+  wx = Math.max(4, Math.min(nnS.w*nnS.tile - 4, wx));
+  wy = Math.max(4, Math.min(nnS.h*nnS.tile - 4, wy));
+  nnS.telePick = { wx: wx, wy: wy };
+  nnTeleDraw();
+  const info = $('#nnTeleInfo'), go = $('#nnTeleGo');
+  if(info) info.textContent = '📍 传送目的地：' + nnTeleInfoText(wx, wy);
+  if(go) go.disabled = false;
+  sfx.click();
+}
+/* 找一个能站下的落点：从目标格向外螺旋搜索，水/楼自动让开 */
+function nnStandSpot(tx, ty){
+  const T = nnS.tile;
+  for(let r=0; r<=14; r++){
+    for(let dy=-r; dy<=r; dy++) for(let dx=-r; dx<=r; dx++){
+      if(Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+      const cx = tx + dx, cy = ty + dy;
+      if(cx < 0 || cy < 0 || cx >= nnS.w || cy >= nnS.h) continue;
+      const px = cx*T + 4, py = cy*T + 4;
+      if(nnCanStand(px, py)) return { x: px, y: py };
+    }
+  }
+  return null;
+}
+function nnTeleGo(){
+  const pk = nnS.telePick;
+  if(!pk) return;
+  const T = nnS.tile;
+  const spot = nnStandSpot(Math.floor(pk.wx/T), Math.floor(pk.wy/T));
+  if(!spot){ const info = $('#nnTeleInfo'); if(info) info.textContent = '这一带落不下脚，换个地方点一下'; sfx.lose(); return; }
+  nnS.pos.x = spot.x; nnS.pos.y = spot.y;
+  nnS.road = null; nnS.subName = ''; nnS.uniName = ''; nnS.nearTxt = '';
+  const met = $('#nnMet'); if(met) met.classList.add('hidden');
+  const rel = $('#nnRoad'); if(rel) rel.classList.add('hidden');
+  const uni = $('#nnUni'); if(uni) uni.classList.add('hidden');
+  nnSave();
+  nnTeleClose();
+  nnRender();
+  nnUpdateStats();
+  if(!nnS.running) nnStart();
+  gsfx('pop', 300);
+}
+function nnDistrict(px, py){  const T = nnS.tile, tx = Math.max(0, Math.min(nnS.w-1, Math.floor(px/T)));
   const ty = py / T, W = nnS.w;
   if(ty < nnS.riverY[tx]){
     if(tx < W*0.25) return '西乡塘';
@@ -14384,6 +14532,7 @@ function nnStop(save){
 }
 function nnBack(){
   nnStop();
+  nnTeleClose();
   document.body.classList.remove('game-full');
   document.documentElement.classList.remove('game-lock');
   $('#nnView').classList.add('hidden');
@@ -14398,7 +14547,7 @@ function nnTick(ts){
   nnS.last = ts;
   const T = nnS.tile, k = nnS.keys;
   let dx = 0, dy = 0;
-  if(!nnS.cardOpen){
+  if(!nnS.cardOpen && !nnS.teleOpen){
     if(k.left) dx -= 1;
     if(k.right) dx += 1;
     if(k.up) dy -= 1;
@@ -14514,7 +14663,9 @@ function nnTick(ts){
 const NN_KEYMAP = { arrowup:'up', arrowdown:'down', arrowleft:'left', arrowright:'right', w:'up', a:'left', s:'down', d:'right' };
 document.addEventListener('keydown', e => {
   if(!nnS.running) return;
+  if(nnS.teleOpen){ if(e.key === 'Escape'){ nnTeleClose(); e.preventDefault(); } return; }
   if(e.key === 'Escape'){ if(nnS.cardOpen) nnCloseCard(); return; }
+  if(e.key.toLowerCase() === 't'){ e.preventDefault(); nnTeleOpen(); return; }
   if(e.key === 'Shift'){ nnS.keys.run = true; return; }
   const m = NN_KEYMAP[e.key.toLowerCase()];
   if(!m || nnS.cardOpen) return;
@@ -14531,6 +14682,23 @@ window.addEventListener('blur', () => { nnS.keys = {}; });
 
 $('#nnStart').addEventListener('click', nnStart);
 $('#nnBack').addEventListener('click', nnBack);
+$('#nnTeleBtn').addEventListener('click', () => nnTeleOpen());
+$('#nnTeleClose').addEventListener('click', nnTeleClose);
+$('#nnTeleCancel').addEventListener('click', nnTeleClose);
+$('#nnTeleGo').addEventListener('click', nnTeleGo);
+$('#nnTele').addEventListener('click', e => { if(e.target === $('#nnTele')) nnTeleClose(); });
+$('#nnTeleMap').addEventListener('click', e => {
+  const cv = e.currentTarget, r = cv.getBoundingClientRect();
+  const fx = (e.clientX - r.left) / r.width, fy = (e.clientY - r.top) / r.height;
+  nnTelePickAt(fx * nnS.w * nnS.tile, fy * nnS.h * nnS.tile);
+});
+/* 大厅小地图也能点：直接开面板并选中那个点 */
+$('#nnMini').addEventListener('click', e => {
+  if(!nnS.built) return;
+  const cv = e.currentTarget, r = cv.getBoundingClientRect();
+  const fx = (e.clientX - r.left) / r.width, fy = (e.clientY - r.top) / r.height;
+  nnTeleOpen({ wx: fx * nnS.w * nnS.tile, wy: fy * nnS.h * nnS.tile });
+});
 $('#nnLmList').addEventListener('click', e => {
   const b = e.target.closest('[data-lm]');
   if(!b || !nnS.lms.length) return;
