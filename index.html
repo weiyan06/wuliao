@@ -770,7 +770,18 @@ a.hot-item:active{transform:translate(1px,1px)}
 .nn-stage{position:relative; max-width:880px; margin:0 auto}
 body.game-full .nn-stage{max-width:min(880px, calc((100dvh - 170px) * 1.6))}
 .nn-map{width:100%; height:auto; display:block; image-rendering:pixelated; background:#0b1014; border:3px solid var(--line); box-shadow:5px 5px 0 rgba(0,0,0,.5); touch-action:none}
-.nn-near{position:absolute; left:8px; top:8px; z-index:4; max-width:72%; padding:4px 8px; font-size:12px; color:var(--yellow); background:rgba(11,12,24,.86); border:2px solid var(--line)}
+.nn-near{position:absolute; left:8px; top:8px; z-index:4; max-width:52%; padding:4px 8px; font-size:12px; color:var(--yellow); background:rgba(11,12,24,.86); border:2px solid var(--line)}
+.nn-road{position:absolute; right:8px; top:8px; z-index:4; max-width:46%; padding:4px 8px; font-size:12px; color:#8fd3ff; background:rgba(11,12,24,.86); border:2px solid var(--line); display:flex; align-items:center; gap:6px}
+.nn-road b{color:#e6f4ff; font-size:12.5px; letter-spacing:.5px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.nn-road.hidden{display:none}
+.nn-met{position:absolute; right:8px; top:44px; z-index:4; max-width:46%; padding:3px 8px; font-size:12px; color:#8fd3ff; background:rgba(11,12,24,.86); border:2px solid #2f5fa0; display:flex; align-items:center; gap:6px}
+.nn-met b{color:#e6f4ff; font-size:12.5px; letter-spacing:.5px}
+.nn-met.hidden{display:none}
+.nn-met.pop{animation:nnRoadPop .38s ease-out}
+.nn-roadlog{font-size:11.5px; line-height:1.65; color:#8fd3ff; margin-top:6px; word-break:break-all}
+.nn-roadlog b{color:#e6f4ff}
+.nn-road.pop{animation:nnRoadPop .38s ease-out}
+@keyframes nnRoadPop{0%{transform:scale(.86);opacity:.35}55%{transform:scale(1.06)}100%{transform:scale(1);opacity:1}}
 .nn-card{position:absolute; left:50%; bottom:12px; transform:translateX(-50%); z-index:6; width:min(440px,94%); padding:12px 14px; background:var(--panel); border:3px solid var(--line); box-shadow:5px 5px 0 rgba(0,0,0,.55)}
 .nn-card-head{display:flex; align-items:center; gap:10px}
 .nn-card-emoji{font-size:20px; line-height:1}
@@ -800,7 +811,7 @@ body.nn-live footer.site-footer{display:none}
       </svg>
       <div>
         <h1>像素屋</h1>
-        <div class="tagline">PIXEL HOUSE v3.15.1</div>
+        <div class="tagline">PIXEL HOUSE v3.17.0</div>
       </div>
     </div>
     <div class="hdr-actions">
@@ -2236,12 +2247,13 @@ body.nn-live footer.site-footer{display:none}
     <!-- ===== 视图：像素南宁 ===== -->
     <section id="view-nanning" class="view">
       <div id="nnLobby" class="lobby">
-        <p class="view-tip">一座 8-bit 的南宁：方向键 / WASD 漫步主城，走到地标跟前会自动跳出卡片。探索记录只存在本机浏览器。</p>
+        <p class="view-tip">一座 8-bit 的南宁：34×23km 真实路网（含 113 座地铁站），方向键 / WASD 漫步主城，走到地标跟前会自动跳出卡片、走上哪条路就报哪条路。探索记录只存在本机浏览器。</p>
         <div class="nn-hero">
           <div><canvas id="nnMini" class="nn-mini" width="600" height="400" aria-label="南宁像素地图全景"></canvas></div>
           <div class="nn-side">
             <div class="nn-count">已探索 <b id="nnCountTxt">0</b> / <span id="nnTotalTxt">16</span></div>
             <div class="nn-bar"><i id="nnBar"></i></div>
+            <div class="nn-roadlog" id="nnRoadLog"></div>
             <button id="nnStart" class="px-btn green" type="button">▶ 开始漫游</button>
             <button id="nnReset" class="px-btn ghost" type="button">↺ 清空探索记录</button>
           </div>
@@ -2258,6 +2270,8 @@ body.nn-live footer.site-footer{display:none}
         </div>
         <div class="nn-stage" id="nnStage">
           <div class="nn-near" id="nnNear">在附近走走，找找地标</div>
+          <div class="nn-road hidden" id="nnRoad"></div>
+          <div class="nn-met hidden" id="nnMet"></div>
           <div class="nn-card hidden" id="nnCard"></div>
         </div>
         <p class="nn-hint">方向键 / WASD 移动 · Shift 加速 · 手机用下方方向键 · Esc 收起卡片</p>
@@ -13763,6 +13777,20 @@ function nnEnsureMap(){
     p += n;
   }
 
+  /* 道路名字栅格：0=无名，n=rnNames[n-1]；RLE 是「值;次数;值;次数…」 */
+  const rn = new Uint16Array(W*H);
+  if(NN_MAP.rn){
+    const parts = NN_MAP.rn.split(';');
+    let q = 0;
+    for(let i=0;i+1<parts.length;i+=2){
+      const v = parseInt(parts[i],36) || 0, n = parseInt(parts[i+1],36) || 0;
+      if(!n) continue;
+      if(v) rn.fill(v, q, q + n);
+      q += n;
+    }
+  }
+  nnS.rn = rn; nnS.rnNames = NN_MAP.rnNames || [];
+
   /* 树 / 灌木：公园密、街边稀，按坐标哈希，稳定不闪 */
   const dec = new Uint8Array(W*H);
   for(let y=2;y<H-2;y++) for(let x=2;x<W-2;x++){
@@ -13804,6 +13832,7 @@ function nnEnsureMap(){
   }));
 
   nnS.type = type; nnS.dec = dec; nnS.blds = blds; nnS.lms = lms;
+  nnS.subs = (NN_MAP.subs || []).map(s => ({ n: s.n, tx: s.tx, ty: s.ty, x: s.tx * T + 4, y: s.ty * T + 4 }));
 
   const vis = store.get('nanning.visited', {});
   nnS.visited = (vis && typeof vis === 'object' && !Array.isArray(vis)) ? vis : {};
@@ -13897,6 +13926,13 @@ function nnPaintMap(){
   }
 
   for(const b of nnS.blds) nnPaintBld(c, b);
+
+  /* 地铁站：地面留个小蓝牌（站其实在地下，这里当出入口记号） */
+  for(const s of nnS.subs){
+    const px = s.tx * T, py = s.ty * T;
+    c.fillStyle = '#12203a'; c.fillRect(px + 2, py + 2, 4, 4);
+    c.fillStyle = '#dfe9ff'; c.fillRect(px + 3, py + 3, 2, 2);
+  }
 
   /* 桥面护栏：哪一侧贴着水，就在那一侧画栏杆 */
   for(let y=1;y<H-1;y++) for(let x=1;x<W-1;x++){
@@ -14168,6 +14204,7 @@ function nnRefreshLobby(){
     '<button class="nn-lm' + (nnS.visited[l.id] ? ' done' : '') + '" data-lm="' + l.id + '" type="button">' +
     '<span class="nn-dot"></span><span>' + l.name + '</span></button>').join('');
   nnDrawMini();
+  nnRoadLogRender();
 }
 function nnShowDetail(lm){
   const d = $('#nnDetail');
@@ -14202,6 +14239,33 @@ function nnDiscover(lm){
   nnRefreshLobby();
   const all = nnS.lms.every(l => nnS.visited[l.id]);
   if(all) setTimeout(() => sfx.win(), 300);
+}
+/* 走过的路：只记名字，存本机 */
+function nnRoadSet(){
+  if(!nnS.roadSet) nnS.roadSet = store.get('nanning.roads', {}) || {};
+  return nnS.roadSet;
+}
+function nnRoadMark(name){
+  const set = nnRoadSet();
+  if(!name || set[name]) return;
+  set[name] = 1;
+  store.set('nanning.roads', set);
+  nnRoadLogRender();
+}
+function nnRoadLogRender(){
+  const el = $('#nnRoadLog');
+  if(!el) return;
+  const names = Object.keys(nnRoadSet());
+  if(!names.length){ el.innerHTML = '<span style="color:var(--dim)">还没走上过有名字的路</span>'; return; }
+  el.innerHTML = '🛣 走过的路 <b>' + names.length + '</b> 条：' + names.map(escHtml).join('、');
+}
+/* 脚下是哪条路（无名路段返回空串） */
+function nnRoadAt(x, y){
+  if(!nnS.rn) return '';
+  const T = nnS.tile;
+  const tx = nnClamp(Math.round(x / T), 0, nnS.w - 1), ty = nnClamp(Math.round(y / T), 0, nnS.h - 1);
+  const v = nnS.rn[ty * nnS.w + tx];
+  return v ? (nnS.rnNames[v - 1] || '') : '';
 }
 function nnUpdateStats(){
   if(!nnS.built) return;
@@ -14249,6 +14313,10 @@ function nnStart(){
   $('#nnCard').classList.add('hidden');
   nnS.cardOpen = false;
   nnS.nearTxt = '';
+  nnS.road = null;
+  nnS.subName = '';
+  var met0 = $('#nnMet'); if(met0) met0.classList.add('hidden');
+  var rel0 = $('#nnRoad'); if(rel0) rel0.classList.add('hidden');
   nnRender();
   nnUpdateStats();
   nnS.raf = requestAnimationFrame(nnTick);
@@ -14300,6 +14368,47 @@ function nnTick(ts){
     if(nnS.stepT > 320){ nnS.stepT = 0; gsfx('step', 300); }
   } else {
     nnS.animT = 0;
+  }
+
+  const road = nnRoadAt(nnS.pos.x, nnS.pos.y);
+  if(road !== nnS.road){
+    nnS.road = road;
+    const rel = $('#nnRoad');
+    if(rel){
+      if(road){
+        rel.innerHTML = '<span class="ic">🛣</span><b>' + escHtml(road) + '</b>';
+        rel.classList.remove('hidden', 'pop');
+        void rel.offsetWidth;
+        rel.classList.add('pop');
+        gsfx('click', 400);
+        nnRoadMark(road);
+      } else {
+        rel.classList.add('hidden');
+      }
+    }
+  }
+
+  /* 地铁站：走到跟前就报站名（一格 8px，2600 ≈ 50px ≈ 600m 内有站） */
+  let sub = null, subD = 1e9;
+  for(const s of nnS.subs){
+    const d2 = (s.x - nnS.pos.x) * (s.x - nnS.pos.x) + (s.y - nnS.pos.y) * (s.y - nnS.pos.y);
+    if(d2 < subD){ subD = d2; sub = s; }
+  }
+  const subName = (sub && subD < 2600) ? sub.n : '';
+  if(subName !== nnS.subName){
+    nnS.subName = subName;
+    const el = $('#nnMet');
+    if(el){
+      if(subName){
+        el.innerHTML = '🚇 <b>' + escHtml(subName) + '</b>';
+        el.classList.remove('hidden', 'pop');
+        void el.offsetWidth;
+        el.classList.add('pop');
+        gsfx('point', 600);
+      } else {
+        el.classList.add('hidden');
+      }
+    }
   }
 
   let near = null, nearD = 1e9;
