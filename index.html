@@ -778,6 +778,10 @@ body.game-full .nn-stage{max-width:min(880px, calc((100dvh - 170px) * 1.6))}
 .nn-met b{color:#e6f4ff; font-size:12.5px; letter-spacing:.5px}
 .nn-met.hidden{display:none}
 .nn-met.pop{animation:nnRoadPop .38s ease-out}
+.nn-uni{position:absolute; right:8px; top:78px; z-index:4; max-width:52%; padding:3px 8px; font-size:12px; color:#8fe0c8; background:rgba(9,20,16,.88); border:2px solid #2f7f68; display:flex; align-items:center; gap:6px}
+.nn-uni b{color:#dcfff4; font-size:12.5px; letter-spacing:.5px}
+.nn-uni.hidden{display:none}
+.nn-uni.pop{animation:nnRoadPop .38s ease-out}
 .nn-roadlog{font-size:11.5px; line-height:1.65; color:#8fd3ff; margin-top:6px; word-break:break-all}
 .nn-roadlog b{color:#e6f4ff}
 .nn-road.pop{animation:nnRoadPop .38s ease-out}
@@ -811,7 +815,7 @@ body.nn-live footer.site-footer{display:none}
       </svg>
       <div>
         <h1>像素屋</h1>
-        <div class="tagline">PIXEL HOUSE v3.17.0</div>
+        <div class="tagline">PIXEL HOUSE v3.18.0</div>
       </div>
     </div>
     <div class="hdr-actions">
@@ -2247,13 +2251,14 @@ body.nn-live footer.site-footer{display:none}
     <!-- ===== 视图：像素南宁 ===== -->
     <section id="view-nanning" class="view">
       <div id="nnLobby" class="lobby">
-        <p class="view-tip">一座 8-bit 的南宁：34×23km 真实路网（含 113 座地铁站），方向键 / WASD 漫步主城，走到地标跟前会自动跳出卡片、走上哪条路就报哪条路。探索记录只存在本机浏览器。</p>
+        <p class="view-tip">一座 8-bit 的南宁：34×23km 真实路网（含 113 座地铁站、46 所高校），方向键 / WASD 漫步主城，走到地标跟前会自动跳出卡片、走上哪条路就报哪条路、靠近地铁站和大学会报名字。探索记录只存在本机浏览器。</p>
         <div class="nn-hero">
           <div><canvas id="nnMini" class="nn-mini" width="600" height="400" aria-label="南宁像素地图全景"></canvas></div>
           <div class="nn-side">
             <div class="nn-count">已探索 <b id="nnCountTxt">0</b> / <span id="nnTotalTxt">16</span></div>
             <div class="nn-bar"><i id="nnBar"></i></div>
             <div class="nn-roadlog" id="nnRoadLog"></div>
+            <div class="nn-roadlog" id="nnUniLog"></div>
             <button id="nnStart" class="px-btn green" type="button">▶ 开始漫游</button>
             <button id="nnReset" class="px-btn ghost" type="button">↺ 清空探索记录</button>
           </div>
@@ -2272,6 +2277,7 @@ body.nn-live footer.site-footer{display:none}
           <div class="nn-near" id="nnNear">在附近走走，找找地标</div>
           <div class="nn-road hidden" id="nnRoad"></div>
           <div class="nn-met hidden" id="nnMet"></div>
+          <div class="nn-uni hidden" id="nnUni"></div>
           <div class="nn-card hidden" id="nnCard"></div>
         </div>
         <p class="nn-hint">方向键 / WASD 移动 · Shift 加速 · 手机用下方方向键 · Esc 收起卡片</p>
@@ -13795,13 +13801,14 @@ function nnEnsureMap(){
   const dec = new Uint8Array(W*H);
   for(let y=2;y<H-2;y++) for(let x=2;x<W-2;x++){
     const t = type[y*W+x];
-    if(t !== 0 && t !== 10) continue;
+    if(t !== 0 && t !== 10 && t !== 11) continue;
     const h = ((x*73856093) ^ (y*19349663)) >>> 0;
     const r = (h % 1000) / 1000;
     if(t === 10){
       if(r < 0.30) dec[y*W+x] = 1; else if(r < 0.42) dec[y*W+x] = 2;
     } else {
-      if(r < 0.035) dec[y*W+x] = 1; else if(r < 0.055) dec[y*W+x] = 2;
+      const thr = t === 11 ? [0.06, 0.09] : [0.035, 0.055];
+      if(r < thr[0]) dec[y*W+x] = 1; else if(r < thr[1]) dec[y*W+x] = 2;
     }
   }
 
@@ -13833,6 +13840,7 @@ function nnEnsureMap(){
 
   nnS.type = type; nnS.dec = dec; nnS.blds = blds; nnS.lms = lms;
   nnS.subs = (NN_MAP.subs || []).map(s => ({ n: s.n, tx: s.tx, ty: s.ty, x: s.tx * T + 4, y: s.ty * T + 4 }));
+  nnS.unis = (NN_MAP.unis || []).map(u => ({ n: u.n, tx: u.tx, ty: u.ty, a: u.a || 0, x: u.tx * T + 4, y: u.ty * T + 4 }));
 
   const vis = store.get('nanning.visited', {});
   nnS.visited = (vis && typeof vis === 'object' && !Array.isArray(vis)) ? vis : {};
@@ -13895,6 +13903,12 @@ function nnPaintMap(){
         c.fillStyle = (r%7 === 0) ? '#33684a' : '#2d5f42';
         c.fillRect(px,py,T,T);
         if(r%11 === 0){ c.fillStyle = '#3b7455'; c.fillRect(px+2,py+4,3,2); }
+      } else if(t === 11){
+        /* 校园：偏灰绿的草坪 + 浅色步道，跟公园、草地分开 */
+        c.fillStyle = (r%6 === 0) ? '#54705a' : '#4c6652';
+        c.fillRect(px,py,T,T);
+        if(r%9 === 0){ c.fillStyle = '#6c8a70'; c.fillRect(px+1,py+5,T-2,1); }
+        if(r%23 === 0){ c.fillStyle = '#7c9a80'; c.fillRect(px+2,py+2,3,3); }
       } else if(t === 5){
         c.fillStyle = '#2a4631'; c.fillRect(px,py,T,T);
         c.fillStyle = '#233c2a'; c.fillRect(px+1,py+1,T-2,T-2);
@@ -13960,6 +13974,30 @@ function nnPaintMap(){
   }
 
   for(const lm of nnS.lms) nnPaintLm(c, lm);
+  if(nnS.unis) nnPaintUnis(c);
+}
+
+/* ---------- 高校：小校徽 + 校名（大校区才落字，避免挤成一团） ---------- */
+function nnPaintUnis(c){
+  const T = nnS.tile;
+  c.font = 'bold 9px "Microsoft YaHei", monospace';
+  c.textAlign = 'center'; c.textBaseline = 'middle';
+  for(const u of nnS.unis){
+    const cx = u.tx*T + 4, cy = u.ty*T + 4;
+    /* 校徽牌：深青底 + 白色学士帽 */
+    c.fillStyle = 'rgba(6,14,18,.62)'; c.fillRect(cx-7, cy-7, 14, 12);
+    c.fillStyle = '#1d6f63'; c.fillRect(cx-6, cy-6, 12, 10);
+    c.fillStyle = '#6ee0c6'; c.fillRect(cx-4, cy-3, 8, 2);
+    c.fillStyle = '#bff5e6'; c.fillRect(cx-2, cy-5, 4, 2);
+    c.fillStyle = '#0b3a34'; c.fillRect(cx-1, cy-1, 2, 2);
+    if(u.a >= 16){
+      c.lineWidth = 2; c.strokeStyle = 'rgba(4,12,10,.85)';
+      c.strokeText(u.n, cx, cy + 12);
+      c.fillStyle = '#c8f3e4';
+      c.fillText(u.n, cx, cy + 12);
+    }
+  }
+  c.textAlign = 'left'; c.textBaseline = 'alphabetic';
 }
 
 function nnPaintBld(c, b){
@@ -14183,6 +14221,10 @@ function nnDrawMini(){
   ctx.clearRect(0,0,W,H);
   ctx.drawImage(nnS.mapCv, 0, 0, W, H);
   const k = W / (nnS.w * nnS.tile);
+  for(const u of (nnS.unis || [])){
+    const x = Math.round(u.tx*nnS.tile*k), y = Math.round(u.ty*nnS.tile*k);
+    ctx.fillStyle = '#6ee0c6'; ctx.fillRect(x-1, y-1, 3, 3);
+  }
   for(const lm of nnS.lms){
     const x = Math.round(lm.tx*nnS.tile*k), y = Math.round(lm.ty*nnS.tile*k);
     ctx.fillStyle = nnS.visited[lm.id] ? '#3ddc84' : '#ffc53d';
@@ -14205,6 +14247,11 @@ function nnRefreshLobby(){
     '<span class="nn-dot"></span><span>' + l.name + '</span></button>').join('');
   nnDrawMini();
   nnRoadLogRender();
+  const ul = $('#nnUniLog');
+  if(ul){
+    const n = (nnS.unis || []).length;
+    ul.innerHTML = n ? ('🎓 高校 <b>' + n + '</b> 所：广西大学 · 广西医科大学 · 广西民族大学 · 南宁师范大学 · 广西财经学院 · 广西艺术学院 · 广西中医药大学 …') : '';
+  }
 }
 function nnShowDetail(lm){
   const d = $('#nnDetail');
@@ -14316,6 +14363,8 @@ function nnStart(){
   nnS.road = null;
   nnS.subName = '';
   var met0 = $('#nnMet'); if(met0) met0.classList.add('hidden');
+  nnS.uniName = '';
+  var uni0 = $('#nnUni'); if(uni0) uni0.classList.add('hidden');
   var rel0 = $('#nnRoad'); if(rel0) rel0.classList.add('hidden');
   nnRender();
   nnUpdateStats();
@@ -14401,6 +14450,34 @@ function nnTick(ts){
     if(el){
       if(subName){
         el.innerHTML = '🚇 <b>' + escHtml(subName) + '</b>';
+        el.classList.remove('hidden', 'pop');
+        void el.offsetWidth;
+        el.classList.add('pop');
+        gsfx('point', 600);
+      } else {
+        el.classList.add('hidden');
+      }
+    }
+  }
+
+  /* 高校：站在校园地面里或贴近校区中心就报校名 */
+  const ctx0 = Math.floor(nnS.pos.x / T), cty0 = Math.floor(nnS.pos.y / T);
+  const onCampus = (ctx0 >= 0 && cty0 >= 0 && ctx0 < nnS.w && cty0 < nnS.h) && nnS.type[cty0*nnS.w+ctx0] === 11;
+  let uni = null, uniD = 1e9;
+  if(nnS.unis){
+    for(const u of nnS.unis){
+      const d2 = (u.x - nnS.pos.x) * (u.x - nnS.pos.x) + (u.y - nnS.pos.y) * (u.y - nnS.pos.y);
+      if(d2 < uniD){ uniD = d2; uni = u; }
+    }
+  }
+  const uniDist = Math.sqrt(uniD);
+  const uniName = (uni && (onCampus || uniDist < 36)) ? uni.n : '';
+  if(uniName !== nnS.uniName){
+    nnS.uniName = uniName;
+    const el = $('#nnUni');
+    if(el){
+      if(uniName){
+        el.innerHTML = '🎓 <b>' + escHtml(uniName) + '</b>';
         el.classList.remove('hidden', 'pop');
         void el.offsetWidth;
         el.classList.add('pop');
