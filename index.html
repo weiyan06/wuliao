@@ -799,7 +799,7 @@ body.nn-live footer.site-footer{display:none}
       </svg>
       <div>
         <h1>像素屋</h1>
-        <div class="tagline">PIXEL HOUSE v3.13.0</div>
+        <div class="tagline">PIXEL HOUSE v3.14.0</div>
       </div>
     </div>
     <div class="hdr-actions">
@@ -13723,7 +13723,7 @@ $('#nesKeysReset').addEventListener('click', () => {
    像素南宁 · 漫游地图（程序化生成的主城 + 步行解锁 16 个地标）
    ============================================================ */
 const nnS = {
-  built:false, running:false, w:0, h:0, tile:8, riverY:null,
+  built:false, running:false, w:0, h:0, tile:8, riverY:null, riverHW:null,
   type:null, dec:null, blds:[], lms:[],
   mapCv:null, cv:null, ctx:null,
   view:{ w:400, h:250 },
@@ -13747,161 +13747,80 @@ function nnClamp(v, a, b){ return v < a ? a : (v > b ? b : v); }
 /* ---------- 生成地图（地形 / 道路 / 桥 / 街区 / 地标） ---------- */
 function nnEnsureMap(){
   if(nnS.built) return true;
-  if(typeof NN_MAP === 'undefined') return false;
-  const W = NN_MAP.w, H = NN_MAP.h, T = NN_MAP.tile, half = NN_MAP.river.half;
+  if(typeof NN_MAP === 'undefined' || !NN_MAP.grid) return false;
+  const W = NN_MAP.w, H = NN_MAP.h, T = NN_MAP.tile;
   nnS.w = W; nnS.h = H; nnS.tile = T;
+
+  /* 真实路网 / 水系烘焙好的格网：RLE 解码 */
   const type = new Uint8Array(W*H);
-  const dec  = new Uint8Array(W*H);
-  const zone = new Uint8Array(W*H);
-  const rnd  = nnRand(20261124);
-  const get = (x,y) => (x<0||y<0||x>=W||y>=H) ? 9 : type[y*W+x];
-  const put = (x,y,c) => { if(x>=0&&y>=0&&x<W&&y<H) type[y*W+x] = c; };
-  const putDec = (x,y,d) => { if(x>=0&&y>=0&&x<W&&y<H) dec[y*W+x] = d; };
-
-  /* 邕江中心线 */
-  const riverY = new Float32Array(W);
-  const pts = NN_MAP.river.pts;
-  for(let x=0;x<W;x++){
-    let i = 0;
-    while(i < pts.length-2 && x > pts[i+1][0]) i++;
-    const a = pts[i], b = pts[i+1];
-    const t = nnClamp((x - a[0]) / ((b[0]-a[0]) || 1), 0, 1);
-    riverY[x] = a[1] + (b[1]-a[1])*t + Math.sin(x*0.11)*1.2;
-  }
-  nnS.riverY = riverY;
-
-  /* 水面 + 两岸沙滩 */
-  for(let x=0;x<W;x++){
-    const cy = riverY[x];
-    for(let y=Math.floor(cy-half); y<=Math.ceil(cy+half); y++) put(x,y,1);
-    for(let k=1;k<=2;k++){ put(x, Math.floor(cy-half)-k, 6); put(x, Math.ceil(cy+half)+k, 6); }
+  let p = 0;
+  for(const run of NN_MAP.grid.split(';')){
+    if(!run) continue;
+    const t = parseInt(run[0], 36), n = parseInt(run.slice(1), 36);
+    if(!n) continue;
+    type.fill(t, p, p + n);
+    p += n;
   }
 
-  /* 公园 / 大学 / 山 / 湖 */
-  for(const z of NN_MAP.zones){
-    if(z.kind === 'campus'){
-      for(let y=z.y1;y<=z.y2;y++) for(let x=z.x1;x<=z.x2;x++){
-        if(get(x,y) === 0){ zone[y*W+x] = 1; }
-      }
-      continue;
-    }
-    for(let y=Math.floor(z.cy-z.ry); y<=Math.ceil(z.cy+z.ry); y++){
-      for(let x=Math.floor(z.cx-z.rx); x<=Math.ceil(z.cx+z.rx); x++){
-        const dx = (x-z.cx)/z.rx, dy = (y-z.cy)/z.ry;
-        if(dx*dx + dy*dy > 1) continue;
-        const t = get(x,y);
-        if(t !== 0 && t !== 6) continue;
-        if(z.kind === 'lake') put(x,y,1);
-        else if(z.kind === 'mountain'){ put(x,y,5); zone[y*W+x] = 2; }
-        else zone[y*W+x] = 1;
-      }
-    }
-  }
-  /* 湖岸补沙滩 */
-  for(let y=1;y<H-1;y++) for(let x=1;x<W-1;x++){
-    if(get(x,y) !== 0) continue;
-    if(get(x-1,y)===1 || get(x+1,y)===1 || get(x,y-1)===1 || get(x,y+1)===1) put(x,y,6);
-  }
-
-  /* 地标前的小广场（先铺广场，再压道路，最后放建筑） */
-  for(const lm of NN_MAP.lms){
-    for(let dy=-3;dy<=3;dy++) for(let dx=-3;dx<=3;dx++){
-      if(dx*dx + dy*dy > 9) continue;
-      const t = get(lm.tx+dx, lm.ty+dy);
-      if(t===0 || t===2 || t===6) put(lm.tx+dx, lm.ty+dy, 3);
-    }
-  }
-
-  /* 主干道（水与山跳过） */
-  for(const r of NN_MAP.roadsH){
-    for(let y=r.y;y<r.y+r.w;y++) for(let x=r.x1;x<=r.x2;x++){
-      const t = get(x,y); if(t===1 || t===5) continue; put(x,y,2);
-    }
-  }
-  for(const r of NN_MAP.roadsV){
-    for(let x=r.x;x<r.x+r.w;x++){
-      const cy = riverY[Math.min(W-1, Math.max(0,x))];
-      for(let y=4;y<Math.floor(cy-half-1);y++){ const t=get(x,y); if(t!==1 && t!==5) put(x,y,2); }
-      for(let y=Math.ceil(cy+half+2);y<154;y++){ const t=get(x,y); if(t!==1 && t!==5) put(x,y,2); }
-    }
-  }
-  /* 沿江路 */
-  for(let x=6;x<W-6;x++){
-    const cy = riverY[x];
-    for(let k=0;k<2;k++){
-      const yn = Math.floor(cy-half-5-k), ys = Math.ceil(cy+half+5+k);
-      if(yn>0 && get(x,yn)!==1 && get(x,yn)!==5) put(x,yn,2);
-      if(ys<H-1 && get(x,ys)!==1 && get(x,ys)!==5) put(x,ys,2);
-    }
-  }
-  /* 道路两侧铺人行道 */
-  for(let y=1;y<H-1;y++) for(let x=1;x<W-1;x++){
-    if(get(x,y) !== 0) continue;
-    if(get(x-1,y)===2 || get(x+1,y)===2 || get(x,y-1)===2 || get(x,y+1)===2) put(x,y,8);
-  }
-  /* 过江桥 */
-  for(const bx of NN_MAP.bridges){
-    for(let x=bx-2;x<=bx+2;x++){
-      const cy = riverY[Math.min(W-1, Math.max(0,x))];
-      for(let y=Math.floor(cy-half-4); y<=Math.ceil(cy+half+4); y++){
-        const t = get(x,y);
-        if(t===0 || t===1 || t===2 || t===6) put(x,y,7);
-      }
-    }
-  }
-
-  /* 地标主体（不可穿行的建筑/塔/山门） */
-  const FOOT = {
-    station:[5,3], estation:[7,3], mall:[5,4], conference:[4,4], tower:[3,3],
-    oldstreet:[5,3], foodstreet:[5,3], waterstreet:[5,3], campus:[4,2],
-    park:[3,2], plaza:[1,1], bridge:[0,0], lake:[0,0], mountain:[2,2]
-  };
-  for(const lm of NN_MAP.lms){
-    const f = FOOT[lm.kind] || [3,3];
-    if(!f[0]) continue;
-    const x1 = lm.tx - Math.floor(f[0]/2), y1 = lm.ty - Math.floor(f[1]/2);
-    for(let y=y1;y<y1+f[1];y++) for(let x=x1;x<x1+f[0];x++){
-      const t = get(x,y);
-      if(t===1 || t===7) continue;
-      put(x,y,4);
-    }
-  }
-
-  /* 街区建筑 */
-  const palette = ['#5b4b7a','#45597f','#6e4b6b','#43667a','#6a5a3c','#3f5570','#7a564a','#585a88'];
-  const blds = [];
-  for(let by=5; by<H-8; by+=7){
-    for(let bx=5; bx<W-9; bx+=8){
-      const ry = riverY[Math.min(W-1, bx)];
-      const north = by < ry - 9;
-      const dens = north ? (bx<34 ? 0.5 : (bx<82 ? 0.86 : 0.93)) : (bx<120 ? 0.72 : 0.52);
-      if(rnd() > dens) continue;
-      for(let k=0;k<3;k++){
-        const w = 2 + Math.floor(rnd()*3), h = 2 + Math.floor(rnd()*3);
-        const ox = bx + Math.floor(rnd()*(8-w)), oy = by + Math.floor(rnd()*(7-h));
-        let ok = true;
-        for(let y=oy;y<oy+h && ok;y++){
-          for(let x=ox;x<ox+w;x++){ const t = get(x,y); if(t !== 0 && t !== 8){ ok = false; break; } }
-        }
-        if(!ok) continue;
-        for(let y=oy;y<oy+h;y++) for(let x=ox;x<ox+w;x++) put(x,y,4);
-        blds.push({ x:ox, y:oy, w:w, h:h, c: palette[(ox*3 + oy*5 + k) % palette.length] });
-      }
-    }
-  }
-
-  /* 树（公园/校园更密，只做装饰不挡路） */
+  /* 树 / 灌木：公园密、街边稀，按坐标哈希，稳定不闪 */
+  const dec = new Uint8Array(W*H);
   for(let y=2;y<H-2;y++) for(let x=2;x<W-2;x++){
-    if(get(x,y) !== 0) continue;
-    const r = rnd(), p = zone[y*W+x] === 1 ? 0.36 : 0.05;
-    if(r < p) putDec(x,y,1);
+    const t = type[y*W+x];
+    if(t !== 0 && t !== 10) continue;
+    const h = ((x*73856093) ^ (y*19349663)) >>> 0;
+    const r = (h % 1000) / 1000;
+    if(t === 10){
+      if(r < 0.30) dec[y*W+x] = 1; else if(r < 0.42) dec[y*W+x] = 2;
+    } else {
+      if(r < 0.035) dec[y*W+x] = 1; else if(r < 0.055) dec[y*W+x] = 2;
+    }
   }
 
-  nnS.type = type; nnS.dec = dec; nnS.blds = blds; nnS.lms = NN_MAP.lms.slice();
+  /* 邕江：每列最宽的一段水面当作江面，用于分区与河岸判断 */
+  const riverY = new Float32Array(W), riverHW = new Float32Array(W);
+  for(let x=0;x<W;x++){
+    let bestStart = -1, bestLen = 0, y = 0;
+    while(y < H){
+      if(type[y*W+x] === 1){
+        const s = y;
+        while(y < H && type[y*W+x] === 1) y++;
+        if(y - s > bestLen){ bestLen = y - s; bestStart = s; }
+      } else y++;
+    }
+    riverY[x] = bestStart < 0 ? (x ? riverY[x-1] : H/2) : bestStart + bestLen/2;
+    riverHW[x] = bestLen ? bestLen/2 : 2;
+  }
+  nnS.riverY = riverY; nnS.riverHW = riverHW;
+
+  const EM = { station:'🚉', estation:'🚄', plaza:'🏙', park:'🌳', oldstreet:'🏮', foodstreet:'🍜',
+               lake:'🚣', tower:'🏢', mall:'🛍', conference:'🏵', mountain:'⛰', campus:'🎓',
+               bridge:'🌉', waterstreet:'⚓' };
+  const pal = NN_MAP.pal || [];
+  const blds = (NN_MAP.blds || []).map(b => ({ x:b[0], y:b[1], w:b[2], h:b[3], c: pal[b[4]] || '#4b5570' }));
+  const lms = (NN_MAP.lms || []).map(l => ({
+    id:l.id, name:l.name, tx:l.tx, ty:l.ty, kind:l.kind, desc:l.desc, tip:l.tip,
+    emoji: l.emoji || EM[l.kind] || '📍'
+  }));
+
+  nnS.type = type; nnS.dec = dec; nnS.blds = blds; nnS.lms = lms;
+
   const vis = store.get('nanning.visited', {});
   nnS.visited = (vis && typeof vis === 'object' && !Array.isArray(vis)) ? vis : {};
-  const sx = NN_MAP.start.x*T + 4, sy = NN_MAP.start.y*T + 4;
-  nnS.pos.x = sx; nnS.pos.y = sy;
+
+  /* 出生点：朝阳广场南侧找一块能站的地 */
+  const chaoyang = lms.find(l => l.id === 'chaoyang') || { tx: 119, ty: 80 };
+  let start = { x: chaoyang.tx*T + 4, y: (chaoyang.ty + 4)*T + 4 };
+  for(let r=0; r<9 && !nnCanStand(start.x, start.y); r++){
+    let found = false;
+    for(let dy=-r; dy<=r && !found; dy++){
+      for(let dx=-r; dx<=r && !found; dx++){
+        const px2 = (chaoyang.tx + dx)*T + 4, py2 = (chaoyang.ty + dy + 3)*T + 4;
+        if(nnCanStand(px2, py2)){ start.x = px2; start.y = py2; found = true; }
+      }
+    }
+    if(found) break;
+  }
+  nnS.pos.x = start.x; nnS.pos.y = start.y;
   const saved = store.get('nanning.pos', null);
   if(saved && typeof saved.x === 'number' && nnCanStand(saved.x, saved.y)){ nnS.pos.x = saved.x; nnS.pos.y = saved.y; }
   nnS.built = true;
@@ -13929,19 +13848,23 @@ function nnPaintMap(){
         c.fillRect(px,py,T,T);
         if(r%13 === 0){ c.fillStyle = '#2c4b33'; c.fillRect(px+3,py+2,2,2); }
       } else if(t === 1){
-        c.fillStyle = '#215280'; c.fillRect(px,py,T,T);
-        if(r%4 === 0){ c.fillStyle = '#2d6a9a'; c.fillRect(px+1,py+3,5,1); }
-        if(r%9 === 0){ c.fillStyle = '#1a4368'; c.fillRect(px+2,py+6,3,1); }
+        c.fillStyle = '#1f4f80'; c.fillRect(px,py,T,T);
+        if(r%4 === 0){ c.fillStyle = '#2c6796'; c.fillRect(px+1,py+3,5,1); }
+        if(r%9 === 0){ c.fillStyle = '#173f68'; c.fillRect(px+2,py+6,3,1); }
       } else if(t === 2){
-        c.fillStyle = '#3b405e'; c.fillRect(px,py,T,T);
-        if(r%7 === 0){ c.fillStyle = '#454b6c'; c.fillRect(px+1,py+1,3,2); }
+        c.fillStyle = '#4e5675'; c.fillRect(px,py,T,T);
+        if(r%7 === 0){ c.fillStyle = '#5d6689'; c.fillRect(px+1,py+1,3,2); }
       } else if(t === 3){
-        c.fillStyle = '#4a4f72'; c.fillRect(px,py,T,T);
-        if(r%5 === 0){ c.fillStyle = '#555b82'; c.fillRect(px+1,py+1,T-2,T-2); }
+        c.fillStyle = '#5a6182'; c.fillRect(px,py,T,T);
+        if(r%5 === 0){ c.fillStyle = '#666d8f'; c.fillRect(px+1,py+1,T-2,T-2); }
       } else if(t === 8){
-        c.fillStyle = '#565d7f'; c.fillRect(px,py,T,T);
-        c.fillStyle = '#5f6689'; c.fillRect(px+1,py+1,T-2,1);
-        c.fillStyle = '#4b5273'; c.fillRect(px+1,py+T-2,T-2,1);
+        c.fillStyle = '#6a7292'; c.fillRect(px,py,T,T);
+        c.fillStyle = '#76809f'; c.fillRect(px+1,py+1,T-2,1);
+        c.fillStyle = '#5a6280'; c.fillRect(px+1,py+T-2,T-2,1);
+      } else if(t === 10){
+        c.fillStyle = (r%7 === 0) ? '#33684a' : '#2d5f42';
+        c.fillRect(px,py,T,T);
+        if(r%11 === 0){ c.fillStyle = '#3b7455'; c.fillRect(px+2,py+4,3,2); }
       } else if(t === 5){
         c.fillStyle = '#2a4631'; c.fillRect(px,py,T,T);
         c.fillStyle = '#233c2a'; c.fillRect(px+1,py+1,T-2,T-2);
@@ -13952,47 +13875,51 @@ function nnPaintMap(){
       } else if(t === 7){
         c.fillStyle = '#4a4f70'; c.fillRect(px,py,T,T);
         c.fillStyle = '#585e84'; c.fillRect(px,py+T-1,T,1);
+      } else if(t === 9){
+        c.fillStyle = '#33374f'; c.fillRect(px,py,T,T);
+        if(r%6 === 0){ c.fillStyle = '#3c4159'; c.fillRect(px+1,py+1,3,2); }
       } else {
         c.fillStyle = '#26283f'; c.fillRect(px,py,T,T);
       }
     }
   }
 
-  /* 车道虚线 */
+  /* 车道虚线：跟着实际路面走，弯的直的都有 */
   c.fillStyle = '#ffd97a';
-  for(const r of NN_MAP.roadsH){
-    const row = r.y + Math.floor(r.w/2);
-    for(let x=r.x1;x<=r.x2;x+=6){
-      if(nnS.type[row*W+x] === 2) c.fillRect(x*T, row*T + 3, 2*T, 1);
-    }
-  }
-  for(const r of NN_MAP.roadsV){
-    const col = r.x + Math.floor(r.w/2);
-    for(let y=6;y<152;y+=6){
-      if(nnS.type[y*W+col] === 2) c.fillRect(col*T + 3, y*T, 1, 2*T);
-    }
+  for(let y=1;y<H-1;y++) for(let x=1;x<W-1;x++){
+    if(nnS.type[y*W+x] !== 2) continue;
+    if(hash(x,y) % 8 !== 0) continue;
+    const l = nnS.type[y*W+x-1] === 2, r2 = nnS.type[y*W+x+1] === 2;
+    if(l && r2){ c.fillRect(x*T, y*T+3, 5, 1); continue; }
+    const u = nnS.type[(y-1)*W+x] === 2, d = nnS.type[(y+1)*W+x] === 2;
+    if(u && d) c.fillRect(x*T+3, y*T, 1, 5);
   }
 
   for(const b of nnS.blds) nnPaintBld(c, b);
 
-  /* 桥栏杆与中线 */
-  const half = NN_MAP.river.half;
-  for(const bx of NN_MAP.bridges){
-    const cy = nnS.riverY[Math.min(W-1, Math.max(0,bx))];
-    const y1 = Math.floor(cy-half-4)*T, y2 = Math.ceil(cy+half+4)*T;
+  /* 桥面护栏：哪一侧贴着水，就在那一侧画栏杆 */
+  for(let y=1;y<H-1;y++) for(let x=1;x<W-1;x++){
+    if(nnS.type[y*W+x] !== 7) continue;
+    const px = x*T, py = y*T;
     c.fillStyle = '#8e95c4';
-    c.fillRect((bx-2)*T, y1, 1, y2-y1);
-    c.fillRect((bx+3)*T-1, y1, 1, y2-y1);
-    c.fillStyle = '#ffc53d';
-    c.fillRect(bx*T+3, y1, 1, y2-y1);
+    if(nnS.type[y*W+x-1] === 1) c.fillRect(px, py, 1, T);
+    if(nnS.type[y*W+x+1] === 1) c.fillRect(px+T-1, py, 1, T);
+    if(nnS.type[(y-1)*W+x] === 1) c.fillRect(px, py, T, 1);
+    if(nnS.type[(y+1)*W+x] === 1) c.fillRect(px, py+T-1, T, 1);
   }
 
   for(let y=0;y<H;y++) for(let x=0;x<W;x++){
-    if(nnS.dec[y*W+x] !== 1) continue;
+    const d = nnS.dec[y*W+x];
+    if(!d) continue;
     const px = x*T, py = y*T;
-    c.fillStyle = '#1e4429'; c.fillRect(px+1,py+2,6,5);
-    c.fillStyle = '#2c6b3c'; c.fillRect(px+2,py+1,4,4);
-    c.fillStyle = '#3d8a4e'; c.fillRect(px+2,py+2,2,2);
+    if(d === 1){
+      c.fillStyle = '#1e4429'; c.fillRect(px+1,py+2,6,5);
+      c.fillStyle = '#2c6b3c'; c.fillRect(px+2,py+1,4,4);
+      c.fillStyle = '#3d8a4e'; c.fillRect(px+2,py+2,2,2);
+    } else {
+      c.fillStyle = '#26492f'; c.fillRect(px+2,py+3,4,3);
+      c.fillStyle = '#33603c'; c.fillRect(px+3,py+2,2,2);
+    }
   }
 
   for(const lm of nnS.lms) nnPaintLm(c, lm);
@@ -14000,17 +13927,20 @@ function nnPaintMap(){
 
 function nnPaintBld(c, b){
   const T = nnS.tile, px = b.x*T, py = b.y*T, pw = b.w*T, ph = b.h*T;
-  c.fillStyle = '#141528'; c.fillRect(px+1,py+1,pw-2,ph-2);
-  c.fillStyle = b.c; c.fillRect(px+2,py+2,pw-4,ph-4);
-  c.fillStyle = 'rgba(255,255,255,.30)'; c.fillRect(px+3,py+3,pw-6,2);
-  c.fillStyle = 'rgba(0,0,0,.45)'; c.fillRect(px+2,py+ph-4,pw-4,2);
-  c.fillStyle = 'rgba(255,255,255,.10)'; c.fillRect(px+2,py+2,2,ph-4);
-  for(let wy=py+7; wy<py+ph-6; wy+=5){
-    for(let wx=px+4; wx<px+pw-5; wx+=5){
-      const lit = ((wx*7 + wy*11 + b.w*5) % 4 === 0);
-      c.fillStyle = lit ? '#ffe08a' : '#5b6488';
-      c.fillRect(wx,wy,3,2);
+  c.fillStyle = '#12131f'; c.fillRect(px, py, pw, ph);
+  c.fillStyle = b.c; c.fillRect(px+1, py+1, pw-2, ph-2);
+  c.fillStyle = 'rgba(255,255,255,.22)'; c.fillRect(px+1, py+1, pw-2, 2);
+  c.fillStyle = 'rgba(0,0,0,.38)'; c.fillRect(px+1, py+ph-3, pw-2, 2);
+  if(pw >= 16 && ph >= 16){
+    for(let wy=py+5; wy<py+ph-4; wy+=6){
+      for(let wx=px+4; wx<px+pw-4; wx+=6){
+        const lit = ((wx + wy*3 + b.w) % 13) < 4;
+        c.fillStyle = lit ? '#ffd97a' : '#3c4360';
+        c.fillRect(wx, wy, 2, 2);
+      }
     }
+  } else if(pw >= 16){
+    c.fillStyle = '#3c4360'; c.fillRect(px+3, py+4, pw-6, 2);
   }
 }
 
@@ -14134,9 +14064,15 @@ function nnCanStand(px, py){
 }
 function nnDistrict(px, py){
   const T = nnS.tile, tx = Math.max(0, Math.min(nnS.w-1, Math.floor(px/T)));
-  const ty = py / T;
-  if(ty < nnS.riverY[tx]) return tx < 34 ? '西乡塘' : (tx < 82 ? '兴宁' : '青秀');
-  return tx < 120 ? '江南' : '五象新区';
+  const ty = py / T, W = nnS.w;
+  if(ty < nnS.riverY[tx]){
+    if(tx < W*0.25) return '西乡塘';
+    if(tx < W*0.44) return '兴宁';
+    return '青秀';
+  }
+  if(tx < W*0.44) return '江南';
+  if(tx < W*0.60) return '良庆';
+  return '五象新区';
 }
 function nnSave(){
   if(!nnS.built) return;
@@ -14194,7 +14130,8 @@ function nnDrawMini(){
   const cv = $('#nnMini');
   if(!cv || !nnS.mapCv || !nnS.built) return;
   const ctx = cv.getContext('2d');
-  const W = 600, H = 400;
+  const W = 600, H = Math.round(600 * nnS.h / nnS.w);
+  cv.width = W; cv.height = H;
   ctx.setTransform(1,0,0,1,0,0);
   ctx.imageSmoothingEnabled = true;
   ctx.clearRect(0,0,W,H);
